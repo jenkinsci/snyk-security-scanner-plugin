@@ -1,4 +1,4 @@
-package io.snyk.snyk_security.snyk_security;
+package io.snyk.plugins;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.*;
 import hudson.model.*;
@@ -159,16 +159,17 @@ public class SnykSecurityBuilder extends Builder {
             }
         }
 
-        listener.getLogger().println("temp dir " + tempDir);
         args.add("-v", dirPath + ":/project", "-v", tempDir + ":/tmp", "snyk/snyk", "test", "--json");
         Launcher.ProcStarter ps = launcher.launch();
         ps.cmds(args);
+        String command = args.toString();
+        listener.getLogger().println(command.replace(token, "*****"));
         ps.stdin(null);
         ps.stderr(listener.getLogger());
         ps.stdout(listener.getLogger());
         ps.quiet(true);
         int exitCode = ps.join();
-        listener.getLogger().println("exit code" + String.valueOf(exitCode));
+        listener.getLogger().println("exit code " + String.valueOf(exitCode));
         if (exitCode > 1) {
             return Result.FAILURE;
         }

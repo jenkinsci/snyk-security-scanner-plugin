@@ -1,4 +1,4 @@
-package io.snyk.snyk_security.snyk_security;
+package io.snyk.plugins;
 
 import hudson.model.AbstractBuild;
 import hudson.model.Action;
@@ -23,7 +23,7 @@ public class SnykSecurityAction implements Action {
 
     @Override
     public String getIconFileName() {
-        return "/plugin/snyk-security/images/snyk_icon.png";
+        return "/plugin/snyk-security-scanner/images/snyk_icon.png";
     }
 
     @Override
