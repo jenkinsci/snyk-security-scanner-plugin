@@ -1,0 +1,9 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:i="jelly:fmt">
+    <t:summary href="snyk-results" icon="/plugin/snyk_security/images/snyk_icon.png">
+        <a href="${it.urlName}">${it.displayName}</a>
+    </t:summary>
+</j:jelly>
+
+
