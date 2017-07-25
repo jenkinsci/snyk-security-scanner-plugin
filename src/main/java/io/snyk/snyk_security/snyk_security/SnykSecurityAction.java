@@ -23,7 +23,7 @@ public class SnykSecurityAction implements Action {
 
     @Override
     public String getIconFileName() {
-        return "/plugin/snyk_security/images/snyk_icon.png";
+        return "/plugin/snyk-security/images/snyk_icon.png";
     }
 
     @Override

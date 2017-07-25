@@ -10,7 +10,7 @@
     <relativePath/>
   </parent>
   <groupId>io.snyk.snyk_security</groupId>
-  <artifactId>snyk_security</artifactId>
+  <artifactId>snyk-security</artifactId>
   <version>1.1-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
@@ -20,8 +20,8 @@
   </properties>
 
   <name>Snyk Security Plugin</name>
-  <description>Snyk security plugin</description>
-  <url>https://wiki.jenkins-ci.org/display/JENKINS/Snyk+Plugin</url>
+  <description>Add the ability to test your code dependencies for vulnerabilities against Snyk database</description>
+  <url>https://wiki.jenkins-ci.org/display/JENKINS/Snyk+Security+Plugin</url>
 
   <licenses>
     <license>
