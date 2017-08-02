@@ -64,11 +64,10 @@
     </dependency>
   </dependencies>
 
-
   <scm>
     <connection>scm:git:ssh://github.com/jenkinsci/snyk-security-scanner-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/snyk-security-scanner-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/MYPLUGsnyk-security-scanner-pluginINNAME</url>
-    <tag>snyk-security-scanner-1.2</tag>
+    <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
+    <tag>snyk-security-scanner-1.2-SNAPSHOT</tag>
   </scm>
 </project>
