@@ -10,7 +10,7 @@
   </parent>
   <groupId>io.snyk.plugins</groupId>
   <artifactId>snyk-security-scanner</artifactId>
-  <version>1.1</version>
+  <version>1.2-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -66,6 +66,6 @@
 
 
   <scm>
-    <tag>snyk-security-scanner-1.1</tag>
+    <tag>snyk-security-scanner-1.2</tag>
   </scm>
 </project>

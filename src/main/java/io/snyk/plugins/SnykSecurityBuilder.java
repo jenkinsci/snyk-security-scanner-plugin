@@ -82,12 +82,12 @@ public class SnykSecurityBuilder extends Builder {
 
 
     @Override
+    @SuppressFBWarnings({"NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, java.lang.InterruptedException{
         String token;
         try {
-            EnvVars envVars = new EnvVars();
-            envVars = build.getEnvironment(listener);
+            EnvVars envVars = build.getEnvironment(listener);
             token = envVars.get("SNYK_TOKEN");
             if (token == null){
                 listener.getLogger().println("SNYK_TOKEN wasn't found");
@@ -150,8 +150,7 @@ public class SnykSecurityBuilder extends Builder {
             tempDir = System.getProperty("java.io.tmpdir");
         }
 
-        EnvVars envVars = new EnvVars();
-        envVars = run.getEnvironment(listener);
+        EnvVars envVars = run.getEnvironment(listener);
         String javaRepo = envVars.get("MAVEN_REPO_PATH");
         if ((javaRepo != null) && (!javaRepo.isEmpty())) {
             if (new File(javaRepo).exists()) {
@@ -196,7 +195,6 @@ public class SnykSecurityBuilder extends Builder {
         return (DescriptorImpl)super.getDescriptor();
     }
 
-    @SuppressFBWarnings("NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
     private void archiveArtifacts(Run<?,?> build, Launcher launcher, TaskListener listener, FilePath workspace )
             throws java.lang.InterruptedException {
         ArtifactArchiver artifactArchiver = new ArtifactArchiver("snyk_report.*");
