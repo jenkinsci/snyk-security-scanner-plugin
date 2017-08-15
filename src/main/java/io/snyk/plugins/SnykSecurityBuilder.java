@@ -138,6 +138,7 @@ public class SnykSecurityBuilder extends Builder {
         run.setResult(scanResult);
     }
 
+    @SuppressFBWarnings({"DM_DEFAULT_ENCODING", "REC_CATCH_EXCEPTION","OS_OPEN_STREAM"})
     public String getUserId(@Nonnull TaskListener listener) {
         String userName = System.getProperty("user.name");
         String userId = "1000";
@@ -159,6 +160,7 @@ public class SnykSecurityBuilder extends Builder {
         return userId;
     }
 
+    @SuppressFBWarnings({"NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
     public Result scanProject(@Nonnull Run<?, ?> run,
                               @Nonnull FilePath workspace,
                               @Nonnull Launcher launcher,
