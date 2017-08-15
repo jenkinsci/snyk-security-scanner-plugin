@@ -3,7 +3,7 @@
   <f:section title="When a project is vulnerable">
      <f:radioBlock checked="${instance.isOnFailBuild('true') or true}" name="onFailBuild" value="true" title="Build fails" inline="true" help="/plugin/snyk-security-scanner/help-build-fail.html">
       </f:radioBlock>
-      <f:radioBlock checked="${instance.isOnFailBuild('false')}" name="onFailBuild" value="false" title="ignore Vulnerabilities" inline="true" help="/plugin/snyk-security-scanner/help-build-ignore.html">
+      <f:radioBlock checked="${instance.isOnFailBuild('false')}" name="onFailBuild" value="false" title="Ignore vulnerabilities" inline="true" help="/plugin/snyk-security-scanner/help-build-ignore.html">
       </f:radioBlock>
   </f:section>
    <f:section title="Settings">
@@ -20,6 +20,12 @@
       </f:entry>
       <f:entry title="Env flags" name="envFlags" field="envFlags" help="/plugin/snyk-security-scanner/help-env-flags.html">
          <f:textbox value="${instance.envFlags}"/>
+      </f:entry>
+      <f:entry title="Docker Image" name="dockerImage" field="dockerImage" help="/plugin/snyk-security-scanner/help-docker-image.html">
+               <f:textbox value="${instance.dockerImage}"/>
+      </f:entry>
+      <f:entry title="Project Name" name="projectName" field="projectName" help="/plugin/snyk-security-scanner/help-project-name.html">
+                <f:textbox value="${instance.projectName}"/>
       </f:entry>
   </f:section>
 </j:jelly>

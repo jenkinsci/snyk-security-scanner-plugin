@@ -48,6 +48,8 @@ public class SnykSecurityStep extends AbstractStepImpl {
     private String tokenCredentialId;
     private boolean failOnBuild;
     private String envVars;
+    private String dockerImage;
+    private String projectName;
 
     @DataBoundConstructor
     public SnykSecurityStep() {}
@@ -114,6 +116,24 @@ public class SnykSecurityStep extends AbstractStepImpl {
         this.envVars = envVars;
     }
 
+    public String getDockerImage() {
+        return dockerImage;
+    }
+
+    @DataBoundSetter
+    public void setDockerImage(String dockerImage) {
+        this.dockerImage = dockerImage;
+    }
+
+    public String getProjectName() {
+        return projectName;
+    }
+
+    @DataBoundSetter
+    public void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
+
 
     @Extension
     public static class DescriptorImpl extends AbstractStepDescriptorImpl {
@@ -159,7 +179,9 @@ public class SnykSecurityStep extends AbstractStepImpl {
                 return null;
             }
             SnykSecurityBuilder builder = new SnykSecurityBuilder(
-                    String.valueOf(step.failOnBuild), step.monitor, step.targetFile, step.organization, step.envVars);
+                    String.valueOf(step.failOnBuild), step.monitor,
+                    step.targetFile, step.organization, step.envVars,
+                    step.dockerImage, step.projectName);
             builder.perform(build, ws, launcher, listener, realToken);
             return null;
         }

@@ -13,6 +13,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.Nonnull;
 import java.io.*;
+import java.nio.file.Paths;
 
 public class SnykSecurityBuilder extends Builder {
 
@@ -21,14 +22,18 @@ public class SnykSecurityBuilder extends Builder {
     private String targetFile = "";
     private String organization = "";
     private String envFlags="";
+    private String dockerImage="";
+    private String projectName="";
 
     @DataBoundConstructor
-    public SnykSecurityBuilder(String onFailBuild, boolean isMonitor, String targetFile, String organization, String envFlags) {
+    public SnykSecurityBuilder(String onFailBuild, boolean isMonitor, String targetFile, String organization, String envFlags, String dockerImage, String projectName) {
         this.onFailBuild = onFailBuild;
         this.isMonitor = isMonitor;
         this.targetFile = targetFile;
         this.organization = organization;
         this.envFlags = envFlags;
+        this.dockerImage = dockerImage;
+        this.projectName= projectName;
     }
 
     public String isOnFailBuild(String state) {
@@ -67,19 +72,33 @@ public class SnykSecurityBuilder extends Builder {
         this.organization = organization;
     }
 
+    public String getOrganization() {
+        return this.organization;
+    }
+
     public String getEnvFlags() {
         return this.envFlags;
     }
-
     @DataBoundSetter
     public void setEnvFlags(String envFlags) {
         this.envFlags = envFlags;
     }
 
-    public String getOrganization() {
-        return this.organization;
+    public String getDockerImage() {
+        return this.dockerImage;
+    }
+    @DataBoundSetter
+    public void setDockerImage(String dockerImage) {
+        this.dockerImage= dockerImage;
     }
 
+    public String getProjectName() {
+        return this.projectName;
+    }
+    @DataBoundSetter
+    public void setProjectName(String projectName) {
+        this.projectName= projectName;
+    }
 
     @Override
     @SuppressFBWarnings({"NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
@@ -119,6 +138,27 @@ public class SnykSecurityBuilder extends Builder {
         run.setResult(scanResult);
     }
 
+    public String getUserId(@Nonnull TaskListener listener) {
+        String userName = System.getProperty("user.name");
+        String userId = "1000";
+        String command = "id -u "+ userName;
+        try {
+            Process pr = Runtime.getRuntime().exec(command);
+            BufferedReader input = new BufferedReader(new InputStreamReader(
+                    pr.getInputStream()));
+            int exitValue = pr.waitFor();
+            if (exitValue != 0) {
+                listener.getLogger().println("Failed to fetch userId using default: " + userId);
+                return userId;
+            }
+            userId = input.readLine();
+            listener.getLogger().println("Jenkins userId: " + userId);
+        } catch (Exception e) {
+            listener.getLogger().println("Exception raised while getting group ID, using default value: " + userId);
+        }
+        return userId;
+    }
+
     public Result scanProject(@Nonnull Run<?, ?> run,
                               @Nonnull FilePath workspace,
                               @Nonnull Launcher launcher,
@@ -126,9 +166,10 @@ public class SnykSecurityBuilder extends Builder {
                               @Nonnull String token) throws IOException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
         String dirPath = workspace.toURI().getPath();
-
+        String projectDirName = Paths.get(dirPath).getFileName().toString();
+        String userId = getUserId(listener);
         args.add("docker", "run");
-        args.add("--rm", "-v", "/var/run/docker.sock:/var/run/docker.sock",
+        args.add("--rm", "-v", "/var/run/docker.sock:/var/run/docker.sock", "-u", userId,
                 "-e", "SNYK_TOKEN=" + token);
         if (this.isMonitor) {
             args.add("-e", "MONITOR=true");
@@ -141,6 +182,13 @@ public class SnykSecurityBuilder extends Builder {
         }
         if ((this.envFlags != null) && (!this.envFlags.equals(""))) {
             args.add("-e", "ENV_FLAGS=" + this.envFlags);
+        }
+
+        if ((this.projectName != null) && (!this.projectName.equals(""))) {
+            args.add("-e", "PROJECT_FOLDER=" + this.projectName);
+            projectDirName = this.projectName;
+        } else{
+            args.add("-e", "PROJECT_FOLDER=" + projectDirName);
         }
 
         String tempDir;
@@ -158,7 +206,12 @@ public class SnykSecurityBuilder extends Builder {
             }
         }
 
-        args.add("-v", dirPath + ":/project", "-v", tempDir + ":/tmp", "snyk/snyk", "test", "--json");
+        String snykDockerImage = "snyk/snyk";
+        if ((this.dockerImage != null) && (!this.dockerImage.equals(""))) {
+            snykDockerImage = dockerImage;
+        }
+
+        args.add("-v", dirPath + ":/project/" + projectDirName, "-v", tempDir + ":/tmp", snykDockerImage, "test", "--json");
         Launcher.ProcStarter ps = launcher.launch();
         ps.cmds(args);
         String command = args.toString();
@@ -172,13 +225,6 @@ public class SnykSecurityBuilder extends Builder {
         if (exitCode > 1) {
             return Result.FAILURE;
         }
-        FilePath target = new FilePath(workspace, "snyk_report.html");
-        FilePath outFilePath = new FilePath(new File(tempDir + "/snyk_report.html"));
-        outFilePath.copyTo(target);
-
-        FilePath targetCSS = new FilePath(workspace, "snyk_report.css");
-        FilePath outCSS = new FilePath(new File(tempDir + "/snyk_report.css"));
-        outCSS.copyTo(targetCSS);
 
         String artifactName = "snyk_report.html";
         run.addAction(new SnykSecurityAction(run, artifactName));
