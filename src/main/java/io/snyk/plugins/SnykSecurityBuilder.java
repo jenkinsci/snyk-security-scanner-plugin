@@ -139,20 +139,24 @@ public class SnykSecurityBuilder extends Builder {
     }
 
     @SuppressFBWarnings({"DM_DEFAULT_ENCODING", "REC_CATCH_EXCEPTION","OS_OPEN_STREAM"})
-    public String getUserId(@Nonnull TaskListener listener) {
-        String userName = System.getProperty("user.name");
+    public String getUserId(@Nonnull Launcher launcher, @Nonnull TaskListener listener) {
         String userId = "1000";
-        String command = "id -u "+ userName;
+
         try {
-            Process pr = Runtime.getRuntime().exec(command);
-            BufferedReader input = new BufferedReader(new InputStreamReader(
-                    pr.getInputStream()));
-            int exitValue = pr.waitFor();
-            if (exitValue != 0) {
+            ArgumentListBuilder args = new ArgumentListBuilder();
+            args.add("id", "-u");
+            Launcher.ProcStarter ps = launcher.launch();
+            ps.cmds(args);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
+            ps.stdout(baos);
+            ps.quiet(true);
+            int exitCode = ps.join();
+            String input = new String(baos.toByteArray(), "UTF-8");
+            if (exitCode != 0) {
                 listener.getLogger().println("Failed to fetch userId using default: " + userId);
                 return userId;
             }
-            userId = input.readLine();
+            userId = input.replace("\n", "");
             listener.getLogger().println("Jenkins userId: " + userId);
         } catch (Exception e) {
             listener.getLogger().println("Exception raised while getting group ID, using default value: " + userId);
@@ -169,7 +173,7 @@ public class SnykSecurityBuilder extends Builder {
         ArgumentListBuilder args = new ArgumentListBuilder();
         String dirPath = workspace.toURI().getPath();
         String projectDirName = Paths.get(dirPath).getFileName().toString();
-        String userId = getUserId(listener);
+        String userId = getUserId(launcher, listener);
         args.add("docker", "run");
         args.add("--rm", "-v", "/var/run/docker.sock:/var/run/docker.sock", "-u", userId,
                 "-e", "SNYK_TOKEN=" + token);
@@ -192,7 +196,6 @@ public class SnykSecurityBuilder extends Builder {
         } else{
             args.add("-e", "PROJECT_FOLDER=" + projectDirName);
         }
-
         String tempDir;
         if (new File("/tmp").exists()) {
             tempDir = "/tmp";
