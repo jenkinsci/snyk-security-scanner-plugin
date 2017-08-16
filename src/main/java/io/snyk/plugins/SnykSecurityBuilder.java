@@ -204,11 +204,10 @@ public class SnykSecurityBuilder extends Builder {
         }
 
         EnvVars envVars = run.getEnvironment(listener);
+
         String javaRepo = envVars.get("MAVEN_REPO_PATH");
         if ((javaRepo != null) && (!javaRepo.isEmpty())) {
-            if (new File(javaRepo).exists()) {
-                args.add("-v", javaRepo + ":/home/node/.m2");
-            }
+            args.add("-v", javaRepo + ":/home/node/.m2");
         }
 
         String snykDockerImage = "snyk/snyk";
