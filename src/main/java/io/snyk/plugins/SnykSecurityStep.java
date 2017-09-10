@@ -175,9 +175,9 @@ public class SnykSecurityStep extends AbstractStepImpl {
             String realToken = getTokenToUse();
             if (realToken == null || realToken.isEmpty()) {
                 listener.getLogger().println("Snyk token is required");
-                build.setResult(Result.FAILURE);
-                return null;
+                throw new Exception("Snyk token is required");
             }
+
             SnykSecurityBuilder builder = new SnykSecurityBuilder(
                     String.valueOf(step.failOnBuild), step.monitor,
                     step.targetFile, step.organization, step.envVars,

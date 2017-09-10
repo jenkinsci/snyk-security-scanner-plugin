@@ -132,10 +132,12 @@ public class SnykSecurityBuilder extends Builder {
                         @Nonnull FilePath workspace,
                         @Nonnull Launcher launcher,
                         @Nonnull TaskListener listener,
-                        @Nonnull String token) throws InterruptedException, IOException, AbortException {
+                        @Nonnull String token) throws Exception {
 
         Result scanResult = scanProject(run, workspace, launcher, listener, token);
-        run.setResult(scanResult);
+        if (scanResult == Result.FAILURE) {
+            throw new Exception("Snyk returned failure");
+        }
     }
 
     @SuppressFBWarnings({"DM_DEFAULT_ENCODING", "REC_CATCH_EXCEPTION","OS_OPEN_STREAM"})
@@ -157,7 +159,8 @@ public class SnykSecurityBuilder extends Builder {
                 return userId;
             }
             userId = input.replace("\n", "");
-            listener.getLogger().println("Jenkins userId: " + userId);
+            userId = userId.replace(" ", "");
+            listener.getLogger().println("Jenkins User ID: " + userId);
         } catch (Exception e) {
             listener.getLogger().println("Exception raised while getting group ID, using default value: " + userId);
         }
@@ -175,8 +178,8 @@ public class SnykSecurityBuilder extends Builder {
         String projectDirName = Paths.get(dirPath).getFileName().toString();
         String userId = getUserId(launcher, listener);
         args.add("docker", "run");
-        args.add("--rm", "-v", "/var/run/docker.sock:/var/run/docker.sock", "-u", userId,
-                "-e", "SNYK_TOKEN=" + token);
+        args.add("--rm", "-v", "/var/run/docker.sock:/var/run/docker.sock");
+        args.add("-e", "SNYK_TOKEN=" + token);
         if (this.isMonitor) {
             args.add("-e", "MONITOR=true");
         }
@@ -204,8 +207,15 @@ public class SnykSecurityBuilder extends Builder {
         }
 
         EnvVars envVars = run.getEnvironment(listener);
+        args.add("-e", "USER_ID="+userId);
 
         String javaRepo = envVars.get("MAVEN_REPO_PATH");
+        String ivyRepo = envVars.get("IVY_REPO_PATH");
+
+        if  ((ivyRepo != null) && (!ivyRepo.isEmpty())) {
+            args.add("-v", ivyRepo + ":/home/node/.ivy2");
+        }
+
         if ((javaRepo != null) && (!javaRepo.isEmpty())) {
             args.add("-v", javaRepo + ":/home/node/.m2");
         }
