@@ -1,18 +1,24 @@
 package io.snyk.plugins;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.*;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.*;
 import hudson.tasks.ArtifactArchiver;
-import hudson.util.ArgumentListBuilder;
-import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
+import hudson.util.ArgumentListBuilder;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.Nonnull;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 
 public class SnykSecurityBuilder extends Builder {
@@ -21,9 +27,9 @@ public class SnykSecurityBuilder extends Builder {
     private boolean isMonitor;
     private String targetFile = "";
     private String organization = "";
-    private String envFlags="";
-    private String dockerImage="";
-    private String projectName="";
+    private String envFlags = "";
+    private String dockerImage = "";
+    private String projectName = "";
 
     @DataBoundConstructor
     public SnykSecurityBuilder(String onFailBuild, boolean isMonitor, String targetFile, String organization, String envFlags, String dockerImage, String projectName) {
@@ -33,7 +39,7 @@ public class SnykSecurityBuilder extends Builder {
         this.organization = organization;
         this.envFlags = envFlags;
         this.dockerImage = dockerImage;
-        this.projectName= projectName;
+        this.projectName = projectName;
     }
 
     public String isOnFailBuild(String state) {
@@ -76,39 +82,42 @@ public class SnykSecurityBuilder extends Builder {
         return this.organization;
     }
 
-    public String getEnvFlags() {
-        return this.envFlags;
-    }
     @DataBoundSetter
     public void setEnvFlags(String envFlags) {
         this.envFlags = envFlags;
     }
 
+    public String getEnvFlags() {
+        return this.envFlags;
+    }
+
+    @DataBoundSetter
+    public void setDockerImage(String dockerImage) {
+        this.dockerImage = dockerImage;
+    }
+
     public String getDockerImage() {
         return this.dockerImage;
     }
+
     @DataBoundSetter
-    public void setDockerImage(String dockerImage) {
-        this.dockerImage= dockerImage;
+        public void setProjectName(String projectName) {
+        this.projectName = projectName;
     }
 
     public String getProjectName() {
         return this.projectName;
     }
-    @DataBoundSetter
-    public void setProjectName(String projectName) {
-        this.projectName= projectName;
-    }
 
     @Override
     @SuppressFBWarnings({"NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"})
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener)
-            throws IOException, java.lang.InterruptedException{
+            throws IOException, java.lang.InterruptedException {
         String token;
         try {
             EnvVars envVars = build.getEnvironment(listener);
             token = envVars.get("SNYK_TOKEN");
-            if (token == null){
+            if (token == null) {
                 listener.getLogger().println("SNYK_TOKEN wasn't found");
                 build.setResult(Result.FAILURE);
                 return false;
@@ -121,10 +130,8 @@ public class SnykSecurityBuilder extends Builder {
 
         Result scanResult = scanProject(build, build.getWorkspace(), launcher, listener, token);
         build.setResult(scanResult);
-        if (scanResult == Result.SUCCESS) {
-            return true;
-        }
-        return false;
+
+        return scanResult == Result.SUCCESS;
     }
 
     // From pipeline
@@ -140,7 +147,7 @@ public class SnykSecurityBuilder extends Builder {
         }
     }
 
-    @SuppressFBWarnings({"DM_DEFAULT_ENCODING", "REC_CATCH_EXCEPTION","OS_OPEN_STREAM"})
+    @SuppressFBWarnings({"DM_DEFAULT_ENCODING", "REC_CATCH_EXCEPTION", "OS_OPEN_STREAM"})
     public String getUserId(@Nonnull Launcher launcher, @Nonnull TaskListener listener) {
         String userId = "1000";
 
@@ -195,8 +202,7 @@ public class SnykSecurityBuilder extends Builder {
 
         if ((this.projectName != null) && (!this.projectName.equals(""))) {
             args.add("-e", "PROJECT_FOLDER=" + this.projectName);
-            projectDirName = this.projectName;
-        } else{
+        } else {
             args.add("-e", "PROJECT_FOLDER=" + projectDirName);
         }
         String tempDir;
@@ -207,12 +213,12 @@ public class SnykSecurityBuilder extends Builder {
         }
 
         EnvVars envVars = run.getEnvironment(listener);
-        args.add("-e", "USER_ID="+userId);
+        args.add("-e", "USER_ID=" + userId);
 
         String javaRepo = envVars.get("MAVEN_REPO_PATH");
         String ivyRepo = envVars.get("IVY_REPO_PATH");
 
-        if  ((ivyRepo != null) && (!ivyRepo.isEmpty())) {
+        if ((ivyRepo != null) && (!ivyRepo.isEmpty())) {
             args.add("-v", ivyRepo + ":/home/node/.ivy2");
         }
 
@@ -225,7 +231,7 @@ public class SnykSecurityBuilder extends Builder {
             snykDockerImage = dockerImage;
         }
 
-        args.add("-v", dirPath + ":/project/" + projectDirName, "-v", tempDir + ":/tmp", snykDockerImage, "test", "--json");
+        args.add("-v", dirPath + ":/project/", "-v", tempDir + ":/tmp", snykDockerImage, "test", "--json");
         Launcher.ProcStarter ps = launcher.launch();
         ps.cmds(args);
         String command = args.toString();
@@ -252,14 +258,14 @@ public class SnykSecurityBuilder extends Builder {
 
     @Override
     public DescriptorImpl getDescriptor() {
-        return (DescriptorImpl)super.getDescriptor();
+        return (DescriptorImpl) super.getDescriptor();
     }
 
-    private void archiveArtifacts(Run<?,?> build, Launcher launcher, TaskListener listener, FilePath workspace )
+    private void archiveArtifacts(Run<?, ?> build, Launcher launcher, TaskListener listener, FilePath workspace)
             throws java.lang.InterruptedException {
         ArtifactArchiver artifactArchiver = new ArtifactArchiver("snyk_report.*");
         artifactArchiver.perform(build, workspace, launcher, listener);
-    };
+    }
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
@@ -278,7 +284,7 @@ public class SnykSecurityBuilder extends Builder {
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
             save();
-            return super.configure(req,formData);
+            return super.configure(req, formData);
         }
     }
 }
