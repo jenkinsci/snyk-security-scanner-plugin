@@ -7,12 +7,11 @@ import hudson.model.Run;
 import javax.annotation.Nonnull;
 
 public class SnykSecurityAction implements Action {
-
     private String resultsUrl;
     private Run<?,?> build;
 
     public SnykSecurityAction(AbstractBuild<?,?> build, String artifactName) {
-            this.build = build;
+        this.build = build;
         this.resultsUrl = "../artifact/" + artifactName;
     }
 
