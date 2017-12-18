@@ -239,8 +239,7 @@ public class SnykSecurityBuilder extends Builder {
         ps.quiet(true);
         int exitCode = ps.join();
         listener.getLogger().println("exit code " + String.valueOf(exitCode));
-        
-        if ((exitCode != 0) && (this.getOnFailBuild().equals("true"))) {
+        if (exitCode > 1) {
             return Result.FAILURE;
         }
 
@@ -260,6 +259,10 @@ public class SnykSecurityBuilder extends Builder {
         }
 
         archiveArtifacts(run, launcher, listener, workspace);
+
+        if ((exitCode != 0) && (this.getOnFailBuild().equals("true"))) {
+            return Result.FAILURE;
+        }
 
         return Result.SUCCESS;
     }
