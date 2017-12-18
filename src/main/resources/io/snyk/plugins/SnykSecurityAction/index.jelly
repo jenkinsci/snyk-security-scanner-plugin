@@ -5,7 +5,12 @@ hudson" xmlns:f="/lib/form">
     <st:include it="${it.build}" page="sidepanel.jelly" />
     
     <l:main-panel>
-      <iframe width="100%" height="700" frameborder="0" src="${it.resultsUrl}"/>
+      <h3>Reports</h3>
+        <j:forEach var="artifact" items="${it.build.artifacts}">
+          <j:if test="${artifact.toString().indexOf('report.html') != -1}">
+            <a href="report#${artifact}">${artifact.toString().replace("_snyk_report.html", "")}</a><br />
+          </j:if>
+        </j:forEach>
     </l:main-panel>
 
   </l:layout>

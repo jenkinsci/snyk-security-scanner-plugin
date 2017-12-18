@@ -1,0 +1,18 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:g="glide">
+  <l:layout norefresh="true">
+    <st:include it="${it.build}" page="sidepanel.jelly" />
+    
+    <l:main-panel>
+      <a href="../${it.urlName}">Back To Reports</a><br /><br />
+      <script>console.log(location.hash)</script>
+      <iframe width="95%" height="700" id="reportsframe" frameborder="0" src="" />
+      <br /><br />
+      <a href="../${it.urlName}">Back To Reports</a>
+    </l:main-panel>
+
+    <script>
+      document.getElementById("reportsframe").src = "../artifact/" + location.hash.substr(1)
+    </script> 
+  </l:layout>
+</j:jelly>
