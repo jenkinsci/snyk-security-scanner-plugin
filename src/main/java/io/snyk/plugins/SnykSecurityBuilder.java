@@ -14,6 +14,9 @@ import org.kohsuke.stapler.StaplerRequest;
 import javax.annotation.Nonnull;
 import java.io.*;
 import java.nio.file.Paths;
+import java.nio.file.Files;
+
+import static java.nio.file.StandardCopyOption.*;
 
 public class SnykSecurityBuilder extends Builder {
 
@@ -240,13 +243,27 @@ public class SnykSecurityBuilder extends Builder {
             return Result.FAILURE;
         }
 
-        String artifactName = "snyk_report.html";
-        run.addAction(new SnykSecurityAction(run, artifactName));
+        String artifactName = projectDirName + "_snyk_report.html";
+        String artifactPath = dirPath + "/" + artifactName;
+        String originalArtifactName = "/snyk_report.html";
+        String originalArtifactPath = dirPath + "/" + originalArtifactName;
+        
+        Files.move(
+            (new File(originalArtifactPath)).toPath(), 
+            (new File(artifactPath)).toPath(),
+            REPLACE_EXISTING
+        );
+
+        if (run.getActions(SnykSecurityAction.class).size() <= 0) {
+            run.addAction(new SnykSecurityAction(run, artifactName));
+        }
+
         archiveArtifacts(run, launcher, listener, workspace);
 
         if ((exitCode != 0) && (this.getOnFailBuild().equals("true"))) {
             return Result.FAILURE;
         }
+
         return Result.SUCCESS;
     }
 
@@ -257,7 +274,7 @@ public class SnykSecurityBuilder extends Builder {
 
     private void archiveArtifacts(Run<?,?> build, Launcher launcher, TaskListener listener, FilePath workspace )
             throws java.lang.InterruptedException {
-        ArtifactArchiver artifactArchiver = new ArtifactArchiver("snyk_report.*");
+        ArtifactArchiver artifactArchiver = new ArtifactArchiver("*snyk_report.*");
         artifactArchiver.perform(build, workspace, launcher, listener);
     };
 
