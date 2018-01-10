@@ -50,6 +50,8 @@ public class SnykSecurityStep extends AbstractStepImpl {
     private String envVars;
     private String dockerImage;
     private String projectName;
+    private String httpProxy;
+    private String httpsProxy;
 
     @DataBoundConstructor
     public SnykSecurityStep() {}
@@ -134,6 +136,23 @@ public class SnykSecurityStep extends AbstractStepImpl {
         this.projectName = projectName;
     }
 
+    public String getHttpProxy() {
+        return httpProxy;
+    }
+
+    @DataBoundSetter
+    public void setHttpProxy(String httpProxy) {
+        this.httpProxy = httpProxy;
+    }
+
+    public String getHttpsProxy() {
+        return httpsProxy;
+    }
+
+    @DataBoundSetter
+    public void setHttpsProxy(String httpsProxy) {
+        this.httpsProxy = httpsProxy;
+    }
 
     @Extension
     public static class DescriptorImpl extends AbstractStepDescriptorImpl {
@@ -181,7 +200,8 @@ public class SnykSecurityStep extends AbstractStepImpl {
             SnykSecurityBuilder builder = new SnykSecurityBuilder(
                     String.valueOf(step.failOnBuild), step.monitor,
                     step.targetFile, step.organization, step.envVars,
-                    step.dockerImage, step.projectName);
+                    step.dockerImage, step.projectName, step.httpProxy,
+                    step.httpsProxy);
             builder.perform(build, ws, launcher, listener, realToken);
             return null;
         }

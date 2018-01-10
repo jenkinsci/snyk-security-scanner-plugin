@@ -27,5 +27,11 @@
       <f:entry title="Project Name" name="projectName" field="projectName" help="/plugin/snyk-security-scanner/help-project-name.html">
                 <f:textbox value="${instance.projectName}"/>
       </f:entry>
+      <f:entry title="HTTP Proxy" name="httpProxy" field="httpProxy" help="/plugin/snyk-security-scanner/help-http-proxy.html">
+                <f:textbox value="${instance.httpProxy}"/>
+      </f:entry>
+      <f:entry title="HTTPS Proxy" name="httpsProxy" field="httpsProxy" help="/plugin/snyk-security-scanner/help-project-name.html">
+                <f:textbox value="${instance.httpsProxy}"/>
+      </f:entry>
   </f:section>
 </j:jelly>

@@ -27,16 +27,20 @@ public class SnykSecurityBuilder extends Builder {
     private String envFlags="";
     private String dockerImage="";
     private String projectName="";
+    private String httpProxy="";
+    private String httpsProxy="";
 
     @DataBoundConstructor
-    public SnykSecurityBuilder(String onFailBuild, boolean isMonitor, String targetFile, String organization, String envFlags, String dockerImage, String projectName) {
+    public SnykSecurityBuilder(String onFailBuild, boolean isMonitor, String targetFile, String organization, String envFlags, String dockerImage, String projectName, String httpProxy, String httpsProxy) {
         this.onFailBuild = onFailBuild;
         this.isMonitor = isMonitor;
         this.targetFile = targetFile;
         this.organization = organization;
         this.envFlags = envFlags;
         this.dockerImage = dockerImage;
-        this.projectName= projectName;
+        this.projectName = projectName;
+        this.httpProxy = httpProxy;
+        this.httpsProxy = httpsProxy;
     }
 
     public String isOnFailBuild(String state) {
@@ -101,6 +105,22 @@ public class SnykSecurityBuilder extends Builder {
     @DataBoundSetter
     public void setProjectName(String projectName) {
         this.projectName= projectName;
+    }
+
+    public String getHttpProxy() {
+        return this.httpProxy;
+    }
+    @DataBoundSetter
+    public void setHttpProxy(String httpProxy) {
+        this.httpProxy= httpProxy;
+    }
+
+    public String getHttpsProxy() {
+        return this.httpsProxy;
+    }
+    @DataBoundSetter
+    public void setHttpsProxy(String httpsProxy) {
+        this.httpsProxy= httpsProxy;
     }
 
     @Override
@@ -202,6 +222,15 @@ public class SnykSecurityBuilder extends Builder {
         } else{
             args.add("-e", "PROJECT_FOLDER=" + projectDirName);
         }
+
+        if ((this.httpProxy != null) && (!this.httpProxy.equals(""))) {
+            args.add("-e", "HTTP_PROXY=" + this.httpProxy);
+        }
+
+        if ((this.httpsProxy != null) && (!this.httpsProxy.equals(""))) {
+            args.add("-e", "HTTPS_PROXY=" + this.httpsProxy);
+        }
+
         String tempDir;
         if (new File("/tmp").exists()) {
             tempDir = "/tmp";
