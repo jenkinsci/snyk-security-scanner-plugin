@@ -9,7 +9,7 @@ Snyk Jenkins plugin enables jenkins users to test their open source packages aga
 ## Installation
 
 1. This plugin requires Docker installation on the machine in order to scan your dependencies.
-2. Pull Snyk docker image by running the following command: `docker pull snyk/snyk`
+2. Pull Snyk docker image by running the following command: `docker pull snyk/snyk-cli`
 3. Add Jenkins user to the docker group: `sudo usermod -aG docker jenkins-user` and verify that the Jenkins user can
 run docker commands without a sudo.
 
