@@ -252,7 +252,7 @@ public class SnykSecurityBuilder extends Builder {
             args.add("-v", javaRepo + ":/home/node/.m2");
         }
 
-        String snykDockerImage = "snyk/snyk";
+        String snykDockerImage = "snyk/snyk-cli";
         if ((this.dockerImage != null) && (!this.dockerImage.equals(""))) {
             snykDockerImage = dockerImage;
         }
