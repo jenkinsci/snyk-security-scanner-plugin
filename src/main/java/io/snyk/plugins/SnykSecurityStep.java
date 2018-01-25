@@ -18,10 +18,7 @@ package io.snyk.plugins;
 import com.cloudbees.plugins.credentials.CredentialsMatcher;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Util;
+import hudson.*;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -39,6 +36,7 @@ import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import java.util.Collections;
 import java.util.List;
+import hudson.EnvVars;
 
 public class SnykSecurityStep extends AbstractStepImpl {
     private String token;
@@ -52,6 +50,7 @@ public class SnykSecurityStep extends AbstractStepImpl {
     private String projectName;
     private String httpProxy;
     private String httpsProxy;
+
 
     @DataBoundConstructor
     public SnykSecurityStep() {}
@@ -188,6 +187,9 @@ public class SnykSecurityStep extends AbstractStepImpl {
         @StepContextParameter
         private transient Launcher launcher;
 
+        @StepContextParameter
+        transient EnvVars nodeEnvVars;
+
         @Override
         protected Void run() throws Exception {
             listener.getLogger().println("Running Snyk security step.");
@@ -202,7 +204,7 @@ public class SnykSecurityStep extends AbstractStepImpl {
                     step.targetFile, step.organization, step.envVars,
                     step.dockerImage, step.projectName, step.httpProxy,
                     step.httpsProxy);
-            builder.perform(build, ws, launcher, listener, realToken);
+            builder.perform(build, ws, launcher, listener, realToken, nodeEnvVars);
             return null;
         }
 
