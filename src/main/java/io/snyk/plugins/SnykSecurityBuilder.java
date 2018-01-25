@@ -128,21 +128,15 @@ public class SnykSecurityBuilder extends Builder {
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener)
             throws IOException, java.lang.InterruptedException{
         String token;
-        try {
-            EnvVars envVars = build.getEnvironment(listener);
-            token = envVars.get("SNYK_TOKEN");
-            if (token == null){
-                listener.getLogger().println("SNYK_TOKEN wasn't found");
-                build.setResult(Result.FAILURE);
-                return false;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        EnvVars nodeEnvVars = build.getEnvironment(listener);
+        token = nodeEnvVars.get("SNYK_TOKEN");
+        if (token == null){
+            listener.getLogger().println("SNYK_TOKEN wasn't found");
             build.setResult(Result.FAILURE);
             return false;
         }
 
-        Result scanResult = scanProject(build, build.getWorkspace(), launcher, listener, token);
+        Result scanResult = scanProject(build, build.getWorkspace(), launcher, listener, token, nodeEnvVars);
         build.setResult(scanResult);
         if (scanResult == Result.SUCCESS) {
             return true;
@@ -155,9 +149,10 @@ public class SnykSecurityBuilder extends Builder {
                         @Nonnull FilePath workspace,
                         @Nonnull Launcher launcher,
                         @Nonnull TaskListener listener,
-                        @Nonnull String token) throws Exception {
+                        @Nonnull String token,
+                        @Nonnull EnvVars nodeEnvVars) throws Exception {
 
-        Result scanResult = scanProject(run, workspace, launcher, listener, token);
+        Result scanResult = scanProject(run, workspace, launcher, listener, token, nodeEnvVars);
         if (scanResult == Result.FAILURE) {
             throw new Exception("Snyk returned failure");
         }
@@ -195,7 +190,8 @@ public class SnykSecurityBuilder extends Builder {
                               @Nonnull FilePath workspace,
                               @Nonnull Launcher launcher,
                               @Nonnull TaskListener listener,
-                              @Nonnull String token) throws IOException, InterruptedException {
+                              @Nonnull String token,
+                              @Nonnull EnvVars nodeEnvVars) throws IOException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
         String dirPath = workspace.toURI().getPath();
         String projectDirName = Paths.get(dirPath).getFileName().toString();
@@ -238,11 +234,10 @@ public class SnykSecurityBuilder extends Builder {
             tempDir = System.getProperty("java.io.tmpdir");
         }
 
-        EnvVars envVars = run.getEnvironment(listener);
         args.add("-e", "USER_ID="+userId);
 
-        String javaRepo = envVars.get("MAVEN_REPO_PATH");
-        String ivyRepo = envVars.get("IVY_REPO_PATH");
+        String javaRepo = nodeEnvVars.get("MAVEN_REPO_PATH");
+        String ivyRepo = nodeEnvVars.get("IVY_REPO_PATH");
 
         if  ((ivyRepo != null) && (!ivyRepo.isEmpty())) {
             args.add("-v", ivyRepo + ":/home/node/.ivy2");
