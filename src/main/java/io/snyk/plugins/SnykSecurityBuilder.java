@@ -247,7 +247,7 @@ public class SnykSecurityBuilder extends Builder {
             args.add("-v", javaRepo + ":/home/node/.m2");
         }
 
-        String snykDockerImage = "snyk/snyk-cli";
+        String snykDockerImage = "snyk/snyk-cli:npm";
         if ((this.dockerImage != null) && (!this.dockerImage.equals(""))) {
             snykDockerImage = dockerImage;
         }
@@ -271,9 +271,9 @@ public class SnykSecurityBuilder extends Builder {
         String artifactPath = dirPath + "/" + artifactName;
         String originalArtifactName = "/snyk_report.html";
         String originalArtifactPath = dirPath + "/" + originalArtifactName;
-        
+
         Files.move(
-            (new File(originalArtifactPath)).toPath(), 
+            (new File(originalArtifactPath)).toPath(),
             (new File(artifactPath)).toPath(),
             REPLACE_EXISTING
         );
