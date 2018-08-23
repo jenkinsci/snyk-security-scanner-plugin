@@ -272,17 +272,22 @@ public class SnykSecurityBuilder extends Builder {
         String originalArtifactName = "snyk_report.html";
         String originalArtifactPath = dirPath + "/" + originalArtifactName;
 
-        Files.move(
-            (new File(originalArtifactPath)).toPath(),
-            (new File(artifactPath)).toPath(),
-            REPLACE_EXISTING
-        );
+        try {
+            Files.move(
+                (new File(originalArtifactPath)).toPath(),
+                (new File(artifactPath)).toPath(),
+                REPLACE_EXISTING
+            );
 
-        if (run.getActions(SnykSecurityAction.class).size() <= 0) {
-            run.addAction(new SnykSecurityAction(run, artifactName));
+            if (run.getActions(SnykSecurityAction.class).size() <= 0) {
+                run.addAction(new SnykSecurityAction(run, artifactName));
+            }
+
+            archiveArtifacts(run, launcher, listener, workspace);
+        } catch (Exception e) {
+            listener.getLogger().println("Failed to create report artifact " +
+                e.getMessage());
         }
-
-        archiveArtifacts(run, launcher, listener, workspace);
 
         if ((exitCode != 0) && (this.getOnFailBuild().equals("true"))) {
             return Result.FAILURE;
