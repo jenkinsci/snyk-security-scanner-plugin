@@ -269,7 +269,7 @@ public class SnykSecurityBuilder extends Builder {
 
         String artifactName = projectDirName + "_snyk_report.html";
         String artifactPath = dirPath + "/" + artifactName;
-        String originalArtifactName = "/snyk_report.html";
+        String originalArtifactName = "snyk_report.html";
         String originalArtifactPath = dirPath + "/" + originalArtifactName;
 
         Files.move(
