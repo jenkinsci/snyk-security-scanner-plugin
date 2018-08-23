@@ -10,7 +10,7 @@
   </parent>
   <groupId>io.snyk.plugins</groupId>
   <artifactId>snyk-security-scanner</artifactId>
-  <version>1.9.3-SNAPSHOT</version>
+  <version>1.9.3</version>
   <packaging>hpi</packaging>
 
   <properties>
@@ -68,7 +68,7 @@
     <connection>scm:git:ssh://github.com/jenkinsci/snyk-security-scanner-plugin.git</connection>
     <developerConnection>scm:git:ssh://git@github.com/jenkinsci/snyk-security-scanner-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
-    <tag>snyk-security-scanner-1.9.3-SNAPSHOT</tag>
+    <tag>snyk-security-scanner-1.9.3</tag>
   </scm>
 
   <distributionManagement>
