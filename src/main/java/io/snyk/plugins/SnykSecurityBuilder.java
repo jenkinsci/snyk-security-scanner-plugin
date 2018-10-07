@@ -196,8 +196,7 @@ public class SnykSecurityBuilder extends Builder {
         String dirPath = workspace.toURI().getPath();
         String projectDirName = Paths.get(dirPath).getFileName().toString();
         String userId = getUserId(launcher, listener);
-        args.add("docker", "run");
-        args.add("--rm", "-v", "/var/run/docker.sock:/var/run/docker.sock");
+        args.add("docker", "run", "--rm");
         args.add("-e", "SNYK_TOKEN=" + token);
         if (this.isMonitor) {
             args.add("-e", "MONITOR=true");
