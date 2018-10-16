@@ -284,8 +284,7 @@ public class SnykSecurityBuilder extends Builder {
 
             archiveArtifacts(run, launcher, listener, workspace);
         } catch (Exception e) {
-            listener.getLogger().println("Failed to create report artifact " +
-                e.getMessage());
+            listener.getLogger().println("Failed to create report artifact " + e);
         }
 
         if ((exitCode != 0) && (this.getOnFailBuild().equals("true"))) {
