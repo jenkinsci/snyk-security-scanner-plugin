@@ -1,4 +1,5 @@
 package io.snyk.plugins;
+
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.*;
 import hudson.model.*;
@@ -13,10 +14,6 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.Nonnull;
 import java.io.*;
-import java.nio.file.Paths;
-import java.nio.file.Files;
-
-import static java.nio.file.StandardCopyOption.*;
 
 public class SnykSecurityBuilder extends Builder {
 
@@ -193,8 +190,8 @@ public class SnykSecurityBuilder extends Builder {
                               @Nonnull String token,
                               @Nonnull EnvVars nodeEnvVars) throws IOException, InterruptedException {
         ArgumentListBuilder args = new ArgumentListBuilder();
-        String dirPath = workspace.toURI().getPath();
-        String projectDirName = Paths.get(dirPath).getFileName().toString();
+        String workspaceFullPath = workspace.getRemote();
+        String projectFolderName = workspace.getName();
         String userId = getUserId(launcher, listener);
         args.add("docker", "run", "--rm");
         args.add("-e", "SNYK_TOKEN=" + token);
@@ -213,9 +210,9 @@ public class SnykSecurityBuilder extends Builder {
 
         if ((this.projectName != null) && (!this.projectName.equals(""))) {
             args.add("-e", "PROJECT_FOLDER=" + this.projectName);
-            projectDirName = this.projectName;
+            projectFolderName = this.projectName;
         } else{
-            args.add("-e", "PROJECT_FOLDER=" + projectDirName);
+            args.add("-e", "PROJECT_FOLDER=" + projectFolderName);
         }
 
         if ((this.httpProxy != null) && (!this.httpProxy.equals(""))) {
@@ -251,7 +248,7 @@ public class SnykSecurityBuilder extends Builder {
             snykDockerImage = dockerImage;
         }
 
-        args.add("-v", dirPath + ":/project/" + projectDirName, "-v", tempDir + ":/tmp", snykDockerImage, "test", "--json");
+        args.add("-v", workspaceFullPath + ":/project/" + projectFolderName, "-v", tempDir + ":/tmp", snykDockerImage, "test", "--json");
         Launcher.ProcStarter ps = launcher.launch();
         ps.cmds(args);
         String command = args.toString();
@@ -266,17 +263,11 @@ public class SnykSecurityBuilder extends Builder {
             return Result.FAILURE;
         }
 
-        String artifactName = projectDirName + "_snyk_report.html";
-        String artifactPath = dirPath + "/" + artifactName;
+        String artifactName = projectFolderName + "_snyk_report.html";
         String originalArtifactName = "snyk_report.html";
-        String originalArtifactPath = dirPath + "/" + originalArtifactName;
 
         try {
-            Files.move(
-                (new File(originalArtifactPath)).toPath(),
-                (new File(artifactPath)).toPath(),
-                REPLACE_EXISTING
-            );
+            workspace.child(originalArtifactName).renameTo(workspace.child(artifactName));
 
             if (run.getActions(SnykSecurityAction.class).size() <= 0) {
                 run.addAction(new SnykSecurityAction(run, artifactName));
@@ -326,4 +317,3 @@ public class SnykSecurityBuilder extends Builder {
         }
     }
 }
-
