@@ -281,15 +281,15 @@ public class SnykSecurityBuilder extends Builder {
 
             FilePath originalArtifactPath = workspace.child(originalArtifactName);
             FilePath newArtifactPath = workspace.child(newArtifactName);
-            LOG.log(FINE, format("Generated Snyk report [%s], exist: [%s]", originalArtifactName, originalArtifactPath.exists()));
-            LOG.log(FINE, format("New Snyk report [%s], exist: [%s]", newArtifactName, newArtifactPath.exists()));
+            LOG.log(FINE, format("Generated Snyk report [%s], exists: [%s]", originalArtifactName, originalArtifactPath.exists()));
+            LOG.log(FINE, format("New Snyk report [%s], exists: [%s]", newArtifactName, newArtifactPath.exists()));
 
             if (newArtifactPath.exists()) {
-                LOG.log(WARNING, format("Remove Snyk report file [%s]. The workspace was not deleted before build starts!", newArtifactName));
+                LOG.log(WARNING, format("Removing previous Snyk report file [%s]. The workspace was not deleted after last build!", newArtifactName));
                 newArtifactPath.delete();
             }
             if (!originalArtifactPath.exists()) {
-                throw new FileNotFoundException(format("Generated Snyk report was not found: %s", originalArtifactName));
+                throw new FileNotFoundException(format("Generated Snyk report was not found: [%s]", originalArtifactName));
             }
 
             originalArtifactPath.renameTo(newArtifactPath);
