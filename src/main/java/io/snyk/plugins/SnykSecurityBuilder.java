@@ -14,8 +14,15 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import javax.annotation.Nonnull;
 import java.io.*;
+import java.util.logging.Logger;
+
+import static java.lang.String.format;
+import static java.util.logging.Level.FINE;
+import static java.util.logging.Level.WARNING;
 
 public class SnykSecurityBuilder extends Builder {
+
+    private static final Logger LOG = Logger.getLogger(SnykSecurityBuilder.class.getName());
 
     private final String onFailBuild;
     private boolean isMonitor;
@@ -189,10 +196,15 @@ public class SnykSecurityBuilder extends Builder {
                               @Nonnull TaskListener listener,
                               @Nonnull String token,
                               @Nonnull EnvVars nodeEnvVars) throws IOException, InterruptedException {
-        ArgumentListBuilder args = new ArgumentListBuilder();
         String workspaceFullPath = workspace.getRemote();
         String projectFolderName = workspace.getName();
         String userId = getUserId(launcher, listener);
+
+        LOG.log(FINE, format("workspaceFullPath: [%s]", workspaceFullPath));
+        LOG.log(FINE, format("projectFolderName: [%s]", projectFolderName));
+        LOG.log(FINE, format("userId: [%s]", userId));
+
+        ArgumentListBuilder args = new ArgumentListBuilder();
         args.add("docker", "run", "--rm");
         args.add("-e", "SNYK_TOKEN=" + token);
         if (this.isMonitor) {
@@ -263,14 +275,27 @@ public class SnykSecurityBuilder extends Builder {
             return Result.FAILURE;
         }
 
-        String artifactName = projectFolderName + "_snyk_report.html";
-        String originalArtifactName = "snyk_report.html";
-
         try {
-            workspace.child(originalArtifactName).renameTo(workspace.child(artifactName));
+            String originalArtifactName = "snyk_report.html";
+            String newArtifactName = projectFolderName + "_snyk_report.html";
+
+            FilePath originalArtifactPath = workspace.child(originalArtifactName);
+            FilePath newArtifactPath = workspace.child(newArtifactName);
+            LOG.log(FINE, format("Generated Snyk report [%s], exist: [%s]", originalArtifactName, originalArtifactPath.exists()));
+            LOG.log(FINE, format("New Snyk report [%s], exist: [%s]", newArtifactName, newArtifactPath.exists()));
+
+            if (newArtifactPath.exists()) {
+                LOG.log(WARNING, format("Remove Snyk report file [%s]. The workspace was not deleted before build starts!", newArtifactName));
+                newArtifactPath.delete();
+            }
+            if (!originalArtifactPath.exists()) {
+                throw new FileNotFoundException(format("Generated Snyk report was not found: %s", originalArtifactName));
+            }
+
+            originalArtifactPath.renameTo(newArtifactPath);
 
             if (run.getActions(SnykSecurityAction.class).size() <= 0) {
-                run.addAction(new SnykSecurityAction(run, artifactName));
+                run.addAction(new SnykSecurityAction(run, newArtifactName));
             }
 
             archiveArtifacts(run, launcher, listener, workspace);
