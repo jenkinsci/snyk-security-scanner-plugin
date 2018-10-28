@@ -74,6 +74,11 @@
           <artifactId>flatten-maven-plugin</artifactId>
           <version>1.0.1</version>
         </plugin>
+        <plugin>
+          <groupId>pl.project13.maven</groupId>
+          <artifactId>git-commit-id-plugin</artifactId>
+          <version>2.2.5</version>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
@@ -93,6 +98,37 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>pl.project13.maven</groupId>
+        <artifactId>git-commit-id-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>get-git-info</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>validate-project-version</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>validateRevision</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <generateGitPropertiesFile>true</generateGitPropertiesFile>
+          <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+          <validationProperties>
+            <validationProperty>
+              <name>validating project version</name>
+              <value>${project.version}</value>
+              <shouldMatchTo><![CDATA[^.*(?<!-SNAPSHOT)$]]></shouldMatchTo>
+            </validationProperty>
+          </validationProperties>
+        </configuration>
       </plugin>
     </plugins>
   </build>
