@@ -1,0 +1,28 @@
+sudo: false
+language: java
+
+jdk:
+- oraclejdk8
+- openjdk8
+
+cache:
+  directories:
+  - "$HOME/.m2/repository"
+  - "$HOME/.m2/wrapper"
+
+install: true
+script: ./mvnw test --show-version --batch-mode --errors
+
+jobs:
+  include:
+  - stage: "Release"
+    if: type = push AND tag is present
+    script: true
+    deploy:
+      provider: script
+      script: ./mvnw deploy --show-version --batch-mode --errors --settings .travis/settings.xml -Drevision=$TRAVIS_TAG
+      on:
+        branch: master
+        jdk: oraclejdk8
+        repo: jenkinsci/snyk-security-scanner-plugin
+        tags: true
