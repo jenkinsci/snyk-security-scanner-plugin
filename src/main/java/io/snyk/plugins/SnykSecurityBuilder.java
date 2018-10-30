@@ -316,10 +316,17 @@ public class SnykSecurityBuilder extends Builder {
     }
 
     private void archiveArtifacts(Run<?,?> build, Launcher launcher, TaskListener listener, FilePath workspace )
-            throws java.lang.InterruptedException {
+            throws Exception {
         ArtifactArchiver artifactArchiver = new ArtifactArchiver("*snyk_report.*");
+
+        LOG.log(FINE, format("Build root directory: [%s]", build.getRootDir()));
+        LOG.log(FINE, format("Workspace remote: [%s]", workspace.getRemote()));
+        LOG.log(FINE, format("Start archiving artifacts: [%s]", artifactArchiver.getArtifacts()));
+
         artifactArchiver.perform(build, workspace, launcher, listener);
-    };
+
+        LOG.log(FINE, "Archiving artifacts successfully completed");
+    }
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
