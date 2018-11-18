@@ -10,7 +10,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class SnykInstaller extends ToolInstaller {
 
   @DataBoundConstructor
-  SnykInstaller(String label) {
+  public SnykInstaller(String label) {
     super(label);
   }
 
