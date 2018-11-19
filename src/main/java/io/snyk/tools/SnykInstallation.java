@@ -1,4 +1,4 @@
-package io.snyk.tool;
+package io.snyk.tools;
 
 import javax.annotation.Nonnull;
 import java.util.Collections;

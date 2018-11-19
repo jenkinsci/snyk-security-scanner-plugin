@@ -1,4 +1,4 @@
-package io.snyk.tool;
+package io.snyk.tools;
 
 import hudson.FilePath;
 import hudson.model.Node;
