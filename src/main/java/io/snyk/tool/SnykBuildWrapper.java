@@ -1,8 +1,8 @@
 package io.snyk.tool;
 
+import javax.annotation.Nonnull;
 import java.util.stream.Stream;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.CopyOnWrite;
 import hudson.Extension;
 import hudson.model.AbstractProject;
@@ -36,7 +36,7 @@ public class SnykBuildWrapper extends BuildWrapper {
       load();
     }
 
-    @NonNull
+    @Nonnull
     @Override
     public String getDisplayName() {
       return "Snyk";

@@ -4,7 +4,6 @@ import javax.annotation.Nonnull;
 import java.util.Collections;
 import java.util.List;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.EnvironmentSpecific;
@@ -30,7 +29,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   }
 
   @Override
-  public SnykInstallation forNode(@NonNull Node node, TaskListener taskListener) {
+  public SnykInstallation forNode(@Nonnull Node node, TaskListener taskListener) {
     return null;
   }
 
