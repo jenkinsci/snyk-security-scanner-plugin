@@ -35,7 +35,6 @@
   <properties>
     <jenkins.version>2.0</jenkins.version>
     <java.level>8</java.level>
-    <java.level.test>8</java.level.test>
     <!-- will be overridden in CD pipeline -->
     <revision>LOCAL-SNAPSHOT</revision>
   </properties>
@@ -48,10 +47,6 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.${java.level}</source>
-          <target>1.${java.level}</target>
-          <testSource>1.${java.level.test}</testSource>
-          <testTarget>1.${java.level.test}</testTarget>
           <compilerArgs>
             <arg>-Xlint:all,-options,-path</arg>
           </compilerArgs>
