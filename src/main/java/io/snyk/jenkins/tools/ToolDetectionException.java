@@ -1,4 +1,4 @@
-package io.snyk.tools;
+package io.snyk.jenkins.tools;
 
 import java.io.IOException;
 

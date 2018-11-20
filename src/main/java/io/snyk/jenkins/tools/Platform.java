@@ -1,4 +1,4 @@
-package io.snyk.tools;
+package io.snyk.jenkins.tools;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
@@ -6,7 +6,6 @@ import java.util.Map;
 
 import hudson.model.Computer;
 import hudson.model.Node;
-import io.snyk.Messages;
 
 /**
  * Supported platform.
@@ -37,11 +36,11 @@ public enum Platform {
     try {
       Computer computer = node.toComputer();
       if (computer == null) {
-        throw new ToolDetectionException(Messages.Tools_nodeNotAvailable(node.getDisplayName()));
+        throw new ToolDetectionException("");
       }
       return detect(computer.getSystemProperties());
     } catch (Exception ex) {
-      throw new ToolDetectionException(Messages.Tools_failureOnProperties(), ex);
+      throw new ToolDetectionException("", ex);
     }
   }
 
@@ -58,6 +57,6 @@ public enum Platform {
     } else if (arch.contains("windows")) {
       return WINDOWS;
     }
-    throw new ToolDetectionException(Messages.Platform_unknown(arch));
+    throw new ToolDetectionException("");
   }
 }
