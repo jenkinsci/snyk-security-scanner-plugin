@@ -55,7 +55,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
     }
 
     public List<? extends ToolInstaller> getDefaultInstallers() {
-      return Collections.singletonList(new SnykInstaller(null));
+      return Collections.singletonList(new SnykInstaller(null, null, null));
     }
 
     @Override

@@ -2,6 +2,7 @@ package io.snyk.jenkins.tools;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import hudson.CopyOnWrite;
@@ -15,7 +16,11 @@ import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import static java.util.logging.Level.FINE;
+
 public class SnykBuildWrapper extends BuildWrapper {
+
+  private static final Logger LOG = Logger.getLogger(SnykBuildWrapper.class.getName());
 
   private final String snykVersion;
 
@@ -47,6 +52,7 @@ public class SnykBuildWrapper extends BuildWrapper {
   }
 
   @Extension
+  @SuppressWarnings({"WeakerAccess", "unused"})
   public static class SnykBuildWrapperDescriptor extends BuildWrapperDescriptor {
 
     @CopyOnWrite
@@ -59,7 +65,7 @@ public class SnykBuildWrapper extends BuildWrapper {
     @Nonnull
     @Override
     public String getDisplayName() {
-      return "Snyk";
+      return "Set up Snyk security tools";
     }
 
     @Override
@@ -67,13 +73,24 @@ public class SnykBuildWrapper extends BuildWrapper {
       return true;
     }
 
-    SnykInstallation[] getInstallations() {
+    public SnykInstallation[] getInstallations() {
       return installations;
     }
 
-    void setInstallations(SnykInstallation... installations) {
+    public void setInstallations(SnykInstallation... installations) {
       this.installations = installations;
       save();
+    }
+
+    public boolean hasInstallationsAvailable() {
+      if (LOG.isLoggable(FINE)) {
+        LOG.log(FINE, "configured snyk installations: {0}", installations.length);
+        for (SnykInstallation installation : installations) {
+          LOG.log(FINE, "- details: {0}", installation);
+        }
+      }
+
+      return installations.length > 0;
     }
   }
 }
