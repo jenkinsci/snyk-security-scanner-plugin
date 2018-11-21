@@ -11,9 +11,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SnykInstaller extends ToolInstaller {
 
+  private final String version;
+  private final Long updatePolicyIntervalHours;
+
   @DataBoundConstructor
-  public SnykInstaller(String label) {
+  public SnykInstaller(String label, String version, Long updatePolicyIntervalHours) {
     super(label);
+    this.version = version;
+    this.updatePolicyIntervalHours = updatePolicyIntervalHours;
   }
 
   @Override
@@ -23,6 +28,15 @@ public class SnykInstaller extends ToolInstaller {
     log.getLogger().println(expectedPath.getRemote());
 
     return expectedPath;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  @SuppressWarnings("unused")
+  public Long getUpdatePolicyIntervalHours() {
+    return updatePolicyIntervalHours;
   }
 
   @Extension
