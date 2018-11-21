@@ -44,30 +44,9 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
     return new SnykInstallation(getName(), translateFor(node, log), getProperties().toList());
   }
 
-  // private Platform getPlatform() throws ToolDetectionException {
-  //   Platform currentPlatform = platform;
-  //
-  //   if (currentPlatform == null) {
-  //     Computer computer = Computer.currentComputer();
-  //     if (computer != null) {
-  //       Node node = computer.getNode();
-  //       if (node == null) {
-  //         throw new ToolDetectionException(Messages.Tools_nodeOffline());
-  //       }
-  //       currentPlatform = Platform.of(node);
-  //     } else {
-  //       // pipeline or master-to-slave case
-  //       currentPlatform = Platform.current();
-  //     }
-  //     platform = currentPlatform;
-  //   }
-  //
-  //   return currentPlatform;
-  // }
-
   @Extension
   @Symbol("snyk")
-  public static class SnykToolDescriptor extends ToolDescriptor<SnykInstallation> {
+  public static class SnykInstallationDescriptor extends ToolDescriptor<SnykInstallation> {
 
     @Nonnull
     @Override
