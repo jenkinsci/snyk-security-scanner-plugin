@@ -1,6 +1,7 @@
 package io.snyk.jenkins.tools;
 
 import javax.annotation.Nonnull;
+import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +33,14 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   private SnykInstallation(@Nonnull String name, @Nonnull String home, List<? extends ToolProperty<?>> properties, Platform platform) {
     super(name, home, properties);
     this.platform = platform;
+  }
+
+  @Override
+  public void buildEnvVars(EnvVars env) {
+    String root = getHome();
+    if (root != null) {
+      env.put("PATH+SNYK_HOME", new File(root, "node_modules/.bin").toString());
+    }
   }
 
   @Override
