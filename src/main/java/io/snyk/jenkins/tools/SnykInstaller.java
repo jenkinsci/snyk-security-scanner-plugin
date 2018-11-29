@@ -30,6 +30,7 @@ public class SnykInstaller extends ToolInstaller {
     return expectedPath;
   }
 
+  @SuppressWarnings("unused")
   public String getVersion() {
     return version;
   }

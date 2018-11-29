@@ -2,10 +2,12 @@ package io.snyk.jenkins.tools;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import hudson.CopyOnWrite;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -30,18 +32,33 @@ public class SnykBuildWrapper extends BuildWrapper {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public Environment setUp(AbstractBuild build, Launcher launcher, BuildListener listener) throws IOException, InterruptedException {
     SnykInstallation installation = getSnykInstallation();
     if (installation != null) {
-      listener.getLogger().println("Installation is not null");
+      EnvVars env = build.getEnvironment(listener);
+      env.overrideAll(build.getBuildVariables());
+
       // install if necessary
-      installation = installation.forNode(Computer.currentComputer().getNode(), listener).forEnvironment(build.getEnvironment(listener));
+      Computer computer = Computer.currentComputer();
+      if (computer != null && computer.getNode() != null) {
+        installation = installation.forNode(computer.getNode(), listener)
+                                   .forEnvironment(build.getEnvironment(listener));
+      }
     }
 
+    // apply Snyk binaries to PATH
     final SnykInstallation install = installation;
-    listener.getLogger().println(install.getHome());
-
-    return super.setUp(build, launcher, listener);
+    return new Environment() {
+      @Override
+      public void buildEnvVars(Map<String, String> env) {
+        if (install != null) {
+          EnvVars envVars = new EnvVars();
+          install.buildEnvVars(envVars);
+          env.putAll(envVars);
+        }
+      }
+    };
   }
 
   private SnykInstallation getSnykInstallation() {
