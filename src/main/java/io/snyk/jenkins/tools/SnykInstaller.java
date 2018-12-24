@@ -55,7 +55,7 @@ public class SnykInstaller extends ToolInstaller {
     args.add("npm", "install", "--prefix", expected.getRemote(), "snyk@" + fixEmptyAndTrim(version));
     Launcher launcher = node.createLauncher(log);
     Launcher.ProcStarter ps = launcher.new ProcStarter();
-    ps.cmds(args).stdout(log);
+    ps.quiet(true).cmds(args).stdout(log);
 
     try {
       int exitCode = launcher.launch(ps).join();
