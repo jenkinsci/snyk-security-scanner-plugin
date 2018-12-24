@@ -36,7 +36,7 @@ public class SnykInstaller extends ToolInstaller {
   }
 
   @Override
-  public FilePath performInstallation(ToolInstallation toolInstallation, Node node, TaskListener log) throws IOException, InterruptedException {
+  public FilePath performInstallation(ToolInstallation tool, Node node, TaskListener log) throws IOException, InterruptedException {
     FilePath expected = preferredLocation(tool, node);
 
     if (!isNpmAvailable(node, log)) {
