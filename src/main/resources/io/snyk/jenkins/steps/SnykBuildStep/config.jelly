@@ -1,0 +1,46 @@
+<?jelly escape-by-default="true"?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+
+  <style type="text/css">
+    .snyk-grid-wrapper {
+      align-items: center;
+      display: grid;
+      grid-row-gap: 5px;
+      grid-template-columns: minmax(auto,auto) minmax(auto,auto) 10px 1fr;
+      padding-bottom: 10px;
+    }
+    /* workaround a jenkins issue with vertical alignment of radio buttons */
+    #jenkins .jenkins-config table td.setting-main input[type='radio'] {
+      position: relative;
+      top: -0.1em;
+    }
+  </style>
+
+  <f:entry title="When issues">
+    <div class="snyk-grid-wrapper">
+      <f:radio title="Fail the build, if severity at or above" name="failBuild" id="failBuild"/>
+      <span/>
+      <f:combobox/>
+      <f:radio title="Let the build continue" name="failBuild" id="notFailBuild"/>
+    </div>
+  </f:entry>
+  <f:entry title="Monitor project on build">
+    <f:checkbox/>
+  </f:entry>
+
+  <f:section title="">
+    <f:entry title="Snyk token">
+      <c:select/>
+    </f:entry>
+    <f:entry title="Target file">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="Organisation">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="Project name">
+      <f:textbox/>
+    </f:entry>
+  </f:section>
+
+</j:jelly>
