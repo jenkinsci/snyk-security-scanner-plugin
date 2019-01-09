@@ -2,21 +2,58 @@ package io.snyk.jenkins.steps;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.util.stream.Stream;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Item;
+import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.util.ListBoxModel;
+import io.snyk.jenkins.credentials.SnykApiToken;
+import jenkins.model.Jenkins;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 public class SnykBuildStep extends Builder {
 
+  private Severity severity;
+  private String snykTokenId;
+
   @DataBoundConstructor
   public SnykBuildStep() {
+  }
 
+  @SuppressWarnings("unused")
+  public String getSeverity() {
+    if (severity != null) {
+      return severity.getSeverity();
+    } else {
+      return null;
+    }
+  }
+
+  @DataBoundSetter
+  public void setSeverity(String severity) {
+    this.severity = Severity.getIfPresent(severity);
+  }
+
+  @SuppressWarnings("unused")
+  public String getSnykTokenId() {
+    return snykTokenId;
+  }
+
+  @DataBoundSetter
+  public void setSnykTokenId(String snykTokenId) {
+    this.snykTokenId = snykTokenId;
   }
 
   @Override
@@ -38,8 +75,33 @@ public class SnykBuildStep extends Builder {
       return true;
     }
 
-    //public ListBoxModel doFillnullItems() {
-    //  return new ListBoxModel();
-    //}
+    @SuppressWarnings("unused")
+    public ListBoxModel doFillSeverityItems(@QueryParameter String severityThreshold) {
+      ListBoxModel model = new ListBoxModel();
+      Stream.of(Severity.values())
+            .map(Severity::getSeverity)
+            .forEach(model::add);
+      return model;
+    }
+
+    @SuppressWarnings("unused")
+    public ListBoxModel doFillSnykTokenIdItems(@AncestorInPath Item item, @QueryParameter String snykTokenId) {
+      StandardListBoxModel model = new StandardListBoxModel();
+
+      if (item == null) {
+        Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins != null && !jenkins.hasPermission(Jenkins.ADMINISTER)) {
+          return model.includeCurrentValue(snykTokenId);
+        }
+      } else {
+        if (!item.hasPermission(Item.EXTENDED_READ) && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
+          return model.includeCurrentValue(snykTokenId);
+        }
+      }
+
+      return model.includeEmptyValue()
+                  .includeAs(ACL.SYSTEM, item, SnykApiToken.class)
+                  .includeCurrentValue(snykTokenId);
+    }
   }
 }

@@ -20,7 +20,7 @@
     <div class="snyk-grid-wrapper">
       <f:radio title="Fail the build, if severity at or above" name="failBuild" id="failBuild"/>
       <span/>
-      <f:combobox/>
+      <f:select field="severity"/>
       <f:radio title="Let the build continue" name="failBuild" id="notFailBuild"/>
     </div>
   </f:entry>
@@ -29,7 +29,7 @@
   </f:entry>
 
   <f:section title="">
-    <f:entry title="Snyk token">
+    <f:entry title="Snyk token" field="snykTokenId">
       <c:select/>
     </f:entry>
     <f:entry title="Target file">
