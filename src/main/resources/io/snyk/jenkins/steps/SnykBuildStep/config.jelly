@@ -18,27 +18,27 @@
 
   <f:entry title="When issues">
     <div class="snyk-grid-wrapper">
-      <f:radio title="Fail the build, if severity at or above" name="failBuild" id="failBuild"/>
+      <f:radio title="Fail the build, if severity at or above" name="failOnIssues" value="true" checked="${instance == null || instance.failOnIssues == true}"/>
       <span/>
       <f:select field="severity"/>
-      <f:radio title="Let the build continue" name="failBuild" id="notFailBuild"/>
+      <f:radio title="Let the build continue" name="failOnIssues" value="false" checked="${instance.failOnIssues == false}"/>
     </div>
   </f:entry>
-  <f:entry title="Monitor project on build">
-    <f:checkbox/>
+  <f:entry title="Monitor project on build" field="monitorProjectOnBuild">
+    <f:checkbox checked="${instance == null || instance.monitorProjectOnBuild == true}"/>
   </f:entry>
 
   <f:section title="">
     <f:entry title="Snyk token" field="snykTokenId">
       <c:select/>
     </f:entry>
-    <f:entry title="Target file">
+    <f:entry title="Target file" field="targetFile">
       <f:textbox/>
     </f:entry>
-    <f:entry title="Organisation">
+    <f:entry title="Organisation" field="organisation">
       <f:textbox/>
     </f:entry>
-    <f:entry title="Project name">
+    <f:entry title="Project name" field="projectName">
       <f:textbox/>
     </f:entry>
   </f:section>

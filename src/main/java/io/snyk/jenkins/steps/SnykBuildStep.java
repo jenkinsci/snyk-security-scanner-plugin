@@ -25,20 +25,41 @@ import org.kohsuke.stapler.QueryParameter;
 
 public class SnykBuildStep extends Builder {
 
-  private Severity severity;
+  private boolean failOnIssues = true;
+  private boolean monitorProjectOnBuild = true;
+  private Severity severity = Severity.LOW;
   private String snykTokenId;
+  private String targetFile;
+  private String organisation;
+  private String projectName;
 
   @DataBoundConstructor
   public SnykBuildStep() {
   }
 
   @SuppressWarnings("unused")
+  public boolean isFailOnIssues() {
+    return failOnIssues;
+  }
+
+  @DataBoundSetter
+  public void setFailOnIssues(boolean failOnIssues) {
+    this.failOnIssues = failOnIssues;
+  }
+
+  @SuppressWarnings("unused")
+  public boolean isMonitorProjectOnBuild() {
+    return monitorProjectOnBuild;
+  }
+
+  @DataBoundSetter
+  public void setMonitorProjectOnBuild(boolean monitorProjectOnBuild) {
+    this.monitorProjectOnBuild = monitorProjectOnBuild;
+  }
+
+  @SuppressWarnings("unused")
   public String getSeverity() {
-    if (severity != null) {
-      return severity.getSeverity();
-    } else {
-      return null;
-    }
+    return severity != null ? severity.getSeverity() : null;
   }
 
   @DataBoundSetter
@@ -54,6 +75,36 @@ public class SnykBuildStep extends Builder {
   @DataBoundSetter
   public void setSnykTokenId(String snykTokenId) {
     this.snykTokenId = snykTokenId;
+  }
+
+  @SuppressWarnings("unused")
+  public String getTargetFile() {
+    return targetFile;
+  }
+
+  @DataBoundSetter
+  public void setTargetFile(String targetFile) {
+    this.targetFile = targetFile;
+  }
+
+  @SuppressWarnings("unused")
+  public String getOrganisation() {
+    return organisation;
+  }
+
+  @DataBoundSetter
+  public void setOrganisation(String organisation) {
+    this.organisation = organisation;
+  }
+
+  @SuppressWarnings("unused")
+  public String getProjectName() {
+    return projectName;
+  }
+
+  @DataBoundSetter
+  public void setProjectName(String projectName) {
+    this.projectName = projectName;
   }
 
   @Override
