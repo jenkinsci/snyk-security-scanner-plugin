@@ -2,8 +2,10 @@ package io.snyk.jenkins.steps;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.stream.Stream;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.Extension;
@@ -24,6 +26,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
+import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
+import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 
 public class SnykBuildStep extends Builder {
@@ -157,10 +161,14 @@ public class SnykBuildStep extends Builder {
                   .includeCurrentValue(snykTokenId);
     }
 
-    @SuppressWarnings("unused")
     public FormValidation doCheckSnykTokenId(@QueryParameter String value) {
       if (fixEmptyAndTrim(value) == null) {
         return FormValidation.error("Snyk API token is required.");
+      } else {
+        if (null == CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList()),
+                                                    allOf(CredentialsMatchers.withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
+          return FormValidation.error("Cannot find currently selected Snyk API token.");
+        }
       }
       return FormValidation.ok();
     }
