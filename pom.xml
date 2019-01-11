@@ -37,6 +37,7 @@
     <java.level>8</java.level>
     <!-- will be overridden in CD pipeline -->
     <revision>LOCAL-SNAPSHOT</revision>
+    <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
 
   <dependencies>
