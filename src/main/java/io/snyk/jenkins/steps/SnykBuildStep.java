@@ -8,6 +8,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -15,6 +16,7 @@ import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import jenkins.model.Jenkins;
@@ -127,7 +129,7 @@ public class SnykBuildStep extends Builder {
     }
 
     @SuppressWarnings("unused")
-    public ListBoxModel doFillSeverityItems(@QueryParameter String severityThreshold) {
+    public ListBoxModel doFillSeverityItems() {
       ListBoxModel model = new ListBoxModel();
       Stream.of(Severity.values())
             .map(Severity::getSeverity)
@@ -138,7 +140,6 @@ public class SnykBuildStep extends Builder {
     @SuppressWarnings("unused")
     public ListBoxModel doFillSnykTokenIdItems(@AncestorInPath Item item, @QueryParameter String snykTokenId) {
       StandardListBoxModel model = new StandardListBoxModel();
-
       if (item == null) {
         Jenkins jenkins = Jenkins.getInstance();
         if (jenkins != null && !jenkins.hasPermission(Jenkins.ADMINISTER)) {
@@ -153,6 +154,15 @@ public class SnykBuildStep extends Builder {
       return model.includeEmptyValue()
                   .includeAs(ACL.SYSTEM, item, SnykApiToken.class)
                   .includeCurrentValue(snykTokenId);
+    }
+
+    @SuppressWarnings("unused")
+    public FormValidation doCheckSnykTokenId(@QueryParameter String value) {
+      if (value == null || "".equals(value)) {
+        return FormValidation.error("Snyk API token is required.");
+      } else {
+        return FormValidation.ok();
+      }
     }
   }
 }
