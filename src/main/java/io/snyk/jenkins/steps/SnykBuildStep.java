@@ -8,7 +8,6 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -24,6 +23,8 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+
+import static hudson.Util.fixEmptyAndTrim;
 
 public class SnykBuildStep extends Builder {
 
@@ -158,11 +159,18 @@ public class SnykBuildStep extends Builder {
 
     @SuppressWarnings("unused")
     public FormValidation doCheckSnykTokenId(@QueryParameter String value) {
-      if (value == null || "".equals(value)) {
+      if (fixEmptyAndTrim(value) == null) {
         return FormValidation.error("Snyk API token is required.");
-      } else {
-        return FormValidation.ok();
       }
+      return FormValidation.ok();
+    }
+
+    @SuppressWarnings("unused")
+    public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild) {
+      if (fixEmptyAndTrim(value) != null && "false".equals(fixEmptyAndTrim(monitorProjectOnBuild))) {
+        return FormValidation.warning("Project name will be ignored, because the project is not monitored on build.");
+      }
+      return FormValidation.ok();
     }
   }
 }
