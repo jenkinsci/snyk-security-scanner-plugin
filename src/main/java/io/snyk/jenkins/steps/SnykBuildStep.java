@@ -133,7 +133,6 @@ public class SnykBuildStep extends Builder {
       return true;
     }
 
-    @SuppressWarnings("unused")
     public ListBoxModel doFillSeverityItems() {
       ListBoxModel model = new ListBoxModel();
       Stream.of(Severity.values())
@@ -142,7 +141,6 @@ public class SnykBuildStep extends Builder {
       return model;
     }
 
-    @SuppressWarnings("unused")
     public ListBoxModel doFillSnykTokenIdItems(@AncestorInPath Item item, @QueryParameter String snykTokenId) {
       StandardListBoxModel model = new StandardListBoxModel();
       if (item == null) {
@@ -173,7 +171,6 @@ public class SnykBuildStep extends Builder {
       return FormValidation.ok();
     }
 
-    @SuppressWarnings("unused")
     public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild) {
       if (fixEmptyAndTrim(value) != null && "false".equals(fixEmptyAndTrim(monitorProjectOnBuild))) {
         return FormValidation.warning("Project name will be ignored, because the project is not monitored on build.");
