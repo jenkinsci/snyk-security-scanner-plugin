@@ -3,11 +3,13 @@ package io.snyk.jenkins.steps;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import hudson.CopyOnWrite;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -20,6 +22,7 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.credentials.SnykApiToken;
+import io.snyk.jenkins.tools.SnykInstallation;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -29,8 +32,12 @@ import org.kohsuke.stapler.QueryParameter;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
+import static java.util.logging.Level.FINE;
+import static java.util.logging.Logger.getLogger;
 
 public class SnykBuildStep extends Builder {
+
+  private static final Logger LOG = getLogger(SnykBuildStep.class.getName());
 
   private boolean failOnIssues = true;
   private boolean monitorProjectOnBuild = true;
@@ -39,6 +46,7 @@ public class SnykBuildStep extends Builder {
   private String targetFile;
   private String organisation;
   private String projectName;
+  private String snykInstallation;
 
   @DataBoundConstructor
   public SnykBuildStep() {
@@ -114,13 +122,31 @@ public class SnykBuildStep extends Builder {
     this.projectName = projectName;
   }
 
+  @SuppressWarnings("unused")
+  public String getSnykInstallation() {
+    return snykInstallation;
+  }
+
+  @DataBoundSetter
+  public void setSnykInstallation(String snykInstallation) {
+    this.snykInstallation = snykInstallation;
+  }
+
   @Override
   public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
     return super.perform(build, launcher, listener);
   }
 
   @Extension
+  @SuppressWarnings("unused")
   public static class SnykBuildStepDescriptor extends BuildStepDescriptor<Builder> {
+
+    @CopyOnWrite
+    private volatile SnykInstallation[] installations = new SnykInstallation[0];
+
+    public SnykBuildStepDescriptor() {
+      load();
+    }
 
     @Nonnull
     @Override
@@ -131,6 +157,25 @@ public class SnykBuildStep extends Builder {
     @Override
     public boolean isApplicable(Class<? extends AbstractProject> jobType) {
       return true;
+    }
+
+    public SnykInstallation[] getInstallations() {
+      return installations;
+    }
+
+    public void setInstallations(SnykInstallation... installations) {
+      this.installations = installations;
+      save();
+    }
+
+    public boolean hasInstallationsAvailable() {
+      if (LOG.isLoggable(FINE)) {
+        LOG.log(FINE, "configured snyk installations: {0}", installations.length);
+        for (SnykInstallation installation : installations) {
+          LOG.log(FINE, "- details: {0}", installation);
+        }
+      }
+      return installations.length > 0;
     }
 
     public ListBoxModel doFillSeverityItems() {
@@ -153,7 +198,6 @@ public class SnykBuildStep extends Builder {
           return model.includeCurrentValue(snykTokenId);
         }
       }
-
       return model.includeEmptyValue()
                   .includeAs(ACL.SYSTEM, item, SnykApiToken.class)
                   .includeCurrentValue(snykTokenId);

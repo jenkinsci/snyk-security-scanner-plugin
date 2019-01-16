@@ -28,6 +28,7 @@
     <f:checkbox checked="${instance == null || instance.monitorProjectOnBuild == true}"/>
   </f:entry>
 
+  <!-- common configuration -->
   <f:section title="">
     <f:entry title="Snyk token" field="snykTokenId">
       <c:select/>
@@ -41,6 +42,27 @@
     <f:entry title="Project name" field="projectName">
       <f:textbox/>
     </f:entry>
+  </f:section>
+
+  <!-- advanced configuration -->
+  <f:section title="">
+    <f:advanced>
+      <f:entry title="Snyk installation">
+        <j:choose>
+          <j:when test="${descriptor.hasInstallationsAvailable()}">
+            <j:set var="tools" value="${descriptor.installations}"/>
+            <select name="_.snykInstallation" class="setting-input">
+              <j:forEach var="tool" items="${tools}">
+                <f:option value="${tool.name}" selected="${tool.name == instance.snykInstallation}">${tool.name}</f:option>
+              </j:forEach>
+            </select>
+          </j:when>
+          <j:otherwise>
+            <f:readOnlyTextbox value="No setup will be done, as no Snyk installations have been defined in the Jenkins system config." clazz=""/>
+          </j:otherwise>
+        </j:choose>
+      </f:entry>
+    </f:advanced>
   </f:section>
 
 </j:jelly>
