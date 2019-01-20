@@ -51,11 +51,12 @@ public class SnykInstaller extends ToolInstaller {
     }
 
     // install snyk
+    log.getLogger().println("Installing Snyk security tool (version '" + fixEmptyAndTrim(version) + "')...");
     ArgumentListBuilder args = new ArgumentListBuilder();
     args.add("npm", "install", "--prefix", expected.getRemote(), "snyk@" + fixEmptyAndTrim(version));
     Launcher launcher = node.createLauncher(log);
     Launcher.ProcStarter ps = launcher.new ProcStarter();
-    ps.quiet(true).cmds(args).stdout(log);
+    ps.quiet(true).cmds(args);
 
     try {
       int exitCode = launcher.launch(ps).join();

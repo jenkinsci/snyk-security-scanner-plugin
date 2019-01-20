@@ -16,23 +16,16 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolInstaller;
 import hudson.tools.ToolProperty;
-import io.snyk.jenkins.tools.SnykBuildWrapper.SnykBuildWrapperDescriptor;
+import io.snyk.jenkins.steps.SnykBuildStep.SnykBuildStepDescriptor;
 import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class SnykInstallation extends ToolInstallation implements EnvironmentSpecific<SnykInstallation>, NodeSpecific<SnykInstallation> {
 
-  private transient Platform platform;
-
   @DataBoundConstructor
   public SnykInstallation(@Nonnull String name, @Nonnull String home, List<? extends ToolProperty<?>> properties) {
-    this(name, home, properties, null);
-  }
-
-  private SnykInstallation(@Nonnull String name, @Nonnull String home, List<? extends ToolProperty<?>> properties, Platform platform) {
     super(name, home, properties);
-    this.platform = platform;
   }
 
   @Override
@@ -73,7 +66,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       if (instance == null) {
         throw new IllegalStateException("Jenkins has not been started, or was already shut down");
       }
-      return instance.getDescriptorByType(SnykBuildWrapperDescriptor.class).getInstallations();
+      return instance.getDescriptorByType(SnykBuildStepDescriptor.class).getInstallations();
     }
 
     @Override
@@ -82,7 +75,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       if (instance == null) {
         throw new IllegalStateException("Jenkins has not been started, or was already shut down");
       }
-      instance.getDescriptorByType(SnykBuildWrapperDescriptor.class).setInstallations(installations);
+      instance.getDescriptorByType(SnykBuildStepDescriptor.class).setInstallations(installations);
     }
   }
 }
