@@ -41,7 +41,7 @@ public class SnykInstaller extends ToolInstaller {
 
     if (!isNpmAvailable(node, log)) {
       //TODO: message for end user
-      log.getLogger().println("NodeJS is not available on this node: " + node.getDisplayName());
+      log.getLogger().println("NodeJS is not available on this node: " + node.getDisplayName() + ". No Snyk installation will be performed!");
       return expected;
     }
 
@@ -62,6 +62,7 @@ public class SnykInstaller extends ToolInstaller {
       int exitCode = launcher.launch(ps).join();
       if (exitCode != 0) {
         log.getLogger().print("Snyk installation was not successful. Exit code: " + exitCode);
+        return expected;
       }
       expected.child(".timestamp").write(valueOf(Instant.now().toEpochMilli()), "UTF-8");
     } catch (Exception ex) {
@@ -79,7 +80,7 @@ public class SnykInstaller extends ToolInstaller {
       int exitCode = launcher.launch(ps).join();
       return exitCode == 0;
     } catch (Exception ex) {
-      LOG.log(SEVERE, "Could not check if NPM is available" + ex);
+      LOG.log(SEVERE, "Could not check if NPM is available: " + ex);
       return false;
     }
   }

@@ -10,11 +10,13 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import hudson.CopyOnWrite;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
+import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
@@ -134,7 +136,26 @@ public class SnykBuildStep extends Builder {
 
   @Override
   public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-    return super.perform(build, launcher, listener);
+    SnykInstallation installation = findSnykInstallation();
+    if (installation != null) {
+      EnvVars env = build.getEnvironment(listener);
+      env.overrideAll(build.getBuildVariables());
+
+      // install if necessary
+      Computer computer = Computer.currentComputer();
+      if (computer != null && computer.getNode() != null) {
+        installation = installation.forNode(computer.getNode(), listener)
+                                   .forEnvironment(build.getEnvironment(listener));
+      }
+    }
+
+    return true;
+  }
+
+  private SnykInstallation findSnykInstallation() {
+    return Stream.of(((SnykBuildStepDescriptor) getDescriptor()).getInstallations())
+                 .filter(installation -> installation.getName().equals(snykInstallation))
+                 .findFirst().orElse(null);
   }
 
   @Extension
