@@ -18,7 +18,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 import static hudson.Util.fixEmptyAndTrim;
 import static java.lang.String.valueOf;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.SEVERE;
 
 public class SnykInstaller extends ToolInstaller {
@@ -40,13 +39,12 @@ public class SnykInstaller extends ToolInstaller {
     FilePath expected = preferredLocation(tool, node);
 
     if (!isNpmAvailable(node, log)) {
-      //TODO: message for end user
       log.getLogger().println("NodeJS is not available on this node: " + node.getDisplayName() + ". No Snyk installation will be performed!");
       return expected;
     }
 
     if (isUpToDate(expected)) {
-      LOG.log(INFO, "No Snyk installation -> up-to-date");
+      log.getLogger().println("Snyk installation is UP-TO-DATE.");
       return expected;
     }
 
