@@ -13,14 +13,18 @@ import hudson.CopyOnWrite;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Computer;
 import hudson.model.Item;
+import hudson.model.Node;
+import hudson.model.Result;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.credentials.SnykApiToken;
@@ -135,27 +139,75 @@ public class SnykBuildStep extends Builder {
   }
 
   @Override
-  public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+  public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener log) throws InterruptedException, IOException {
+    EnvVars env = build.getEnvironment(log);
+    // build arguments
+    ArgumentListBuilder args = new ArgumentListBuilder();
+
+    // look for a snyk installation
     SnykInstallation installation = findSnykInstallation();
     if (installation != null) {
-      EnvVars env = build.getEnvironment(listener);
-      env.overrideAll(build.getBuildVariables());
-
       // install if necessary
       Computer computer = Computer.currentComputer();
-      if (computer != null && computer.getNode() != null) {
-        installation = installation.forNode(computer.getNode(), listener)
-                                   .forEnvironment(build.getEnvironment(listener));
+      Node node = computer != null ? computer.getNode() : null;
+      if (node != null) {
+        installation = installation.forNode(node, log);
+        installation = installation.forEnvironment(env);
+        String exe = installation.getExecutable(launcher);
+        if (exe == null) {
+          log.getLogger().println("Can't retrieve the Snyk executable.");
+          return false;
+        }
+        args.add(exe);
+      } else {
+        log.getLogger().println("Not in a build node");
+        return false;
       }
+    } else {
+      // no snyk installation either, fall back to simple command
+      args.add("snyk");
     }
 
-    return true;
+    SnykApiToken snykApiToken = getSnykTokenCredential();
+    if (snykApiToken == null) {
+      log.getLogger().println("Snyk API token was not defined! Please configure the build properly");
+      build.setResult(Result.FAILURE);
+      return false;
+    }
+    env.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
+    env.overrideAll(build.getBuildVariables());
+    //TODO: add arguments + snyk command here
+
+    try {
+      int exitCode = launcher.launch()
+                             .cmds(args)
+                             .envs(env)
+                             .stdout(log)
+                             .pwd(build.getWorkspace())
+                             .join();
+      boolean success = exitCode == 0;
+      build.setResult(success ? Result.SUCCESS : Result.FAILURE);
+
+      //TODO: add action here
+
+      return success;
+    } catch (IOException ex) {
+      Util.displayIOException(ex, log);
+      ex.printStackTrace(log.fatalError("snyk command execution failed"));
+      build.setResult(Result.FAILURE);
+      return false;
+    }
   }
 
   private SnykInstallation findSnykInstallation() {
     return Stream.of(((SnykBuildStepDescriptor) getDescriptor()).getInstallations())
                  .filter(installation -> installation.getName().equals(snykInstallation))
                  .findFirst().orElse(null);
+  }
+
+  private SnykApiToken getSnykTokenCredential() {
+    return CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList()),
+                                           CredentialsMatchers.withId(snykTokenId));
   }
 
   @Extension
