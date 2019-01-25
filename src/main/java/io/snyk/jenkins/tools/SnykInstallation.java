@@ -26,6 +26,8 @@ import jenkins.security.MasterToSlaveCallable;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import static java.lang.String.format;
+
 public class SnykInstallation extends ToolInstallation implements EnvironmentSpecific<SnykInstallation>, NodeSpecific<SnykInstallation> {
 
   @DataBoundConstructor
@@ -57,7 +59,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       public String call() throws IOException {
         final Path executable = getExecutablePath();
         if (executable == null || Files.notExists(executable)) {
-          throw new IOException(String.format("Can't find snyk commandline <%s>", executable));
+          throw new IOException(format("Could not find Snyk executable <%s>", executable));
         }
         return executable.toAbsolutePath().toString();
       }

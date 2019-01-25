@@ -44,7 +44,7 @@ public class SnykInstaller extends ToolInstaller {
     }
 
     if (isUpToDate(expected)) {
-      log.getLogger().println("Snyk installation is UP-TO-DATE.");
+      log.getLogger().println("Snyk installation is UP-TO-DATE");
       return expected;
     }
 

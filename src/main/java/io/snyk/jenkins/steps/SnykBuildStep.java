@@ -36,6 +36,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
+import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 import static java.util.logging.Level.FINE;
@@ -176,16 +177,35 @@ public class SnykBuildStep extends Builder {
     }
     env.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
     env.overrideAll(build.getBuildVariables());
-    //TODO: add arguments + snyk command here
+
+    args.add("test", "--json");
+    if (fixEmptyAndTrim(severity.getSeverity()) != null) {
+      args.add("--severity-threshold=" + severity.getSeverity());
+    }
+    if (fixEmptyAndTrim(targetFile) != null) {
+      args.add("--file=" + targetFile);
+    }
+    if (fixEmptyAndTrim(organisation) != null) {
+      args.add("--org=" + organisation);
+    }
+    if (fixEmptyAndTrim(projectName) != null) {
+      args.add("--project-name=" + projectName);
+    } else {
+      if (build.getWorkspace() != null) {
+        args.add("--project-name=" + build.getWorkspace().getName());
+      }
+    }
 
     try {
+      log.getLogger().println("Testing for any known vulnerabilities");
+      log.getLogger().println("> " + args);
       int exitCode = launcher.launch()
                              .cmds(args)
                              .envs(env)
-                             .stdout(log)
+                             .quiet(true)
                              .pwd(build.getWorkspace())
                              .join();
-      boolean success = exitCode == 0;
+      boolean success = (!failOnIssues || exitCode == 0);
       build.setResult(success ? Result.SUCCESS : Result.FAILURE);
 
       //TODO: add action here
@@ -193,7 +213,7 @@ public class SnykBuildStep extends Builder {
       return success;
     } catch (IOException ex) {
       Util.displayIOException(ex, log);
-      ex.printStackTrace(log.fatalError("snyk command execution failed"));
+      ex.printStackTrace(log.fatalError("Snyk command execution failed"));
       build.setResult(Result.FAILURE);
       return false;
     }
@@ -207,7 +227,7 @@ public class SnykBuildStep extends Builder {
 
   private SnykApiToken getSnykTokenCredential() {
     return CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList()),
-                                           CredentialsMatchers.withId(snykTokenId));
+                                           withId(snykTokenId));
   }
 
   @Extension
@@ -281,7 +301,7 @@ public class SnykBuildStep extends Builder {
         return FormValidation.error("Snyk API token is required.");
       } else {
         if (null == CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList()),
-                                                    allOf(CredentialsMatchers.withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
+                                                    allOf(withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
           return FormValidation.error("Cannot find currently selected Snyk API token.");
         }
       }
