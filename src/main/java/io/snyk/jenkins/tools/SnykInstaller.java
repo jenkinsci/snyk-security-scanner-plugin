@@ -1,6 +1,10 @@
 package io.snyk.jenkins.tools;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -14,6 +18,7 @@ import hudson.tools.ToolInstallation;
 import hudson.tools.ToolInstaller;
 import hudson.tools.ToolInstallerDescriptor;
 import hudson.util.ArgumentListBuilder;
+import jenkins.security.MasterToSlaveCallable;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import static hudson.Util.fixEmptyAndTrim;
@@ -49,7 +54,7 @@ public class SnykInstaller extends ToolInstaller {
     }
 
     // install snyk
-    log.getLogger().println("Installing Snyk security tool (version '" + fixEmptyAndTrim(version) + "')...");
+    log.getLogger().println("Installing Snyk Security tool (version '" + fixEmptyAndTrim(version) + "')");
     ArgumentListBuilder args = new ArgumentListBuilder();
     args.add("npm", "install", "--prefix", expected.getRemote(), "snyk@" + fixEmptyAndTrim(version));
     Launcher launcher = node.createLauncher(log);
@@ -59,7 +64,7 @@ public class SnykInstaller extends ToolInstaller {
     try {
       int exitCode = launcher.launch(ps).join();
       if (exitCode != 0) {
-        log.getLogger().print("Snyk installation was not successful. Exit code: " + exitCode);
+        log.getLogger().println("Snyk installation was not successful. Exit code: " + exitCode);
         return expected;
       }
       expected.child(".timestamp").write(valueOf(Instant.now().toEpochMilli()), "UTF-8");
