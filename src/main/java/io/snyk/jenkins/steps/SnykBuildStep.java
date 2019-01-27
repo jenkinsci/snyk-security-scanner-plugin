@@ -221,12 +221,12 @@ public class SnykBuildStep extends Builder {
 
       if (installation != null) {
         generateSnykHtmlReport(build, launcher, log, installation.getReportExecutable(launcher));
-      }
 
-      if (build.getActions(SnykReportBuildAction.class).size() <= 0) {
-        build.addAction(new SnykReportBuildAction(build, "snyk_report.html"));
-        ArtifactArchiver artifactArchiver = new ArtifactArchiver("snyk_report.html");
-        artifactArchiver.perform(build, workspace, launcher, log);
+        if (build.getActions(SnykReportBuildAction.class).size() <= 0) {
+          build.addAction(new SnykReportBuildAction(build, "snyk_report.html"));
+          ArtifactArchiver artifactArchiver = new ArtifactArchiver("snyk_report.html");
+          artifactArchiver.perform(build, workspace, launcher, log);
+        }
       }
 
       return success;

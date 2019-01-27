@@ -1,11 +1,11 @@
 <?jelly escape-by-default="true"?>
-<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:l="/lib/layout">
+<j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout">
   <l:layout norefresh="true" title="">
     <!--<st:include it="${it.build}" page="sidepanel.jelly"/>-->
 
     <l:main-panel>
       <h3>Reports</h3>
-      <j:forEach var="artifact" items="${it.build.artifacts}">
+      <j:forEach var="artifact" items="${it.run.artifacts}">
         <j:if test="${artifact.toString().indexOf('snyk_report.html') != -1}">
           <a href="report#${artifact}">${artifact.toString().replace("_snyk_report.html", "")}</a>
           <br/>
