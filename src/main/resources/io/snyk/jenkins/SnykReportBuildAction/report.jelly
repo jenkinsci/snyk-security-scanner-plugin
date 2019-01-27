@@ -1,7 +1,10 @@
 <?jelly escape-by-default="true"?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:l="/lib/layout">
-  <l:layout norefresh="true">
-    <!--<st:include it="${it.build}" page="sidepanel.jelly"/>-->
+  <l:layout title="Snyk Security Report - Reports" norefresh="true">
+
+    <l:side-panel>
+      <st:include page="sidepanel.jelly" it="${it.run}" optional="true"/>
+    </l:side-panel>
 
     <l:main-panel>
       <a href="../${it.urlName}">Back To Reports</a>

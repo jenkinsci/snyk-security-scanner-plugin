@@ -7,21 +7,25 @@ import jenkins.model.RunAction2;
 
 public class SnykReportBuildAction implements RunAction2 {
 
-  private Run<?, ?> run;
-  private String resultUrl;
+  private transient Run<?, ?> run;
 
-
-  public SnykReportBuildAction(@Nonnull Run<?, ?> run, String artifactName) {
+  public SnykReportBuildAction(@Nonnull Run<?, ?> run) {
     this.run = run;
-    this.resultUrl = "../artifact/" + artifactName;
   }
 
   @Override
-  public void onAttached(Run<?, ?> r) {
+  public void onAttached(Run<?, ?> run) {
+    this.run = run;
   }
 
   @Override
-  public void onLoad(Run<?, ?> r) {
+  public void onLoad(Run<?, ?> run) {
+    this.run = run;
+  }
+
+  @SuppressWarnings("unused")
+  public Run<?, ?> getRun() {
+    return run;
   }
 
   @Override
@@ -36,14 +40,6 @@ public class SnykReportBuildAction implements RunAction2 {
 
   @Override
   public String getUrlName() {
-    return "snyk-results";
-  }
-
-  public Run<?, ?> getRun() {
-    return run;
-  }
-
-  public String getResultUrl() {
-    return resultUrl;
+    return "snykReport";
   }
 }

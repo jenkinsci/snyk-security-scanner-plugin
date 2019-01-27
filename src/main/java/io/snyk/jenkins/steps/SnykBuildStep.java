@@ -223,8 +223,8 @@ public class SnykBuildStep extends Builder {
         generateSnykHtmlReport(build, launcher, log, installation.getReportExecutable(launcher));
 
         if (build.getActions(SnykReportBuildAction.class).size() <= 0) {
-          build.addAction(new SnykReportBuildAction(build, "snyk_report.html"));
-          ArtifactArchiver artifactArchiver = new ArtifactArchiver("snyk_report.html");
+          build.addAction(new SnykReportBuildAction(build));
+          ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_snyk_report.html");
           artifactArchiver.perform(build, workspace, launcher, log);
         }
       }
@@ -265,16 +265,14 @@ public class SnykBuildStep extends Builder {
       return;
     }
 
-    FilePath snykReportHtml = workspace.child("snyk_report.html");
-    OutputStream output = snykReportHtml.write();
+    workspace.child("snyk_report.html").write("", "UTF-8");
 
     args.add(reportExecutable);
-    args.add("-i", "snyk_report.json", "-o", "snyk_report.html");
+    args.add("-i", "snyk_report.json", "-o", workspace.getName() + "_snyk_report.html");
     try {
       int exitCode = launcher.launch()
                              .cmds(args)
                              .envs(env)
-                             .stdout(output)
                              .quiet(true)
                              .pwd(workspace)
                              .join();
