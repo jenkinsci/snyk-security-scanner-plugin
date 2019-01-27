@@ -53,20 +53,37 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
     return new SnykInstallation(getName(), translateFor(node, log), getProperties().toList());
   }
 
-  public String getExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
+  public String getSnykExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
     return launcher.getChannel().call(new MasterToSlaveCallable<String, IOException>() {
       @Override
       public String call() throws IOException {
-        final Path executable = getExecutablePath();
-        if (executable == null || Files.notExists(executable)) {
-          throw new IOException(format("Could not find Snyk executable <%s>", executable));
-        }
-        return executable.toAbsolutePath().toString();
+        return resolveExecutable("snyk");
       }
     });
   }
 
-  private Path getExecutablePath() {
+  public String getReportExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
+    return launcher.getChannel().call(new MasterToSlaveCallable<String, IOException>() {
+      @Override
+      public String call() throws IOException {
+        return resolveExecutable("snyk-to-html");
+      }
+    });
+  }
+
+  private String resolveExecutable(String file) throws IOException {
+    final Path nodeModulesBin = getNodeModulesBin();
+    if (nodeModulesBin == null) {
+      throw new IOException("Could not find node modules bin folder");
+    }
+    final Path executable = nodeModulesBin.resolve(file);
+    if (Files.notExists(executable)) {
+      throw new IOException(format("Could not find executable <%s>", executable));
+    }
+    return executable.toAbsolutePath().toString();
+  }
+
+  private Path getNodeModulesBin() {
     String root = getHome();
     if (root == null) {
       return null;
@@ -77,7 +94,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       return null;
     }
 
-    return nodeModules.resolve("snyk");
+    return nodeModules;
   }
 
   @Extension
