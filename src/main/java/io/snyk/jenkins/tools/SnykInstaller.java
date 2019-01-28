@@ -1,6 +1,10 @@
 package io.snyk.jenkins.tools;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -14,11 +18,11 @@ import hudson.tools.ToolInstallation;
 import hudson.tools.ToolInstaller;
 import hudson.tools.ToolInstallerDescriptor;
 import hudson.util.ArgumentListBuilder;
+import jenkins.security.MasterToSlaveCallable;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import static hudson.Util.fixEmptyAndTrim;
 import static java.lang.String.valueOf;
-import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.SEVERE;
 
 public class SnykInstaller extends ToolInstaller {
@@ -40,20 +44,19 @@ public class SnykInstaller extends ToolInstaller {
     FilePath expected = preferredLocation(tool, node);
 
     if (!isNpmAvailable(node, log)) {
-      //TODO: message for end user
-      log.getLogger().println("NodeJS is not available on this node: " + node.getDisplayName());
+      log.getLogger().println("NodeJS is not available on this node: " + node.getDisplayName() + ". No Snyk installation will be performed!");
       return expected;
     }
 
     if (isUpToDate(expected)) {
-      LOG.log(INFO, "No Snyk installation -> up-to-date");
+      log.getLogger().println("Snyk installation is UP-TO-DATE");
       return expected;
     }
 
     // install snyk
-    log.getLogger().println("Installing Snyk security tool (version '" + fixEmptyAndTrim(version) + "')...");
+    log.getLogger().println("Installing Snyk Security tool (version '" + fixEmptyAndTrim(version) + "')");
     ArgumentListBuilder args = new ArgumentListBuilder();
-    args.add("npm", "install", "--prefix", expected.getRemote(), "snyk@" + fixEmptyAndTrim(version));
+    args.add("npm", "install", "--prefix", expected.getRemote(), "snyk@" + fixEmptyAndTrim(version), "snyk-to-html");
     Launcher launcher = node.createLauncher(log);
     Launcher.ProcStarter ps = launcher.new ProcStarter();
     ps.quiet(true).cmds(args);
@@ -61,7 +64,8 @@ public class SnykInstaller extends ToolInstaller {
     try {
       int exitCode = launcher.launch(ps).join();
       if (exitCode != 0) {
-        log.getLogger().print("Snyk installation was not successful. Exit code: " + exitCode);
+        log.getLogger().println("Snyk installation was not successful. Exit code: " + exitCode);
+        return expected;
       }
       expected.child(".timestamp").write(valueOf(Instant.now().toEpochMilli()), "UTF-8");
     } catch (Exception ex) {
@@ -79,7 +83,7 @@ public class SnykInstaller extends ToolInstaller {
       int exitCode = launcher.launch(ps).join();
       return exitCode == 0;
     } catch (Exception ex) {
-      LOG.log(SEVERE, "Could not check if NPM is available" + ex);
+      LOG.log(SEVERE, "Could not check if NPM is available: " + ex);
       return false;
     }
   }
