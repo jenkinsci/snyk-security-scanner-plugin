@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -39,6 +40,7 @@ public class SnykInstaller extends ToolInstaller {
     this.updatePolicyIntervalHours = updatePolicyIntervalHours;
   }
 
+  @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION", justification = "silly rule")
   @Override
   public FilePath performInstallation(ToolInstallation tool, Node node, TaskListener log) throws IOException, InterruptedException {
     FilePath expected = preferredLocation(tool, node);
@@ -96,7 +98,7 @@ public class SnykInstaller extends ToolInstaller {
 
     String content = marker.readToString();
     //TODO: handle parsing exceptions
-    long timestampFromFile = Long.valueOf(content);
+    long timestampFromFile = Long.parseLong(content);
     long timestampNow = Instant.now().toEpochMilli();
 
     long timestampDifference = timestampNow - timestampFromFile;

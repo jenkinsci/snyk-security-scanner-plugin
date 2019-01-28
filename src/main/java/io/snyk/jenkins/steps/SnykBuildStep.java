@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.CopyOnWrite;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -308,6 +309,7 @@ public class SnykBuildStep extends Builder {
       return true;
     }
 
+    @SuppressFBWarnings("EI_EXPOSE_REP")
     public SnykInstallation[] getInstallations() {
       return installations;
     }
