@@ -11,7 +11,7 @@ cache:
   - "$HOME/.m2/wrapper"
 
 install: true
-script: ./mvnw test --show-version --batch-mode --errors --settings .mvn/settings.xml
+script: ./mvnw verify --show-version --batch-mode --errors --settings .mvn/settings.xml
 
 jobs:
   include:
