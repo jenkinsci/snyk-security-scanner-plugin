@@ -34,6 +34,7 @@ import hudson.util.ListBoxModel;
 import io.snyk.jenkins.SnykReportBuildAction;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.tools.SnykInstallation;
+import io.snyk.jenkins.trasnform.ReportConverter;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -269,7 +270,7 @@ public class SnykBuildStep extends Builder {
     workspace.child("snyk_report.html").write("", "UTF-8");
 
     args.add(reportExecutable);
-    args.add("-i", "snyk_report.json", "-o", workspace.getName() + "_snyk_report.html");
+    args.add("-i", "snyk_report.json", "-o", "snyk_report.html");
     try {
       int exitCode = launcher.launch()
                              .cmds(args)
@@ -281,6 +282,9 @@ public class SnykBuildStep extends Builder {
       if (!success) {
         log.getLogger().println("Generating Snyk html report was not successful");
       }
+      String reportWithInlineCSS = workspace.child("snyk_report.html").readToString();
+      String modifiedHtmlReport = ReportConverter.getInstance().modifyHeadSection(reportWithInlineCSS);
+      workspace.child(workspace.getName() + "_snyk_report.html").write(modifiedHtmlReport, "UTF-8");
     } catch (IOException ex) {
       Util.displayIOException(ex, log);
       ex.printStackTrace(log.fatalError("Snyk-to-Html command execution failed"));
