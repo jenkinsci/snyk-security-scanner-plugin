@@ -1,4 +1,4 @@
-package io.snyk.jenkins.trasnform;
+package io.snyk.jenkins.transform;
 
 import org.junit.Assert;
 import org.junit.Test;

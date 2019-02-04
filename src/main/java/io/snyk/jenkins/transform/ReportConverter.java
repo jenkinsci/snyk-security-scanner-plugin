@@ -1,4 +1,4 @@
-package io.snyk.jenkins.trasnform;
+package io.snyk.jenkins.transform;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;

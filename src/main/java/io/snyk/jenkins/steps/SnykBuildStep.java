@@ -34,7 +34,7 @@ import hudson.util.ListBoxModel;
 import io.snyk.jenkins.SnykReportBuildAction;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.tools.SnykInstallation;
-import io.snyk.jenkins.trasnform.ReportConverter;
+import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
