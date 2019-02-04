@@ -51,6 +51,11 @@
       <artifactId>credentials</artifactId>
       <version>2.1.18</version>
     </dependency>
+    <dependency>
+      <groupId>org.jodd</groupId>
+      <artifactId>jodd-lagarto</artifactId>
+      <version>5.0.6</version>
+    </dependency>
   </dependencies>
 
   <build>
