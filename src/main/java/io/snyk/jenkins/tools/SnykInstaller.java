@@ -1,10 +1,6 @@
 package io.snyk.jenkins.tools;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Serializable;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -19,12 +15,13 @@ import hudson.tools.ToolInstallation;
 import hudson.tools.ToolInstaller;
 import hudson.tools.ToolInstallerDescriptor;
 import hudson.util.ArgumentListBuilder;
-import jenkins.security.MasterToSlaveCallable;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import static hudson.Util.fixEmptyAndTrim;
+import static java.lang.String.format;
 import static java.lang.String.valueOf;
-import static java.util.logging.Level.SEVERE;
+import static java.util.logging.Level.FINEST;
+import static java.util.logging.Level.INFO;
 
 public class SnykInstaller extends ToolInstaller {
 
@@ -45,18 +42,55 @@ public class SnykInstaller extends ToolInstaller {
   public FilePath performInstallation(ToolInstallation tool, Node node, TaskListener log) throws IOException, InterruptedException {
     FilePath expected = preferredLocation(tool, node);
 
-    if (!isNpmAvailable(node, log)) {
-      log.getLogger().println("NodeJS is not available on this node: " + node.getDisplayName() + ". No Snyk installation will be performed!");
-      return expected;
-    }
-
     if (isUpToDate(expected)) {
       log.getLogger().println("Snyk installation is UP-TO-DATE");
       return expected;
     }
 
-    // install snyk
-    log.getLogger().println("Installing Snyk Security tool (version '" + fixEmptyAndTrim(version) + "')");
+    if (isNpmAvailable(node, log)) {
+      LOG.log(INFO, format("NodeJS is available on this node: '%s'. Snyk will be installed as NPM package.", node.getDisplayName()));
+      return installSnykAsNpmPackage(expected, node, log);
+    } else {
+      LOG.log(INFO, format("NodeJS is not available on this node: '%s'. Snyk will be installed as single binary.", node.getDisplayName()));
+      return installSnykAsSingleBinary(expected, node, log);
+    }
+  }
+
+  private boolean isUpToDate(FilePath expectedLocation) throws IOException, InterruptedException {
+    FilePath marker = expectedLocation.child(".timestamp");
+    if (!marker.exists()) {
+      return false;
+    }
+
+    String content = marker.readToString();
+    long timestampFromFile = Long.parseLong(content);
+    long timestampNow = Instant.now().toEpochMilli();
+
+    long timestampDifference = timestampNow - timestampFromFile;
+    if (timestampDifference <= 0) {
+      return true;
+    }
+    long updateInterval = TimeUnit.HOURS.toMillis(updatePolicyIntervalHours);
+    return timestampDifference < updateInterval;
+  }
+
+  private boolean isNpmAvailable(Node node, TaskListener log) {
+    Launcher launcher = node.createLauncher(log);
+    Launcher.ProcStarter ps = launcher.new ProcStarter();
+    ps.quiet(true).cmds("npm", "--version");
+
+    try {
+      int exitCode = launcher.launch(ps).join();
+      return exitCode == 0;
+    } catch (Exception ex) {
+      LOG.log(INFO, format("NPM is not available on the node: '%s'", node.getDisplayName()));
+      LOG.log(FINEST, "'npm --version' command failed", ex);
+      return false;
+    }
+  }
+
+  private FilePath installSnykAsNpmPackage(FilePath expected, Node node, TaskListener log) {
+    log.getLogger().println("Installing Snyk Security tool via NPM (version '" + fixEmptyAndTrim(version) + "')");
     ArgumentListBuilder args = new ArgumentListBuilder();
     args.add("npm", "install", "--prefix", expected.getRemote(), "snyk@" + fixEmptyAndTrim(version), "snyk-to-html");
     Launcher launcher = node.createLauncher(log);
@@ -76,37 +110,11 @@ public class SnykInstaller extends ToolInstaller {
     return expected;
   }
 
-  private boolean isNpmAvailable(Node node, TaskListener log) {
-    Launcher launcher = node.createLauncher(log);
-    Launcher.ProcStarter ps = launcher.new ProcStarter();
-    ps.quiet(true).cmds("npm", "--version");
+  private FilePath installSnykAsSingleBinary(FilePath expected, Node node, TaskListener log) {
 
-    try {
-      int exitCode = launcher.launch(ps).join();
-      return exitCode == 0;
-    } catch (Exception ex) {
-      LOG.log(SEVERE, "Could not check if NPM is available: " + ex);
-      return false;
-    }
-  }
+    log.getLogger().println("Installing Snyk Security tool as single binary (version '" + fixEmptyAndTrim(version) + "')");
 
-  private boolean isUpToDate(FilePath expectedLocation) throws IOException, InterruptedException {
-    FilePath marker = expectedLocation.child(".timestamp");
-    if (!marker.exists()) {
-      return false;
-    }
-
-    String content = marker.readToString();
-    //TODO: handle parsing exceptions
-    long timestampFromFile = Long.parseLong(content);
-    long timestampNow = Instant.now().toEpochMilli();
-
-    long timestampDifference = timestampNow - timestampFromFile;
-    if (timestampDifference <= 0) {
-      return true;
-    }
-    long updateInterval = TimeUnit.HOURS.toMillis(updatePolicyIntervalHours);
-    return timestampDifference < updateInterval;
+    return null;
   }
 
   @SuppressWarnings("unused")
@@ -124,6 +132,7 @@ public class SnykInstaller extends ToolInstaller {
 
     @Override
     public String getDisplayName() {
+      //TODO: fix naming
       return "Install as global NPM package";
     }
 
