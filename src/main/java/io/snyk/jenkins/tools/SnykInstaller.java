@@ -42,7 +42,6 @@ public class SnykInstaller extends ToolInstaller {
     this.updatePolicyIntervalHours = updatePolicyIntervalHours;
   }
 
-  @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION", justification = "silly rule")
   @Override
   public FilePath performInstallation(ToolInstallation tool, Node node, TaskListener log) throws IOException, InterruptedException {
     FilePath expected = preferredLocation(tool, node);
@@ -94,6 +93,7 @@ public class SnykInstaller extends ToolInstaller {
     }
   }
 
+  @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION", justification = "silly rule")
   private FilePath installSnykAsNpmPackage(FilePath expected, Node node, TaskListener log) {
     log.getLogger().println("Installing Snyk Security tool via NPM (version '" + fixEmptyAndTrim(version) + "')");
     ArgumentListBuilder args = new ArgumentListBuilder();
@@ -115,6 +115,7 @@ public class SnykInstaller extends ToolInstaller {
     return expected;
   }
 
+  @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
   private FilePath installSnykAsSingleBinary(FilePath expected, Node node, TaskListener log) throws IOException, InterruptedException {
     log.getLogger().println("Installing Snyk Security tool as single binary (version '" + fixEmptyAndTrim(version) + "')");
 
