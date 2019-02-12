@@ -61,6 +61,6 @@ public enum Platform {
     } else if (arch.contains("windows")) {
       return WINDOWS;
     }
-    throw new ToolDetectionException("");
+    throw new ToolDetectionException(arch + " is not supported CPU type");
   }
 }
