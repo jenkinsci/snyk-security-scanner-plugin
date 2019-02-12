@@ -125,11 +125,13 @@ public class SnykInstaller extends ToolInstaller {
     Platform platform = node.getChannel().call(new GetPlatform(node.getDisplayName()));
 
     try {
-      URL downloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
+      URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
+      URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml(platform);
       expected.mkdirs();
-      node.getChannel().call(new Downloader(downloadUrl, expected.child(platform.snykWrapperFileName)));
+      node.getChannel().call(new Downloader(snykDownloadUrl, expected.child(platform.snykWrapperFileName)));
+      node.getChannel().call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
       expected.child(".timestamp").write(valueOf(Instant.now().toEpochMilli()), "UTF-8");
-      expected.child(".installedFrom").write(downloadUrl.toString(), "UTF-8");
+      expected.child(".installedFrom").write(snykDownloadUrl.toString(), "UTF-8");
     } catch (Exception ex) {
       throw new IOException("Could not install snyk binary", ex);
     }

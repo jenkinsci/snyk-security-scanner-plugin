@@ -14,6 +14,7 @@ public class DownloadService {
 
   private static final String SNYK_RELEASES_LATEST = "https://api.github.com/repos/snyk/snyk/releases/latest";
   private static final String SNYK_RELEASES_TAGS = "https://api.github.com/repos/snyk/snyk/releases/tags/v%s";
+  private static final String SNYK_HTML_RELEASES_LATEST = "https://api.github.com/repos/snyk/snyk-to-html/releases/latest";
 
   public static URL getDownloadUrlForSnyk(@Nonnull String version, @Nonnull Platform platform) throws IOException {
     String jsonString;
@@ -28,6 +29,13 @@ public class DownloadService {
     JSONObject release = JSONObject.fromObject(jsonString);
     tagName = (String) release.get("tag_name");
     return new URL(format("https://github.com/snyk/snyk/releases/download/%s/%s", tagName, platform.snykWrapperFileName));
+  }
+
+  public static URL getDownloadUrlForSnykToHtml(@Nonnull Platform platform) throws IOException {
+    String jsonString = loadJSON(SNYK_HTML_RELEASES_LATEST);
+    JSONObject release = JSONObject.fromObject(jsonString);
+    String tagName = (String) release.get("tag_name");
+    return new URL(format("https://github.com/snyk/snyk-to-html/releases/download/%s/%s", tagName, platform.snykToHtmlWrapperFileName));
   }
 
   private static String loadJSON(String source) throws IOException {
