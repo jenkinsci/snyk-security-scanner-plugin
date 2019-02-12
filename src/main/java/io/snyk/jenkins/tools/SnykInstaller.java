@@ -1,6 +1,5 @@
 package io.snyk.jenkins.tools;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -20,7 +19,6 @@ import hudson.tools.ToolInstallerDescriptor;
 import hudson.util.ArgumentListBuilder;
 import io.snyk.jenkins.tools.internal.DownloadService;
 import jenkins.security.MasterToSlaveCallable;
-import net.sf.json.JSONObject;
 import org.apache.commons.io.FileUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -127,7 +125,7 @@ public class SnykInstaller extends ToolInstaller {
     Platform platform = node.getChannel().call(new GetPlatform(node.getDisplayName()));
 
     try {
-      URL downloadUrl = getDownloadUrl(node, platform);
+      URL downloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
       expected.mkdirs();
       node.getChannel().call(new Downloader(downloadUrl, expected.child(platform.snykWrapperFileName)));
       expected.child(".timestamp").write(valueOf(Instant.now().toEpochMilli()), "UTF-8");
@@ -137,20 +135,6 @@ public class SnykInstaller extends ToolInstaller {
     }
 
     return expected;
-  }
-
-  private URL getDownloadUrl(Node node, @Nonnull Platform platform) throws IOException {
-    // get correct tag
-    String jsonString;
-    String tagName;
-    if ("latest".equals(version)) {
-      jsonString = DownloadService.loadJSON("https://api.github.com/repos/snyk/snyk/releases/latest");
-    } else {
-      jsonString = DownloadService.loadJSON(format("https://api.github.com/repos/snyk/snyk/releases/tags/v%s", version));
-    }
-    JSONObject release = JSONObject.fromObject(jsonString);
-    tagName = (String) release.get("tag_name");
-    return new URL(format("https://github.com/snyk/snyk/releases/download/%s/%s", tagName, platform.snykWrapperFileName));
   }
 
   @SuppressWarnings("unused")
