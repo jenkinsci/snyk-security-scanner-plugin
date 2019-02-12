@@ -33,6 +33,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.SnykReportBuildAction;
 import io.snyk.jenkins.credentials.SnykApiToken;
+import io.snyk.jenkins.tools.Platform;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
@@ -158,14 +159,16 @@ public class SnykBuildStep extends Builder {
 
     // look for a snyk installation
     SnykInstallation installation = findSnykInstallation();
+    Platform platform = null;
     if (installation != null) {
       // install if necessary
       Computer computer = Computer.currentComputer();
       Node node = computer != null ? computer.getNode() : null;
+      platform = Platform.of(node);
       if (node != null) {
         installation = installation.forNode(node, log);
         installation = installation.forEnvironment(env);
-        String exe = installation.getSnykExecutable(launcher);
+        String exe = installation.getSnykExecutable(launcher, platform);
         if (exe == null) {
           log.getLogger().println("Can't retrieve the Snyk executable.");
           return false;
@@ -222,7 +225,7 @@ public class SnykBuildStep extends Builder {
       build.setResult(success ? Result.SUCCESS : Result.FAILURE);
 
       if (installation != null) {
-        generateSnykHtmlReport(build, launcher, log, installation.getReportExecutable(launcher));
+        generateSnykHtmlReport(build, launcher, log, installation.getReportExecutable(launcher, platform));
 
         if (build.getActions(SnykReportBuildAction.class).size() <= 0) {
           build.addAction(new SnykReportBuildAction(build));
