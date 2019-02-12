@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.Functions;
 import hudson.Launcher;
 import hudson.model.Node;
 import hudson.model.TaskListener;
@@ -197,7 +198,15 @@ public class SnykInstaller extends ToolInstaller {
 
     @Override
     public Void call() throws IOException {
-      FileUtils.copyURLToFile(downloadUrl, new File(output.getRemote()), 10000, 10000);
+      final File downloadedFile = new File(output.getRemote());
+      FileUtils.copyURLToFile(downloadUrl, downloadedFile, 10000, 10000);
+      // set execute permission
+      if (!Functions.isWindows() && downloadedFile.isFile()) {
+        boolean result = downloadedFile.setExecutable(true, false);
+        if (!result) {
+          throw new IOException(format("Could not set executable flag for the file: %s", downloadedFile.getAbsolutePath()));
+        }
+      }
       return null;
     }
   }
