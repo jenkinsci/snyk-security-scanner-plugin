@@ -21,6 +21,7 @@ import hudson.util.ArgumentListBuilder;
 import io.snyk.jenkins.tools.internal.DownloadService;
 import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import static hudson.Util.fixEmptyAndTrim;
@@ -67,8 +68,15 @@ public class SnykInstaller extends ToolInstaller {
       return false;
     }
 
-    String content = marker.readToString();
-    long timestampFromFile = Long.parseLong(content);
+    String content = StringUtils.chomp(marker.readToString());
+    long timestampFromFile;
+    try {
+      timestampFromFile = Long.parseLong(content);
+    } catch (NumberFormatException ex) {
+      // corrupt of modified .timestamp file
+      LOG.log(FINEST, ".timestamp could not be read, timestamp will be set to current time");
+      timestampFromFile = Instant.now().toEpochMilli();
+    }
     long timestampNow = Instant.now().toEpochMilli();
 
     long timestampDifference = timestampNow - timestampFromFile;
