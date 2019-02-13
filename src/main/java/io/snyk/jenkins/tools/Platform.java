@@ -11,17 +11,21 @@ import hudson.model.Node;
  * Supported platform.
  */
 public enum Platform {
-  LINUX("node", "npm", "bin"),
-  WINDOWS("node.exe", "npm.cmd", "");
+  LINUX("node", "npm", "bin", "snyk-linux", "snyk-to-html-linux"),
+  WINDOWS("node.exe", "npm.cmd", "", "snyk-win.exe", "snyk-to-html-win.exe");
 
   public final String nodeFileName;
   public final String npmFileName;
   public final String binFolder;
+  public final String snykWrapperFileName;
+  public final String snykToHtmlWrapperFileName;
 
-  Platform(String nodeFileName, String npmFileName, String binFolder) {
+  Platform(String nodeFileName, String npmFileName, String binFolder, String snykWrapperFileName, String snykToHtmlWrapperFileName) {
     this.nodeFileName = nodeFileName;
     this.npmFileName = npmFileName;
     this.binFolder = binFolder;
+    this.snykWrapperFileName = snykWrapperFileName;
+    this.snykToHtmlWrapperFileName = snykToHtmlWrapperFileName;
   }
 
   /**
@@ -57,6 +61,6 @@ public enum Platform {
     } else if (arch.contains("windows")) {
       return WINDOWS;
     }
-    throw new ToolDetectionException("");
+    throw new ToolDetectionException(arch + " is not supported CPU type");
   }
 }
