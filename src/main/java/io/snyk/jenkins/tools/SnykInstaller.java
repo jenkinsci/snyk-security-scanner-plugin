@@ -14,6 +14,7 @@ import hudson.Functions;
 import hudson.Launcher;
 import hudson.model.Node;
 import hudson.model.TaskListener;
+import hudson.remoting.VirtualChannel;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolInstaller;
 import hudson.tools.ToolInstallerDescriptor;
@@ -27,12 +28,15 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import static hudson.Util.fixEmptyAndTrim;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.logging.Level.FINEST;
 import static java.util.logging.Level.INFO;
 
 public class SnykInstaller extends ToolInstaller {
 
   private static final Logger LOG = Logger.getLogger(SnykInstaller.class.getName());
+  private static final String INSTALLED_FROM = ".installedFrom";
+  private static final String TIMESTAMP_FILE = ".timestamp";
 
   private final String version;
   private final Long updatePolicyIntervalHours;
@@ -63,7 +67,7 @@ public class SnykInstaller extends ToolInstaller {
   }
 
   private boolean isUpToDate(FilePath expectedLocation) throws IOException, InterruptedException {
-    FilePath marker = expectedLocation.child(".timestamp");
+    FilePath marker = expectedLocation.child(TIMESTAMP_FILE);
     if (!marker.exists()) {
       return false;
     }
@@ -73,9 +77,9 @@ public class SnykInstaller extends ToolInstaller {
     try {
       timestampFromFile = Long.parseLong(content);
     } catch (NumberFormatException ex) {
-      // corrupt of modified .timestamp file
-      LOG.log(FINEST, ".timestamp could not be read, timestamp will be set to current time");
-      timestampFromFile = Instant.now().toEpochMilli();
+      // corrupt of modified .timestamp file => force new installation
+      LOG.log(FINEST, ".timestamp file could not be read and will be reset to 0.");
+      timestampFromFile = 0;
     }
     long timestampNow = Instant.now().toEpochMilli();
 
@@ -117,7 +121,7 @@ public class SnykInstaller extends ToolInstaller {
         log.getLogger().println("Snyk installation was not successful. Exit code: " + exitCode);
         return expected;
       }
-      expected.child(".timestamp").write(valueOf(Instant.now().toEpochMilli()), "UTF-8");
+      expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
     } catch (Exception ex) {
       log.getLogger().println("Could not install snyk via NPM");
     }
@@ -128,20 +132,21 @@ public class SnykInstaller extends ToolInstaller {
   private FilePath installSnykAsSingleBinary(FilePath expected, Node node, TaskListener log) throws IOException, InterruptedException {
     log.getLogger().println("Installing Snyk Security tool as single binary (version '" + fixEmptyAndTrim(version) + "')");
 
-    if (node.getChannel() == null) {
+    final VirtualChannel nodeChannel = node.getChannel();
+    if (nodeChannel == null) {
       throw new IOException(format("Node '%s' is offline", node.getDisplayName()));
     }
 
-    Platform platform = node.getChannel().call(new GetPlatform(node.getDisplayName()));
+    Platform platform = nodeChannel.call(new GetPlatform(node.getDisplayName()));
 
     try {
       URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
       URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml(platform);
       expected.mkdirs();
-      node.getChannel().call(new Downloader(snykDownloadUrl, expected.child(platform.snykWrapperFileName)));
-      node.getChannel().call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
-      expected.child(".timestamp").write(valueOf(Instant.now().toEpochMilli()), "UTF-8");
-      expected.child(".installedFrom").write(snykDownloadUrl.toString(), "UTF-8");
+      nodeChannel.call(new Downloader(snykDownloadUrl, expected.child(platform.snykWrapperFileName)));
+      nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
+      expected.child(INSTALLED_FROM).write(snykDownloadUrl.toString(), UTF_8.name());
+      expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
     } catch (Exception ex) {
       throw new IOException("Could not install snyk binary", ex);
     }
@@ -164,8 +169,7 @@ public class SnykInstaller extends ToolInstaller {
 
     @Override
     public String getDisplayName() {
-      //TODO: fix naming
-      return "Install as global NPM package";
+      return "Install from snyk.io";
     }
 
     @Override
