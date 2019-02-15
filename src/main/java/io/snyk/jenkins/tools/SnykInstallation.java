@@ -3,7 +3,6 @@ package io.snyk.jenkins.tools;
 import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -75,7 +74,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
     final Path nodeModulesBin = getNodeModulesBin();
     if (nodeModulesBin != null) {
       final Path executable = nodeModulesBin.resolve(file);
-      if (Files.notExists(executable)) {
+      if (!executable.toFile().exists()) {
         throw new IOException(format("Could not find executable <%s>", executable));
       }
       return executable.toAbsolutePath().toString();
@@ -86,7 +85,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       }
       String wrapperFileName = "snyk".equals(file) ? platform.snykWrapperFileName : platform.snykToHtmlWrapperFileName;
       final Path executable = Paths.get(root).resolve(wrapperFileName);
-      if (Files.notExists(executable)) {
+      if (!executable.toFile().exists()) {
         throw new IOException(format("Could not find executable <%s>", wrapperFileName));
       }
       return executable.toAbsolutePath().toString();
@@ -100,7 +99,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
     }
 
     Path nodeModules = Paths.get(root).resolve("node_modules").resolve(".bin");
-    if (!Files.exists(nodeModules)) {
+    if (!nodeModules.toFile().exists()) {
       return null;
     }
 
@@ -117,6 +116,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       return "Snyk";
     }
 
+    @Override
     public List<? extends ToolInstaller> getDefaultInstallers() {
       return Collections.singletonList(new SnykInstaller(null, null, null));
     }
