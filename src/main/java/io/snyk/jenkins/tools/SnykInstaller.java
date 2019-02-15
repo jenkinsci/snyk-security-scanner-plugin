@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Functions;
@@ -24,17 +22,17 @@ import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static hudson.Util.fixEmptyAndTrim;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.logging.Level.FINEST;
-import static java.util.logging.Level.INFO;
 
 public class SnykInstaller extends ToolInstaller {
 
-  private static final Logger LOG = Logger.getLogger(SnykInstaller.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(SnykInstaller.class.getName());
   private static final String INSTALLED_FROM = ".installedFrom";
   private static final String TIMESTAMP_FILE = ".timestamp";
 
@@ -57,11 +55,10 @@ public class SnykInstaller extends ToolInstaller {
       return expected;
     }
 
+    log.getLogger().println("Installing Snyk Security tool (version '" + fixEmptyAndTrim(version) + "')");
     if (isNpmAvailable(node, log)) {
-      LOG.log(INFO, format("NodeJS is available on this node: '%s'. Snyk will be installed as NPM package.", node.getDisplayName()));
       return installSnykAsNpmPackage(expected, node, log);
     } else {
-      LOG.log(INFO, format("NodeJS is not available on this node: '%s'. Snyk will be installed as single binary.", node.getDisplayName()));
       return installSnykAsSingleBinary(expected, node, log);
     }
   }
@@ -78,7 +75,7 @@ public class SnykInstaller extends ToolInstaller {
       timestampFromFile = Long.parseLong(content);
     } catch (NumberFormatException ex) {
       // corrupt of modified .timestamp file => force new installation
-      LOG.log(FINEST, ".timestamp file could not be read and will be reset to 0.");
+      LOG.error(".timestamp file is corrupt and cannot be read and will be reset to 0.");
       timestampFromFile = 0;
     }
     long timestampNow = Instant.now().toEpochMilli();
@@ -100,15 +97,15 @@ public class SnykInstaller extends ToolInstaller {
       int exitCode = launcher.launch(ps).join();
       return exitCode == 0;
     } catch (Exception ex) {
-      LOG.log(INFO, format("NPM is not available on the node: '%s'", node.getDisplayName()));
-      LOG.log(FINEST, "'npm --version' command failed", ex);
+      LOG.info("NPM is not available on the node: '{}'", node.getDisplayName());
+      LOG.debug("'npm --version' command failed", ex);
       return false;
     }
   }
 
-  @SuppressFBWarnings(value = "REC_CATCH_EXCEPTION", justification = "silly rule")
   private FilePath installSnykAsNpmPackage(FilePath expected, Node node, TaskListener log) {
-    log.getLogger().println("Installing Snyk Security tool via NPM (version '" + fixEmptyAndTrim(version) + "')");
+    LOG.info("Install Snyk version '{}' as NPM package on node '{}'", version, node.getDisplayName());
+
     ArgumentListBuilder args = new ArgumentListBuilder();
     args.add("npm", "install", "--prefix", expected.getRemote(), "snyk@" + fixEmptyAndTrim(version), "snyk-to-html");
     Launcher launcher = node.createLauncher(log);
@@ -123,14 +120,14 @@ public class SnykInstaller extends ToolInstaller {
       }
       expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
     } catch (Exception ex) {
-      log.getLogger().println("Could not install snyk via NPM");
+      log.getLogger().println("Snyk Security tool could not installed: " + ex.getMessage());
+      LOG.error("Could not install Snyk as NPM package", ex);
     }
     return expected;
   }
 
-  @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE")
   private FilePath installSnykAsSingleBinary(FilePath expected, Node node, TaskListener log) throws IOException, InterruptedException {
-    log.getLogger().println("Installing Snyk Security tool as single binary (version '" + fixEmptyAndTrim(version) + "')");
+    LOG.info("Install Snyk version '{}' as single binary on node '{}'", version, node.getDisplayName());
 
     final VirtualChannel nodeChannel = node.getChannel();
     if (nodeChannel == null) {
@@ -148,7 +145,8 @@ public class SnykInstaller extends ToolInstaller {
       expected.child(INSTALLED_FROM).write(snykDownloadUrl.toString(), UTF_8.name());
       expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
     } catch (Exception ex) {
-      throw new IOException("Could not install snyk binary", ex);
+      log.getLogger().println("Snyk Security tool could not installed: " + ex.getMessage());
+      LOG.error("Could not install Snyk as single binary", ex);
     }
 
     return expected;
