@@ -49,6 +49,7 @@ import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.joining;
 
 public class SnykBuildStep extends Builder {
 
@@ -331,8 +332,11 @@ public class SnykBuildStep extends Builder {
 
     @SuppressWarnings("unused")
     public boolean hasInstallationsAvailable() {
-      LOG.debug("configured snyk installations: {}", installations.length);
-      Arrays.asList(installations).forEach(installation -> LOG.debug("- details: {}", installation));
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Available Snyk installations: {}",
+                  Arrays.stream(installations).map(SnykInstallation::getName).collect(joining(",", "[", "]")));
+      }
+
       return installations.length > 0;
     }
 
