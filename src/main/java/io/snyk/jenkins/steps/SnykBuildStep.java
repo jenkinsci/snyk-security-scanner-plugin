@@ -65,6 +65,7 @@ public class SnykBuildStep extends Builder {
   private String organisation;
   private String projectName;
   private String snykInstallation;
+  private String additionalArguments;
 
   @DataBoundConstructor
   public SnykBuildStep() {
@@ -149,6 +150,16 @@ public class SnykBuildStep extends Builder {
   @DataBoundSetter
   public void setSnykInstallation(String snykInstallation) {
     this.snykInstallation = snykInstallation;
+  }
+
+  @SuppressWarnings("unused")
+  public String getAdditionalArguments() {
+    return additionalArguments;
+  }
+
+  @DataBoundSetter
+  public void setAdditionalArguments(String additionalArguments) {
+    this.additionalArguments = additionalArguments;
   }
 
   @Override
