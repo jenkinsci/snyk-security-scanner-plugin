@@ -223,6 +223,9 @@ public class SnykBuildStep extends Builder {
     } else {
       args.add("--project-name=" + workspace.getName());
     }
+    if (fixEmptyAndTrim(additionalArguments) != null) {
+      args.add(additionalArguments);
+    }
 
     FilePath snykReport = workspace.child(SNYK_REPORT_JSON);
     OutputStream output = snykReport.write();
