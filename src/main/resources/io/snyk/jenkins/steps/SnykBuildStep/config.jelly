@@ -47,7 +47,7 @@
   <!-- advanced configuration -->
   <f:section title="">
     <f:advanced>
-      <f:entry title="Snyk installation">
+      <f:entry title="Snyk installation" field="snykInstallation">
         <j:choose>
           <j:when test="${descriptor.hasInstallationsAvailable()}">
             <j:set var="tools" value="${descriptor.installations}"/>
@@ -58,9 +58,12 @@
             </select>
           </j:when>
           <j:otherwise>
-            <f:readOnlyTextbox value="No setup will be done, as no Snyk installations have been defined in the Jenkins system config." clazz=""/>
+            <f:readOnlyTextbox value="No setup will be done, as no Snyk installations have been defined in the Jenkins system config."/>
           </j:otherwise>
         </j:choose>
+      </f:entry>
+      <f:entry title="Additional arguments" field="additionalArguments">
+        <f:textarea/>
       </f:entry>
     </f:advanced>
   </f:section>

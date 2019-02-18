@@ -3,8 +3,8 @@ package io.snyk.jenkins.steps;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
@@ -41,17 +41,21 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
-import static java.util.logging.Level.FINE;
-import static java.util.logging.Logger.getLogger;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.joining;
 
 public class SnykBuildStep extends Builder {
 
-  private static final Logger LOG = getLogger(SnykBuildStep.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(SnykBuildStep.class.getName());
+  private static final String SNYK_REPORT_HTML = "snyk_report.html";
+  private static final String SNYK_REPORT_JSON = "snyk_report.json";
 
   private boolean failOnIssues = true;
   private boolean monitorProjectOnBuild = true;
@@ -61,9 +65,11 @@ public class SnykBuildStep extends Builder {
   private String organisation;
   private String projectName;
   private String snykInstallation;
+  private String additionalArguments;
 
   @DataBoundConstructor
   public SnykBuildStep() {
+    // called from stapler
   }
 
   @SuppressWarnings("unused")
@@ -146,6 +152,16 @@ public class SnykBuildStep extends Builder {
     this.snykInstallation = snykInstallation;
   }
 
+  @SuppressWarnings("unused")
+  public String getAdditionalArguments() {
+    return additionalArguments;
+  }
+
+  @DataBoundSetter
+  public void setAdditionalArguments(String additionalArguments) {
+    this.additionalArguments = additionalArguments;
+  }
+
   @Override
   public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener log) throws InterruptedException, IOException {
     FilePath workspace = build.getWorkspace();
@@ -207,8 +223,11 @@ public class SnykBuildStep extends Builder {
     } else {
       args.add("--project-name=" + workspace.getName());
     }
+    if (fixEmptyAndTrim(additionalArguments) != null) {
+      args.add(additionalArguments);
+    }
 
-    FilePath snykReport = workspace.child("snyk_report.json");
+    FilePath snykReport = workspace.child(SNYK_REPORT_JSON);
     OutputStream output = snykReport.write();
 
     try {
@@ -227,9 +246,9 @@ public class SnykBuildStep extends Builder {
       if (installation != null) {
         generateSnykHtmlReport(build, launcher, log, installation.getReportExecutable(launcher, platform));
 
-        if (build.getActions(SnykReportBuildAction.class).size() <= 0) {
+        if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
           build.addAction(new SnykReportBuildAction(build));
-          ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_snyk_report.html");
+          ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
           artifactArchiver.perform(build, workspace, launcher, log);
         }
       }
@@ -264,16 +283,16 @@ public class SnykBuildStep extends Builder {
       return;
     }
 
-    FilePath snykReportJson = workspace.child("snyk_report.json");
+    FilePath snykReportJson = workspace.child(SNYK_REPORT_JSON);
     if (!snykReportJson.exists()) {
       log.getLogger().println("Snyk report json doesn't exist");
       return;
     }
 
-    workspace.child("snyk_report.html").write("", "UTF-8");
+    workspace.child(SNYK_REPORT_HTML).write("", UTF_8.name());
 
     args.add(reportExecutable);
-    args.add("-i", "snyk_report.json", "-o", "snyk_report.html");
+    args.add("-i", SNYK_REPORT_JSON, "-o", SNYK_REPORT_HTML);
     try {
       int exitCode = launcher.launch()
                              .cmds(args)
@@ -285,9 +304,9 @@ public class SnykBuildStep extends Builder {
       if (!success) {
         log.getLogger().println("Generating Snyk html report was not successful");
       }
-      String reportWithInlineCSS = workspace.child("snyk_report.html").readToString();
+      String reportWithInlineCSS = workspace.child(SNYK_REPORT_HTML).readToString();
       String modifiedHtmlReport = ReportConverter.getInstance().modifyHeadSection(reportWithInlineCSS);
-      workspace.child(workspace.getName() + "_snyk_report.html").write(modifiedHtmlReport, "UTF-8");
+      workspace.child(workspace.getName() + "_" + SNYK_REPORT_HTML).write(modifiedHtmlReport, UTF_8.name());
     } catch (IOException ex) {
       Util.displayIOException(ex, log);
       ex.printStackTrace(log.fatalError("Snyk-to-Html command execution failed"));
@@ -295,7 +314,6 @@ public class SnykBuildStep extends Builder {
   }
 
   @Extension
-  @SuppressWarnings("unused")
   public static class SnykBuildStepDescriptor extends BuildStepDescriptor<Builder> {
 
     @CopyOnWrite
@@ -326,13 +344,13 @@ public class SnykBuildStep extends Builder {
       save();
     }
 
+    @SuppressWarnings("unused")
     public boolean hasInstallationsAvailable() {
-      if (LOG.isLoggable(FINE)) {
-        LOG.log(FINE, "configured snyk installations: {0}", installations.length);
-        for (SnykInstallation installation : installations) {
-          LOG.log(FINE, "- details: {0}", installation);
-        }
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Available Snyk installations: {}",
+                  Arrays.stream(installations).map(SnykInstallation::getName).collect(joining(",", "[", "]")));
       }
+
       return installations.length > 0;
     }
 

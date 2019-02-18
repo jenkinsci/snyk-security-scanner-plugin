@@ -7,7 +7,7 @@ import jenkins.model.RunAction2;
 
 public class SnykReportBuildAction implements RunAction2 {
 
-  private transient Run<?, ?> run;
+  private Run<?, ?> run;
 
   public SnykReportBuildAction(@Nonnull Run<?, ?> run) {
     this.run = run;
@@ -24,7 +24,7 @@ public class SnykReportBuildAction implements RunAction2 {
   }
 
   @SuppressWarnings("unused")
-  public Run<?, ?> getRun() {
+  public Run getRun() {
     return run;
   }
 
