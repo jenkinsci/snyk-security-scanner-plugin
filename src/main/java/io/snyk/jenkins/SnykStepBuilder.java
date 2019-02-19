@@ -1,4 +1,4 @@
-package io.snyk.jenkins.steps;
+package io.snyk.jenkins;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -31,7 +31,6 @@ import hudson.tasks.Builder;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.snyk.jenkins.SnykReportBuildAction;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.tools.Platform;
 import io.snyk.jenkins.tools.SnykInstallation;
@@ -53,9 +52,9 @@ import static hudson.Util.fixEmptyAndTrim;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
-public class SnykBuildStep extends Builder implements SimpleBuildStep {
+public class SnykStepBuilder extends Builder implements SimpleBuildStep {
 
-  private static final Logger LOG = LoggerFactory.getLogger(SnykBuildStep.class.getName());
+  private static final Logger LOG = LoggerFactory.getLogger(SnykStepBuilder.class.getName());
   private static final String SNYK_REPORT_HTML = "snyk_report.html";
   private static final String SNYK_REPORT_JSON = "snyk_report.json";
 
@@ -70,7 +69,7 @@ public class SnykBuildStep extends Builder implements SimpleBuildStep {
   private String additionalArguments;
 
   @DataBoundConstructor
-  public SnykBuildStep() {
+  public SnykStepBuilder() {
     // called from stapler
   }
 
@@ -258,7 +257,7 @@ public class SnykBuildStep extends Builder implements SimpleBuildStep {
   }
 
   private SnykInstallation findSnykInstallation() {
-    return Stream.of(((SnykBuildStepDescriptor) getDescriptor()).getInstallations())
+    return Stream.of(((SnykStepBuilderDescriptor) getDescriptor()).getInstallations())
                  .filter(installation -> installation.getName().equals(snykInstallation))
                  .findFirst().orElse(null);
   }
@@ -304,12 +303,12 @@ public class SnykBuildStep extends Builder implements SimpleBuildStep {
 
   @Extension
   @Symbol("snyk")
-  public static class SnykBuildStepDescriptor extends BuildStepDescriptor<Builder> {
+  public static class SnykStepBuilderDescriptor extends BuildStepDescriptor<Builder> {
 
     @CopyOnWrite
     private volatile SnykInstallation[] installations = new SnykInstallation[0];
 
-    public SnykBuildStepDescriptor() {
+    public SnykStepBuilderDescriptor() {
       load();
     }
 

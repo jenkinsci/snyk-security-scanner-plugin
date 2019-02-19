@@ -1,4 +1,4 @@
-package io.snyk.jenkins.steps;
+package io.snyk.jenkins;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,16 +18,16 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertThat;
 
-public class SnykBuildStepDescriptorTest {
+public class SnykStepBuilderDescriptorTest {
 
   @Rule
   public JenkinsRule jenkins = new JenkinsRule();
 
-  private SnykBuildStep.SnykBuildStepDescriptor instance;
+  private SnykStepBuilder.SnykStepBuilderDescriptor instance;
 
   @Before
   public void setUp() {
-    instance = new SnykBuildStep.SnykBuildStepDescriptor();
+    instance = new SnykStepBuilder.SnykStepBuilderDescriptor();
   }
 
   @Test

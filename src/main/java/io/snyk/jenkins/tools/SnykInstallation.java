@@ -19,7 +19,7 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolInstaller;
 import hudson.tools.ToolProperty;
-import io.snyk.jenkins.steps.SnykBuildStep.SnykBuildStepDescriptor;
+import io.snyk.jenkins.SnykStepBuilder.SnykStepBuilderDescriptor;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
 import org.jenkinsci.Symbol;
@@ -127,7 +127,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       if (instance == null) {
         throw new IllegalStateException("Jenkins has not been started, or was already shut down");
       }
-      return instance.getDescriptorByType(SnykBuildStepDescriptor.class).getInstallations();
+      return instance.getDescriptorByType(SnykStepBuilderDescriptor.class).getInstallations();
     }
 
     @Override
@@ -136,7 +136,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       if (instance == null) {
         throw new IllegalStateException("Jenkins has not been started, or was already shut down");
       }
-      instance.getDescriptorByType(SnykBuildStepDescriptor.class).setInstallations(installations);
+      instance.getDescriptorByType(SnykStepBuilderDescriptor.class).setInstallations(installations);
     }
   }
 }
