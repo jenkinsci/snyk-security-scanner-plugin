@@ -17,13 +17,13 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
 import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.model.Node;
 import hudson.model.Result;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.security.ACL;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
@@ -37,6 +37,8 @@ import io.snyk.jenkins.tools.Platform;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
+import jenkins.tasks.SimpleBuildStep;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -51,7 +53,7 @@ import static hudson.Util.fixEmptyAndTrim;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
-public class SnykBuildStep extends Builder {
+public class SnykBuildStep extends Builder implements SimpleBuildStep {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykBuildStep.class.getName());
   private static final String SNYK_REPORT_HTML = "snyk_report.html";
@@ -163,22 +165,17 @@ public class SnykBuildStep extends Builder {
   }
 
   @Override
-  public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener log) throws InterruptedException, IOException {
-    FilePath workspace = build.getWorkspace();
-    if (workspace == null) {
-      log.getLogger().println("Build agent is not connected");
-      return false;
-    }
+  public void perform(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener log) throws InterruptedException, IOException {
     EnvVars env = build.getEnvironment(log);
     // build arguments
     ArgumentListBuilder args = new ArgumentListBuilder();
 
     // look for a snyk installation
     SnykInstallation installation = findSnykInstallation();
-    Platform platform = null;
+    Platform platform;
     if (installation != null) {
       // install if necessary
-      Computer computer = Computer.currentComputer();
+      Computer computer = workspace.toComputer();
       Node node = computer != null ? computer.getNode() : null;
       platform = Platform.of(node);
       if (node != null) {
@@ -187,26 +184,29 @@ public class SnykBuildStep extends Builder {
         String exe = installation.getSnykExecutable(launcher, platform);
         if (exe == null) {
           log.getLogger().println("Can't retrieve the Snyk executable.");
-          return false;
+          build.setResult(Result.FAILURE);
+          return;
         }
         args.add(exe);
       } else {
-        log.getLogger().println("Not in a build node");
-        return false;
+        log.getLogger().println("Not in a build node.");
+        build.setResult(Result.FAILURE);
+        return;
       }
     } else {
-      // no snyk installation either, fall back to simple command
-      args.add("snyk");
+      log.getLogger().println("No snyk installation defined.");
+      build.setResult(Result.FAILURE);
+      return;
     }
 
     SnykApiToken snykApiToken = getSnykTokenCredential();
     if (snykApiToken == null) {
       log.getLogger().println("Snyk API token was not defined! Please configure the build properly");
       build.setResult(Result.FAILURE);
-      return false;
+      return;
     }
     env.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
-    env.overrideAll(build.getBuildVariables());
+    env.overrideAll(build.getEnvironment(log));
 
     args.add("test", "--json");
     if (fixEmptyAndTrim(severity.getSeverity()) != null) {
@@ -243,22 +243,17 @@ public class SnykBuildStep extends Builder {
       boolean success = (!failOnIssues || exitCode == 0);
       build.setResult(success ? Result.SUCCESS : Result.FAILURE);
 
-      if (installation != null) {
-        generateSnykHtmlReport(build, launcher, log, installation.getReportExecutable(launcher, platform));
+      generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher, platform));
 
-        if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
-          build.addAction(new SnykReportBuildAction(build));
-          ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
-          artifactArchiver.perform(build, workspace, launcher, log);
-        }
+      if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
+        build.addAction(new SnykReportBuildAction(build));
+        ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
+        artifactArchiver.perform(build, workspace, launcher, log);
       }
-
-      return success;
     } catch (IOException ex) {
       Util.displayIOException(ex, log);
       ex.printStackTrace(log.fatalError("Snyk command execution failed"));
       build.setResult(Result.FAILURE);
-      return false;
     }
   }
 
@@ -273,15 +268,9 @@ public class SnykBuildStep extends Builder {
                                            withId(snykTokenId));
   }
 
-  private void generateSnykHtmlReport(AbstractBuild<?, ?> build, Launcher launcher, BuildListener log, String reportExecutable) throws IOException, InterruptedException {
+  private void generateSnykHtmlReport(Run<?, ?> build, @Nonnull FilePath workspace, Launcher launcher, TaskListener log, String reportExecutable) throws IOException, InterruptedException {
     EnvVars env = build.getEnvironment(log);
     ArgumentListBuilder args = new ArgumentListBuilder();
-
-    FilePath workspace = build.getWorkspace();
-    if (workspace == null) {
-      log.getLogger().println("Build agent is not connected");
-      return;
-    }
 
     FilePath snykReportJson = workspace.child(SNYK_REPORT_JSON);
     if (!snykReportJson.exists()) {
@@ -314,6 +303,7 @@ public class SnykBuildStep extends Builder {
   }
 
   @Extension
+  @Symbol("snyk")
   public static class SnykBuildStepDescriptor extends BuildStepDescriptor<Builder> {
 
     @CopyOnWrite
