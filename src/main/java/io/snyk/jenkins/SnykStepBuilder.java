@@ -1,5 +1,6 @@
 package io.snyk.jenkins;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -119,8 +120,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
   }
 
   @DataBoundSetter
-  public void setTargetFile(String targetFile) {
-    this.targetFile = targetFile;
+  public void setTargetFile(@CheckForNull String targetFile) {
+    this.targetFile = fixEmptyAndTrim(targetFile);
   }
 
   @SuppressWarnings("unused")
@@ -129,8 +130,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
   }
 
   @DataBoundSetter
-  public void setOrganisation(String organisation) {
-    this.organisation = organisation;
+  public void setOrganisation(@CheckForNull String organisation) {
+    this.organisation = fixEmptyAndTrim(organisation);
   }
 
   @SuppressWarnings("unused")
@@ -139,8 +140,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
   }
 
   @DataBoundSetter
-  public void setProjectName(String projectName) {
-    this.projectName = projectName;
+  public void setProjectName(@CheckForNull String projectName) {
+    this.projectName = fixEmptyAndTrim(projectName);
   }
 
   @SuppressWarnings("unused")
@@ -159,8 +160,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
   }
 
   @DataBoundSetter
-  public void setAdditionalArguments(String additionalArguments) {
-    this.additionalArguments = additionalArguments;
+  public void setAdditionalArguments(@CheckForNull String additionalArguments) {
+    this.additionalArguments = fixEmptyAndTrim(additionalArguments);
   }
 
   @Override
