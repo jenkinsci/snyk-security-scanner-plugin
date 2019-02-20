@@ -16,7 +16,7 @@
     }
   </style>
 
-  <f:entry title="When issues" field="failOnIssues">
+  <f:entry title="When issues are found" field="failOnIssues">
     <div class="snyk-grid-wrapper">
       <f:radio title="Fail the build, if severity at or above" name="failOnIssues" value="true" checked="${instance == null || instance.failOnIssues == true}"/>
       <span/>
