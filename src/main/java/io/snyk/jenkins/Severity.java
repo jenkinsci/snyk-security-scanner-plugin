@@ -1,4 +1,4 @@
-package io.snyk.jenkins.steps;
+package io.snyk.jenkins;
 
 import java.util.stream.Stream;
 
