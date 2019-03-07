@@ -6,9 +6,13 @@ import java.util.stream.Collectors;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import hudson.util.FormValidation;
 import hudson.util.FormValidation.Kind;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.credentials.DefaultSnykApiToken;
+import jodd.lagarto.dom.Document;
+import jodd.lagarto.dom.LagartoDOMBuilder;
+import jodd.lagarto.dom.Node;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,6 +20,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 
 public class SnykStepBuilderDescriptorTest {
@@ -96,6 +101,20 @@ public class SnykStepBuilderDescriptorTest {
     Kind organisationValidation = instance.doCheckOrganisation("snyk", "--org=Snyk Ltd").kind;
 
     assertThat(organisationValidation, is(Kind.WARNING));
+  }
+
+  @Test
+  public void doCheckProjectName_shouldAggregateWarningMessages() {
+    FormValidation projectNameValidation = instance.doCheckProjectName("project-name", "false", "--project-name=new-project");
+
+    assertThat(projectNameValidation.kind, is(Kind.WARNING));
+
+    // Jenkins doesn't provide findings count for 'FormValidation", so we parse html output and check count of <li> elements
+    LagartoDOMBuilder domBuilder = new LagartoDOMBuilder();
+    Document document = domBuilder.parse(projectNameValidation.renderHtml());
+    Node ulNode = document.findChildNodeWithName("ul");
+
+    assertThat(ulNode.getChildNodesCount(), equalTo(2));
   }
 
   @Test

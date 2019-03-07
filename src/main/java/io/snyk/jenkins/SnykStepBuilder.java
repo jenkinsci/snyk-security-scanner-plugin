@@ -52,6 +52,7 @@ import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
+import static hudson.Util.fixNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
@@ -417,7 +418,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     }
 
     public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild, @QueryParameter String additionalArguments) {
-      if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(monitorProjectOnBuild) == null || fixEmptyAndTrim(additionalArguments) == null) {
+      if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(monitorProjectOnBuild) == null) {
         return FormValidation.ok();
       }
 
@@ -425,7 +426,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       if ("false".equals(fixEmptyAndTrim(monitorProjectOnBuild))) {
         findings.add(FormValidation.warning("Project name will be ignored, because the project is not monitored on build."));
       }
-      if (additionalArguments.contains("--project-name")) {
+      if (fixNull(additionalArguments).contains("--project-name")) {
         findings.add(FormValidation.warning("Option '--project-name' is overridden in additional arguments text area below."));
       }
       return FormValidation.aggregate(findings);
