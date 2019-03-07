@@ -4,8 +4,10 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
@@ -369,6 +371,17 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
                   .includeCurrentValue(snykTokenId);
     }
 
+    public FormValidation doCheckSeverity(@QueryParameter String value, @QueryParameter String additionalArguments) {
+      if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(additionalArguments) == null) {
+        return FormValidation.ok();
+      }
+
+      if (additionalArguments.contains("--severity-threshold")) {
+        return FormValidation.warning("Option '--severity-threshold' is overridden in additional arguments text area below.");
+      }
+      return FormValidation.ok();
+    }
+
     public FormValidation doCheckSnykTokenId(@QueryParameter String value) {
       if (fixEmptyAndTrim(value) == null) {
         return FormValidation.error("Snyk API token is required.");
@@ -381,11 +394,41 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       return FormValidation.ok();
     }
 
-    public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild) {
-      if (fixEmptyAndTrim(value) != null && "false".equals(fixEmptyAndTrim(monitorProjectOnBuild))) {
-        return FormValidation.warning("Project name will be ignored, because the project is not monitored on build.");
+    public FormValidation doCheckTargetFile(@QueryParameter String value, @QueryParameter String additionalArguments) {
+      if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(additionalArguments) == null) {
+        return FormValidation.ok();
+      }
+
+      if (additionalArguments.contains("--file")) {
+        return FormValidation.warning("Option '--file' is overridden in additional arguments text area below.");
       }
       return FormValidation.ok();
+    }
+
+    public FormValidation doCheckOrganisation(@QueryParameter String value, @QueryParameter String additionalArguments) {
+      if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(additionalArguments) == null) {
+        return FormValidation.ok();
+      }
+
+      if (additionalArguments.contains("--org")) {
+        return FormValidation.warning("Option '--org' is overridden in additional arguments text area below.");
+      }
+      return FormValidation.ok();
+    }
+
+    public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild, @QueryParameter String additionalArguments) {
+      if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(monitorProjectOnBuild) == null || fixEmptyAndTrim(additionalArguments) == null) {
+        return FormValidation.ok();
+      }
+
+      List<FormValidation> findings = new ArrayList<>(2);
+      if ("false".equals(fixEmptyAndTrim(monitorProjectOnBuild))) {
+        findings.add(FormValidation.warning("Project name will be ignored, because the project is not monitored on build."));
+      }
+      if (additionalArguments.contains("--project-name")) {
+        findings.add(FormValidation.warning("Option '--project-name' is overridden in additional arguments text area below."));
+      }
+      return FormValidation.aggregate(findings);
     }
   }
 }
