@@ -3,7 +3,7 @@
   <f:entry title="Version">
     <f:textbox field="version" default="latest"/>
   </f:entry>
-  <f:entry title="Update policy interval">
+  <f:entry title="Update policy interval (hours)">
     <f:textbox field="updatePolicyIntervalHours" default="24"/>
   </f:entry>
 </j:jelly>
