@@ -6,9 +6,13 @@ import java.util.stream.Collectors;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import hudson.util.FormValidation;
 import hudson.util.FormValidation.Kind;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.credentials.DefaultSnykApiToken;
+import jodd.lagarto.dom.Document;
+import jodd.lagarto.dom.LagartoDOMBuilder;
+import jodd.lagarto.dom.Node;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,6 +20,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
+import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 
 public class SnykStepBuilderDescriptorTest {
@@ -54,17 +59,24 @@ public class SnykStepBuilderDescriptorTest {
   }
 
   @Test
-  public void doCheckSnykTokenId_shouldReturnError_ifSnykTokenIsEmpty() {
-    Kind snykTokenCheck = instance.doCheckSnykTokenId(null).kind;
+  public void doCheckSeverity_shouldReturnWarning_ifProjectNameOverriddenWithAdditionalArguments() {
+    Kind severityValidation = instance.doCheckSeverity("high", "--severity-threshold=low").kind;
 
-    assertThat(snykTokenCheck, is(Kind.ERROR));
+    assertThat(severityValidation, is(Kind.WARNING));
+  }
+
+  @Test
+  public void doCheckSnykTokenId_shouldReturnError_ifSnykTokenIsEmpty() {
+    Kind snykTokenIdValidation = instance.doCheckSnykTokenId(null).kind;
+
+    assertThat(snykTokenIdValidation, is(Kind.ERROR));
   }
 
   @Test
   public void doCheckSnykTokenId_shouldReturnError_ifSnykTokenNotFound() {
-    Kind snykTokenCheck = instance.doCheckSnykTokenId("any-token").kind;
+    Kind snykTokenIdValidation = instance.doCheckSnykTokenId("any-token").kind;
 
-    assertThat(snykTokenCheck, is(Kind.ERROR));
+    assertThat(snykTokenIdValidation, is(Kind.ERROR));
   }
 
   @Test
@@ -72,22 +84,50 @@ public class SnykStepBuilderDescriptorTest {
     DefaultSnykApiToken snykToken = new DefaultSnykApiToken(CredentialsScope.GLOBAL, "id", "", "snyk-token");
     CredentialsProvider.lookupStores(jenkins.getInstance()).iterator().next().addCredentials(Domain.global(), snykToken);
 
-    Kind snykTokenCheck = instance.doCheckSnykTokenId("id").kind;
+    Kind snykTokenIdValidation = instance.doCheckSnykTokenId("id").kind;
 
-    assertThat(snykTokenCheck, is(Kind.OK));
+    assertThat(snykTokenIdValidation, is(Kind.OK));
+  }
+
+  @Test
+  public void doCheckTargetFile_shouldReturnWarning_ifTargetFileOverriddenWithAdditionalArguments() {
+    Kind targetFileValidation = instance.doCheckTargetFile("pom.xml", "--file=pom-extended.xml").kind;
+
+    assertThat(targetFileValidation, is(Kind.WARNING));
+  }
+
+  @Test
+  public void doCheckOrganisation_shouldReturnWarning_ifTargetFileOverriddenWithAdditionalArguments() {
+    Kind organisationValidation = instance.doCheckOrganisation("snyk", "--org=Snyk Ltd").kind;
+
+    assertThat(organisationValidation, is(Kind.WARNING));
+  }
+
+  @Test
+  public void doCheckProjectName_shouldAggregateWarningMessages() {
+    FormValidation projectNameValidation = instance.doCheckProjectName("project-name", "false", "--project-name=new-project");
+
+    assertThat(projectNameValidation.kind, is(Kind.WARNING));
+
+    // Jenkins doesn't provide findings count for 'FormValidation", so we parse html output and check count of <li> elements
+    LagartoDOMBuilder domBuilder = new LagartoDOMBuilder();
+    Document document = domBuilder.parse(projectNameValidation.renderHtml());
+    Node ulNode = document.findChildNodeWithName("ul");
+
+    assertThat(ulNode.getChildNodesCount(), equalTo(2));
   }
 
   @Test
   public void doCheckProjectName_shouldReturnWarning_ifProjectNameDefinedWithoutMonitorOnBuild() {
-    Kind doCheckProjectNameCheck = instance.doCheckProjectName("project-name", "false").kind;
+    Kind projectNameValidation = instance.doCheckProjectName("project-name", "false", "").kind;
 
-    assertThat(doCheckProjectNameCheck, is(Kind.WARNING));
+    assertThat(projectNameValidation, is(Kind.WARNING));
   }
 
   @Test
   public void doCheckProjectName_shouldReturnOK_ifProjectNameDefinedWithMonitorOnBuild() {
-    Kind doCheckProjectNameCheck = instance.doCheckProjectName("project-name", "true").kind;
+    Kind projectNameValidation = instance.doCheckProjectName("project-name", "true", "").kind;
 
-    assertThat(doCheckProjectNameCheck, is(Kind.OK));
+    assertThat(projectNameValidation, is(Kind.OK));
   }
 }
