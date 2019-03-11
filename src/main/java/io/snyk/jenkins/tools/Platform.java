@@ -12,6 +12,7 @@ import hudson.model.Node;
  */
 public enum Platform {
   LINUX("node", "npm", "bin", "snyk-linux", "snyk-to-html-linux"),
+  MAC_OS("node", "npm", "bin", "snyk-macos", "snyk-to-html-macos"),
   WINDOWS("node.exe", "npm.cmd", "", "snyk-win.exe", "snyk-to-html-win.exe");
 
   public final String nodeFileName;
@@ -40,11 +41,11 @@ public enum Platform {
     try {
       Computer computer = node.toComputer();
       if (computer == null) {
-        throw new ToolDetectionException("");
+        throw new ToolDetectionException("Node '" + node.getDisplayName() + "' has no executors");
       }
       return detect(computer.getSystemProperties());
     } catch (Exception ex) {
-      throw new ToolDetectionException("", ex);
+      throw new ToolDetectionException(ex);
     }
   }
 
@@ -58,6 +59,8 @@ public enum Platform {
     String arch = ((String) systemProperties.get("os.name")).toLowerCase(Locale.ENGLISH);
     if (arch.contains("linux")) {
       return LINUX;
+    } else if (arch.contains("mac os x") || arch.contains("darwin") || arch.contains("osx")) {
+      return MAC_OS;
     } else if (arch.contains("windows")) {
       return WINDOWS;
     }

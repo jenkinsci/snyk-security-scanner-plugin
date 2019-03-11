@@ -189,7 +189,7 @@ public class SnykInstaller extends ToolInstaller {
     public Platform call() throws IOException {
       try {
         return Platform.current();
-      } catch (ToolDetectionException e) {
+      } catch (ToolDetectionException ex) {
         throw new IOException(format("Could not determine platform on node %s", nodeDisplayName));
       }
     }
