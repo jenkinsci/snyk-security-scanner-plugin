@@ -16,6 +16,10 @@ public class DownloadService {
   private static final String SNYK_RELEASES_TAGS = "https://api.github.com/repos/snyk/snyk/releases/tags/v%s";
   private static final String SNYK_HTML_RELEASES_LATEST = "https://api.github.com/repos/snyk/snyk-to-html/releases/latest";
 
+  private DownloadService() {
+    // squid:S1118
+  }
+
   public static URL getDownloadUrlForSnyk(@Nonnull String version, @Nonnull Platform platform) throws IOException {
     String jsonString;
     String tagName;
