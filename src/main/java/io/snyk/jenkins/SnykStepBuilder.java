@@ -40,6 +40,7 @@ import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
+import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -53,6 +54,7 @@ import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
@@ -245,14 +247,22 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       build.setResult(success ? Result.SUCCESS : Result.FAILURE);
 
       if (LOG.isTraceEnabled()) {
+        LOG.trace("Job: '{}'", build);
         LOG.trace("Command line arguments: {}", args);
         LOG.trace("Exit code: {}", exitCode);
         LOG.trace("Command output: {}", snykReport.readToString());
       }
 
-      if (!success) {
-        log.getLogger().println(snykReport.readToString());
+      JSONObject snykReportJson = JSONObject.fromObject(snykReport.readToString());
+      // exit on cli error immediately
+      if (snykReportJson.has("error")) {
+        log.getLogger().println("Result: " + snykReportJson.getString("error"));
+        build.setResult(Result.FAILURE);
         return;
+      }
+
+      if (snykReportJson.has("summary") && snykReportJson.has("uniqueCount")) {
+        log.getLogger().println(format("Result: %s known vulnerabilities | %s", snykReportJson.getString("uniqueCount"), snykReportJson.getString("summary")));
       }
 
       generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher, platform));
