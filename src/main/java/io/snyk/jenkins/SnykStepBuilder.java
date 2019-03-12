@@ -244,6 +244,17 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       boolean success = (!failOnIssues || exitCode == 0);
       build.setResult(success ? Result.SUCCESS : Result.FAILURE);
 
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Command line arguments: {}", args);
+        LOG.trace("Exit code: {}", exitCode);
+        LOG.trace("Command output: {}", snykReport.readToString());
+      }
+
+      if (!success) {
+        log.getLogger().println(snykReport.readToString());
+        return;
+      }
+
       generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher, platform));
 
       if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
