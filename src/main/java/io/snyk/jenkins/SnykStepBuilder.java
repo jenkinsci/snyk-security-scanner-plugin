@@ -262,9 +262,10 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
                            .quiet(true)
                            .pwd(workspace)
                            .join();
-        success = (!failOnIssues || exitCode == 0);
-        build.setResult(success ? Result.SUCCESS : Result.FAILURE);
-        //TODO: monitor status?
+        if (exitCode != 0) {
+          log.getLogger().println("Warning: 'snyk monitor' was not successful. Exit code: " + exitCode);
+          log.getLogger().println(snykMonitorReport.readToString());
+        }
 
         if (LOG.isTraceEnabled()) {
           LOG.trace("Command line arguments: {}", argsForMonitorCommand);
