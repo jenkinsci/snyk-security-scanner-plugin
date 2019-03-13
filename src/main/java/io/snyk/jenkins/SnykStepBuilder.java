@@ -62,7 +62,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykStepBuilder.class.getName());
   private static final String SNYK_REPORT_HTML = "snyk_report.html";
-  private static final String SNYK_REPORT_JSON = "snyk_report.json";
+  private static final String SNYK_TEST_REPORT_JSON = "snyk_report.json";
+  private static final String SNYK_MONITOR_REPORT_JSON = "snyk_monitor_report.json";
 
   private boolean failOnIssues = true;
   private boolean monitorProjectOnBuild = true;
@@ -172,11 +173,10 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
   @Override
   public void perform(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener log) throws InterruptedException, IOException {
     EnvVars env = build.getEnvironment(log);
-    // build arguments
-    ArgumentListBuilder args = new ArgumentListBuilder();
 
     // look for a snyk installation
     SnykInstallation installation = findSnykInstallation();
+    String snykExecutable;
     Platform platform;
     if (installation != null) {
       // install if necessary
@@ -186,13 +186,12 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       if (node != null) {
         installation = installation.forNode(node, log);
         installation = installation.forEnvironment(env);
-        String exe = installation.getSnykExecutable(launcher, platform);
-        if (exe == null) {
+        snykExecutable = installation.getSnykExecutable(launcher, platform);
+        if (snykExecutable == null) {
           log.getLogger().println("Can't retrieve the Snyk executable.");
           build.setResult(Result.FAILURE);
           return;
         }
-        args.add(exe);
       } else {
         log.getLogger().println("Not in a build node.");
         build.setResult(Result.FAILURE);
@@ -213,33 +212,17 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     env.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
     env.overrideAll(build.getEnvironment(log));
 
-    args.add("test", "--json");
-    if (fixEmptyAndTrim(severity.getSeverity()) != null) {
-      args.add("--severity-threshold=" + severity.getSeverity());
-    }
-    if (fixEmptyAndTrim(targetFile) != null) {
-      args.add("--file=" + targetFile);
-    }
-    if (fixEmptyAndTrim(organisation) != null) {
-      args.add("--org=" + organisation);
-    }
-    if (fixEmptyAndTrim(projectName) != null) {
-      args.add("--project-name=" + projectName);
-    }
-    if (fixEmptyAndTrim(additionalArguments) != null) {
-      args.add(additionalArguments);
-    }
-
-    FilePath snykReport = workspace.child(SNYK_REPORT_JSON);
-    OutputStream output = snykReport.write();
+    FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
+    OutputStream snykTestOutput = snykTestReport.write();
+    ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test");
 
     try {
       log.getLogger().println("Testing for any known vulnerabilities");
-      log.getLogger().println("> " + args);
+      log.getLogger().println("> " + argsForTestCommand);
       int exitCode = launcher.launch()
-                             .cmds(args)
+                             .cmds(argsForTestCommand)
                              .envs(env)
-                             .stdout(output)
+                             .stdout(snykTestOutput)
                              .quiet(true)
                              .pwd(workspace)
                              .join();
@@ -248,21 +231,46 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
 
       if (LOG.isTraceEnabled()) {
         LOG.trace("Job: '{}'", build);
-        LOG.trace("Command line arguments: {}", args);
+        LOG.trace("Command line arguments: {}", argsForTestCommand);
         LOG.trace("Exit code: {}", exitCode);
-        LOG.trace("Command output: {}", snykReport.readToString());
+        LOG.trace("Command output: {}", snykTestReport.readToString());
       }
 
-      JSONObject snykReportJson = JSONObject.fromObject(snykReport.readToString());
+      JSONObject snykTestReportJson = JSONObject.fromObject(snykTestReport.readToString());
       // exit on cli error immediately
-      if (snykReportJson.has("error")) {
-        log.getLogger().println("Result: " + snykReportJson.getString("error"));
+      if (snykTestReportJson.has("error")) {
+        log.getLogger().println("Result: " + snykTestReportJson.getString("error"));
         build.setResult(Result.FAILURE);
         return;
       }
 
-      if (snykReportJson.has("summary") && snykReportJson.has("uniqueCount")) {
-        log.getLogger().println(format("Result: %s known vulnerabilities | %s", snykReportJson.getString("uniqueCount"), snykReportJson.getString("summary")));
+      if (snykTestReportJson.has("summary") && snykTestReportJson.has("uniqueCount")) {
+        log.getLogger().println(format("Result: %s known vulnerabilities | %s", snykTestReportJson.getString("uniqueCount"), snykTestReportJson.getString("summary")));
+      }
+
+      if (monitorProjectOnBuild) {
+        FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
+        OutputStream snykMonitorOutput = snykMonitorReport.write();
+        ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor");
+
+        log.getLogger().println("Record the state of dependencies and any vulnerabilities on snyk.io");
+        log.getLogger().println("> " + argsForMonitorCommand);
+        exitCode = launcher.launch()
+                           .cmds(argsForMonitorCommand)
+                           .envs(env)
+                           .stdout(snykMonitorOutput)
+                           .quiet(true)
+                           .pwd(workspace)
+                           .join();
+        success = (!failOnIssues || exitCode == 0);
+        build.setResult(success ? Result.SUCCESS : Result.FAILURE);
+        //TODO: monitor status?
+
+        if (LOG.isTraceEnabled()) {
+          LOG.trace("Command line arguments: {}", argsForMonitorCommand);
+          LOG.trace("Exit code: {}", exitCode);
+          LOG.trace("Command output: {}", snykMonitorReport.readToString());
+        }
       }
 
       generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher, platform));
@@ -290,11 +298,33 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
                                            withId(snykTokenId));
   }
 
+  private ArgumentListBuilder buildArgumentList(String snykExecutable, String snykCommand) {
+    ArgumentListBuilder args = new ArgumentListBuilder(snykExecutable, snykCommand, "--json");
+
+    if (fixEmptyAndTrim(severity.getSeverity()) != null) {
+      args.add("--severity-threshold=" + severity.getSeverity());
+    }
+    if (fixEmptyAndTrim(targetFile) != null) {
+      args.add("--file=" + targetFile);
+    }
+    if (fixEmptyAndTrim(organisation) != null) {
+      args.add("--org=" + organisation);
+    }
+    if (fixEmptyAndTrim(projectName) != null) {
+      args.add("--project-name=" + projectName);
+    }
+    if (fixEmptyAndTrim(additionalArguments) != null) {
+      args.add(additionalArguments);
+    }
+
+    return args;
+  }
+
   private void generateSnykHtmlReport(Run<?, ?> build, @Nonnull FilePath workspace, Launcher launcher, TaskListener log, String reportExecutable) throws IOException, InterruptedException {
     EnvVars env = build.getEnvironment(log);
     ArgumentListBuilder args = new ArgumentListBuilder();
 
-    FilePath snykReportJson = workspace.child(SNYK_REPORT_JSON);
+    FilePath snykReportJson = workspace.child(SNYK_TEST_REPORT_JSON);
     if (!snykReportJson.exists()) {
       log.getLogger().println("Snyk report json doesn't exist");
       return;
@@ -303,7 +333,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     workspace.child(SNYK_REPORT_HTML).write("", UTF_8.name());
 
     args.add(reportExecutable);
-    args.add("-i", SNYK_REPORT_JSON, "-o", SNYK_REPORT_HTML);
+    args.add("-i", SNYK_TEST_REPORT_JSON, "-o", SNYK_REPORT_HTML);
     try {
       int exitCode = launcher.launch()
                              .cmds(args)
