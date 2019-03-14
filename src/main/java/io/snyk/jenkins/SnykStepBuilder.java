@@ -358,7 +358,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
   }
 
   @Extension
-  @Symbol("snyk")
+  @Symbol("snykSecurity")
   public static class SnykStepBuilderDescriptor extends BuildStepDescriptor<Builder> {
 
     @CopyOnWrite
