@@ -250,6 +250,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
         log.getLogger().println(format("Result: %s known issues | %s", snykTestReportJson.getString("uniqueCount"), snykTestReportJson.getString("summary")));
       }
 
+      String monitorUri = "";
       if (monitorProjectOnBuild) {
         FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
         OutputStream snykMonitorOutput = snykMonitorReport.write();
@@ -274,9 +275,14 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
           LOG.trace("Exit code: {}", exitCode);
           LOG.trace("Command output: {}", snykMonitorReport.readToString());
         }
+
+        JSONObject snykMonitorReportJson = JSONObject.fromObject(snykMonitorReport.readToString());
+        if (snykMonitorReportJson.has("uri")) {
+          monitorUri = snykMonitorReportJson.getString("uri");
+        }
       }
 
-      generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher, platform));
+      generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher, platform), monitorUri);
 
       if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
         build.addAction(new SnykReportBuildAction(build));
@@ -323,7 +329,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     return args;
   }
 
-  private void generateSnykHtmlReport(Run<?, ?> build, @Nonnull FilePath workspace, Launcher launcher, TaskListener log, String reportExecutable) throws IOException, InterruptedException {
+  private void generateSnykHtmlReport(Run<?, ?> build, @Nonnull FilePath workspace, Launcher launcher, TaskListener log, String reportExecutable, String monitorUri) throws IOException, InterruptedException {
     EnvVars env = build.getEnvironment(log);
     ArgumentListBuilder args = new ArgumentListBuilder();
 
@@ -350,7 +356,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       }
       String reportWithInlineCSS = workspace.child(SNYK_REPORT_HTML).readToString();
       String modifiedHtmlReport = ReportConverter.getInstance().modifyHeadSection(reportWithInlineCSS);
-      workspace.child(workspace.getName() + "_" + SNYK_REPORT_HTML).write(modifiedHtmlReport, UTF_8.name());
+      String finalHtmlReport = ReportConverter.getInstance().injectMonitorLink(modifiedHtmlReport, monitorUri);
+      workspace.child(workspace.getName() + "_" + SNYK_REPORT_HTML).write(finalHtmlReport, UTF_8.name());
     } catch (IOException ex) {
       Util.displayIOException(ex, log);
       ex.printStackTrace(log.fatalError("Snyk-to-Html command execution failed"));
