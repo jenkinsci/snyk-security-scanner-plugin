@@ -178,37 +178,39 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     SnykInstallation installation = findSnykInstallation();
     String snykExecutable;
     Platform platform;
-    if (installation != null) {
-      // install if necessary
-      Computer computer = workspace.toComputer();
-      Node node = computer != null ? computer.getNode() : null;
-      platform = Platform.of(node);
-      if (node != null) {
-        installation = installation.forNode(node, log);
-        installation = installation.forEnvironment(env);
-        snykExecutable = installation.getSnykExecutable(launcher, platform);
-        if (snykExecutable == null) {
-          log.getLogger().println("Can't retrieve the Snyk executable.");
-          build.setResult(Result.FAILURE);
-          return;
-        }
-      } else {
-        log.getLogger().println("Not in a build node.");
-        build.setResult(Result.FAILURE);
-        return;
-      }
-    } else {
-      log.getLogger().println("No snyk installation defined.");
+    if (installation == null) {
+      log.getLogger().println("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry.");
+      build.setResult(Result.FAILURE);
+      return;
+    }
+
+    // install if necessary
+    Computer computer = workspace.toComputer();
+    Node node = computer != null ? computer.getNode() : null;
+    platform = Platform.of(node);
+    if (node == null) {
+      log.getLogger().println("Not running on a build node.");
+      build.setResult(Result.FAILURE);
+      return;
+    }
+
+    installation = installation.forNode(node, log);
+    installation = installation.forEnvironment(env);
+    snykExecutable = installation.getSnykExecutable(launcher, platform);
+
+    if (snykExecutable == null) {
+      log.getLogger().println("Can't retrieve the Snyk executable.");
       build.setResult(Result.FAILURE);
       return;
     }
 
     SnykApiToken snykApiToken = getSnykTokenCredential();
     if (snykApiToken == null) {
-      log.getLogger().println("Snyk API token was not defined! Please configure the build properly");
+      log.getLogger().println("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry.");
       build.setResult(Result.FAILURE);
       return;
     }
+
     env.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
     env.overrideAll(build.getEnvironment(log));
 
@@ -217,7 +219,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test");
 
     try {
-      log.getLogger().println("Testing for any known vulnerabilities");
+      log.getLogger().println("Testing for known issues...");
       log.getLogger().println("> " + argsForTestCommand);
       int exitCode = launcher.launch()
                              .cmds(argsForTestCommand)
@@ -239,13 +241,13 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       JSONObject snykTestReportJson = JSONObject.fromObject(snykTestReport.readToString());
       // exit on cli error immediately
       if (snykTestReportJson.has("error")) {
-        log.getLogger().println("Result: " + snykTestReportJson.getString("error"));
+        log.getLogger().println("Error result: " + snykTestReportJson.getString("error"));
         build.setResult(Result.FAILURE);
         return;
       }
 
       if (snykTestReportJson.has("summary") && snykTestReportJson.has("uniqueCount")) {
-        log.getLogger().println(format("Result: %s known vulnerabilities | %s", snykTestReportJson.getString("uniqueCount"), snykTestReportJson.getString("summary")));
+        log.getLogger().println(format("Result: %s known issues | %s", snykTestReportJson.getString("uniqueCount"), snykTestReportJson.getString("summary")));
       }
 
       if (monitorProjectOnBuild) {
@@ -253,7 +255,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
         OutputStream snykMonitorOutput = snykMonitorReport.write();
         ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor");
 
-        log.getLogger().println("Record the state of dependencies and any vulnerabilities on snyk.io");
+        log.getLogger().println("Remember project for continuous monitoring...");
         log.getLogger().println("> " + argsForMonitorCommand);
         exitCode = launcher.launch()
                            .cmds(argsForMonitorCommand)
