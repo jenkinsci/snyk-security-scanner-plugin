@@ -1,9 +1,9 @@
 package io.snyk.jenkins.transform;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertThat;
 
 public class ReportConverterTest {
 
@@ -15,7 +15,7 @@ public class ReportConverterTest {
 
     String outputHtml = converter.modifyHeadSection(inputHtml);
 
-    Assert.assertThat(outputHtml, equalTo(inputHtml));
+    assertThat(outputHtml, equalTo(inputHtml));
   }
 
   @Test
@@ -25,6 +25,25 @@ public class ReportConverterTest {
 
     String outputHtml = converter.modifyHeadSection(inputHtml);
 
-    Assert.assertThat(outputHtml, equalTo(expectedHtml));
+    assertThat(outputHtml, equalTo(expectedHtml));
+  }
+
+  @Test
+  public void injectMonitorLink_shouldNotChangeHtml_ifMonitorUriIsEmpty() {
+    String inputHtml = "<html><head></head><body>report text</body></html>";
+
+    String outputHtml = converter.injectMonitorLink(inputHtml, "");
+
+    assertThat(outputHtml, equalTo(inputHtml));
+  }
+
+  @Test
+  public void injectMonitorLink_shouldAddMonitorLink_ifMonitorUriIsNotEmpty() {
+    String expectedHtml = "<html><head></head><body><center><a target=\"_blank\" href=\"https://app.snyk.io/my-monitor-report\">View On Snyk.io</a></center>report text</body></html>";
+    String inputHtml = "<html><head></head><body>report text</body></html>";
+
+    String outputHtml = converter.injectMonitorLink(inputHtml, "https://app.snyk.io/my-monitor-report");
+
+    assertThat(outputHtml, equalTo(expectedHtml));
   }
 }
