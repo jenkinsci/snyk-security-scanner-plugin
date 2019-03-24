@@ -1,0 +1,9 @@
+<?jelly escape-by-default="true"?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+  <f:entry title="Version">
+    <f:textbox field="version" default="latest"/>
+  </f:entry>
+  <f:entry title="Update policy interval (hours)">
+    <f:textbox field="updatePolicyIntervalHours" default="24"/>
+  </f:entry>
+</j:jelly>

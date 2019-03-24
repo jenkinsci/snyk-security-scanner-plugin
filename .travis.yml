@@ -11,7 +11,7 @@ cache:
   - "$HOME/.m2/wrapper"
 
 install: true
-script: ./mvnw test --show-version --batch-mode --errors
+script: ./mvnw verify --show-version --batch-mode --errors --settings .mvn/settings.xml
 
 jobs:
   include:
@@ -20,9 +20,9 @@ jobs:
     script: true
     deploy:
       provider: script
-      script: ./mvnw deploy --show-version --batch-mode --errors --settings .travis/settings.xml -Drevision=$TRAVIS_TAG
+      script: ./mvnw deploy --show-version --batch-mode --errors --settings .mvn/settings.xml -Drevision=$TRAVIS_TAG
       on:
-        branch: master
+        branch: master OR 2.0.0-dev
         jdk: oraclejdk8
         repo: jenkinsci/snyk-security-scanner-plugin
         tags: true

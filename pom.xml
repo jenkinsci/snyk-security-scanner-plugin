@@ -5,31 +5,90 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>2.11</version>
-    <relativePath />
+    <version>3.26</version>
   </parent>
   <groupId>io.snyk.plugins</groupId>
   <artifactId>snyk-security-scanner</artifactId>
   <version>${revision}</version>
   <packaging>hpi</packaging>
 
-  <properties>
-    <jenkins.version>1.625.3</jenkins.version>
-    <java.level>7</java.level>
-    <!-- will be overridden in CD pipeline -->
-    <revision>LOCAL-SNAPSHOT</revision>
-  </properties>
-
   <name>Snyk Security Plugin</name>
   <description>Add the ability to test your code dependencies for vulnerabilities against Snyk database</description>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/Snyk+Security+Plugin</url>
 
+  <scm>
+    <connection>scm:git:ssh://github.com/jenkinsci/snyk-security-scanner-plugin.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/jenkinsci/snyk-security-scanner-plugin.git</developerConnection>
+    <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
+  </scm>
+  <ciManagement>
+    <system>Travis CI</system>
+    <url>https://travis-ci.org/jenkinsci/snyk-security-scanner-plugin</url>
+  </ciManagement>
   <licenses>
     <license>
       <name>MIT License</name>
       <url>http://opensource.org/licenses/MIT</url>
     </license>
   </licenses>
+
+  <properties>
+    <jenkins.version>2.0</jenkins.version>
+    <java.level>8</java.level>
+    <!-- will be overridden in CD pipeline -->
+    <revision>LOCAL-SNAPSHOT</revision>
+    <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.jenkins-ci</groupId>
+      <artifactId>symbol-annotation</artifactId>
+      <version>1.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>credentials</artifactId>
+      <version>2.1.18</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jodd</groupId>
+      <artifactId>jodd-lagarto</artifactId>
+      <version>5.0.6</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <compilerArgs>
+            <arg>-Xlint:all,-options,-path</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.jenkins-ci.tools</groupId>
+        <artifactId>maven-hpi-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <repositories>
     <repository>
@@ -43,111 +102,4 @@
       <url>https://repo.jenkins-ci.org/public/</url>
     </pluginRepository>
   </pluginRepositories>
-  <dependencies>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins.workflow</groupId>
-      <artifactId>workflow-step-api</artifactId>
-      <version>2.9</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>plain-credentials</artifactId>
-      <version>1.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jenkins-ci.plugins</groupId>
-      <artifactId>credentials</artifactId>
-      <version>1.25</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.aether</groupId>
-      <artifactId>aether-api</artifactId>
-      <version>1.0.0.v20140518</version>
-    </dependency>
-  </dependencies>
-
-  <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>flatten-maven-plugin</artifactId>
-          <version>1.0.1</version>
-        </plugin>
-        <plugin>
-          <groupId>pl.project13.maven</groupId>
-          <artifactId>git-commit-id-plugin</artifactId>
-          <version>2.2.5</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>flatten-maven-plugin</artifactId>
-        <configuration>
-          <flattenMode>oss</flattenMode>
-          <outputDirectory>${project.build.directory}</outputDirectory>
-        </configuration>
-        <executions>
-          <execution>
-            <id>flatten</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>flatten</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>pl.project13.maven</groupId>
-        <artifactId>git-commit-id-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>get-git-info</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-          </execution>
-          <execution>
-            <id>validate-project-version</id>
-            <phase>verify</phase>
-            <goals>
-              <goal>validateRevision</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <generateGitPropertiesFile>true</generateGitPropertiesFile>
-          <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
-          <validationProperties>
-            <validationProperty>
-              <name>validating project version</name>
-              <value>${project.version}</value>
-              <shouldMatchTo><![CDATA[^.*(?<!-SNAPSHOT)$]]></shouldMatchTo>
-            </validationProperty>
-          </validationProperties>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
-  <scm>
-    <connection>scm:git:ssh://github.com/jenkinsci/snyk-security-scanner-plugin.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/jenkinsci/snyk-security-scanner-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
-  </scm>
-
-  <distributionManagement>
-    <repository>
-      <id>maven.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/releases/</url>
-    </repository>
-    <snapshotRepository>
-      <id>maven.jenkins-ci.org</id>
-      <url>https://repo.jenkins-ci.org/snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
-
 </project>

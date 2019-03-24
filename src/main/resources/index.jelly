@@ -1,7 +1,0 @@
-<?jelly escape-by-default='true'?>
-<!--
-  This view is used to render the installed plugins page.
--->
-<div>
-  Snyk security plugin, lets you scan and monitor your project for known vulnerabilties.
-</div>
