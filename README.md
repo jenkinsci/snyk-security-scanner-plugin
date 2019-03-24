@@ -93,7 +93,7 @@ The `snykSecurity` function accepts the following parameters:
 - Pipeline syntax was changed, see [Pipeline jobs](#pipeline-jobs) section for documentation.
 
 
-# Release Workflow
+# Development and Release Workflow
 
 We're using Travis CI to automatically build releases. First make sure the following variables are defined in Travis
 [repository settings](https://docs.travis-ci.com/user/environment-variables#defining-variables-in-repository-settings):
@@ -117,3 +117,7 @@ include alpha and beta versions of plugins, which are not usually included in th
 Releases that contain `alpha` or `beta` in their version number will only show up in the experimental update site, e.g. `2.0.0-alpha-1`.
 
 To configure Jenkins to use experimental update site please follow this [tutorial](https://jenkins.io/doc/developer/publishing/releasing-experimental-updates).
+
+## Troubleshooting
+
+To troubleshoot the plugin, add a logger to capture all `io.snyk.jenkins` logs. Follow [this article](https://support.cloudbees.com/hc/en-us/articles/204880580-How-do-I-create-a-logger-in-Jenkins-for-troubleshooting-and-diagnostic-information-) to add a logger and re-run the Snyk Security job once again to capture logs.
