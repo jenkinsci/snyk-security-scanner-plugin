@@ -34,7 +34,7 @@ Configure your Jenkins settings to install the Snyk Security Scanner plugin:
 
 Note: in order to install a pre-released version of the plugin, change the **Update Site** to `http://updates.jenkins-ci.org/experimental/update-center.json` in the **Advanced** settings. See https://jenkins.io/zh/blog/2013/09/23/experimental-plugins-update-center/ for more details.
 
-Add a Snyk API Token to Jenkins to allow the Snyk Security Scanner to identify with Snyk.
+3. Add a Snyk API Token to Jenkins to allow the Snyk Security Scanner to identify with Snyk.
 Visit **Credentials > System**. Specify a meaningful credential ID value in the **ID** field (i.e. `my-org-snyk-api-token`).
 
 ![Snyk API Token](docs/snyk_configuration_token_v2.png)
@@ -75,21 +75,21 @@ The `snykSecurity` function accepts the following parameters:
 
 - **snykInstallation** - Snyk installation name as configured in the **Global Tool Configuration**.
 - **snykTokenId** - The ID of the API token from the Credentials plugin to be used to authenticate to Snyk.
-- **additionalArguments** (optional) - Refer to the [Snyk CLI](https://snyk.io/docs/using-snyk/) help page for information on additional arguments.
-- **failOnIssues** - This specifies if builds should be failed or continued based on issues found by Snyk.
-- **organisation** (optional) - The Snyk organisation in which this project should be tested and monitored.
-- **projectName** (optional) - A custom name for the Snyk project created for this Jenkins project on every build.
-- **severity** (optional) - Only report vulnerabilities of provided level or higher (low/medium/high). Default is low.
-- **targetFile** (optional) - The path to the manifest file to be used by Snyk.
+- **additionalArguments** (optional, default **none**) - Refer to the [Snyk CLI](https://snyk.io/docs/using-snyk/) help page for information on additional arguments.
+- **failOnIssues** (optional, default **true**) - This specifies if builds should be failed or continued based on issues found by Snyk.
+- **organisation** (optional, default **none**) - The Snyk organisation in which this project should be tested and monitored.
+- **projectName** (optional, default **none**) - A custom name for the Snyk project created for this Jenkins project on every build.
+- **severity** (optional, default **low**) - Only report vulnerabilities of provided level or higher (low/medium/high). Default is low.
+- **targetFile** (optional, default **none**) - The path to the manifest file to be used by Snyk.
 
 
 # Migration from v1
 
 **Note:** the new v2 of the plugin contains incompatible changes to v1 and will require you to adapt your Jenkins jobs. You have to perform global configuration steps as described [here](#global-configuration).
 
-- The plugin does not requires Docker installation on master or worker nodes. Add a Snyk installer in "Global Tool Configuration" page.
+- The plugin does not require Docker installation on master or worker nodes. Add a Snyk installer in **Global Tool Configuration** page to make the CLI available.
 - You don't need to pass Snyk API token as `SNYK_TOKEN` environment variable to the job. Add a credential of type "Snyk API token".
-- Parameters "Runtime Arguments", "Docker Image", "HTTP Proxy", "HTTPS Proxy" are obsolete.
+- The parameters `Runtime Arguments`, `Docker Image`, `HTTP Proxy` and `HTTPS Proxy` are now obsolete.
 - Pipeline syntax was changed, see [Pipeline jobs](#pipeline-jobs) section for documentation.
 
 
