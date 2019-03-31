@@ -323,7 +323,12 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       args.add("--project-name=" + projectName);
     }
     if (fixEmptyAndTrim(additionalArguments) != null) {
-      args.add(additionalArguments);
+      for (String addArg : additionalArguments.split(" ")) 
+      { 
+        if (fixEmptyAndTrim(addArg) != null) {
+          args.add(addArg);
+        }
+      }
     }
 
     return args;
