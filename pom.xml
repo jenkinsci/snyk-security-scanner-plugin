@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.26</version>
+    <version>3.40</version>
   </parent>
   <groupId>io.snyk.plugins</groupId>
   <artifactId>snyk-security-scanner</artifactId>
@@ -33,7 +33,7 @@
   </licenses>
 
   <properties>
-    <jenkins.version>2.0</jenkins.version>
+    <jenkins.version>2.60.3</jenkins.version>
     <java.level>8</java.level>
     <!-- will be overridden in CD pipeline -->
     <revision>LOCAL-SNAPSHOT</revision>
@@ -44,7 +44,7 @@
     <dependency>
       <groupId>org.jenkins-ci</groupId>
       <artifactId>symbol-annotation</artifactId>
-      <version>1.7</version>
+      <version>1.17</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
@@ -54,7 +54,7 @@
     <dependency>
       <groupId>org.jodd</groupId>
       <artifactId>jodd-lagarto</artifactId>
-      <version>5.0.6</version>
+      <version>5.0.11</version>
     </dependency>
   </dependencies>
 
@@ -85,6 +85,7 @@
         <extensions>true</extensions>
         <configuration>
           <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
+          <minimumJavaVersion>1.8</minimumJavaVersion>
         </configuration>
       </plugin>
     </plugins>
