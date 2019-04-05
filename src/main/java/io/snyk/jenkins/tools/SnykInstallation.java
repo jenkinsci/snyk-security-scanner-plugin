@@ -14,6 +14,7 @@ import hudson.Launcher;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.Node;
 import hudson.model.TaskListener;
+import hudson.remoting.VirtualChannel;
 import hudson.slaves.NodeSpecific;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
@@ -53,7 +54,8 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   }
 
   public String getSnykExecutable(@Nonnull Launcher launcher, Platform platform) throws IOException, InterruptedException {
-    return launcher.getChannel().call(new MasterToSlaveCallable<String, IOException>() {
+    VirtualChannel channel = launcher.getChannel();
+    return channel == null ? null : channel.call(new MasterToSlaveCallable<String, IOException>() {
       @Override
       public String call() throws IOException {
         return resolveExecutable("snyk", platform);
@@ -62,7 +64,8 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   }
 
   public String getReportExecutable(@Nonnull Launcher launcher, Platform platform) throws IOException, InterruptedException {
-    return launcher.getChannel().call(new MasterToSlaveCallable<String, IOException>() {
+    VirtualChannel channel = launcher.getChannel();
+    return channel == null ? null : channel.call(new MasterToSlaveCallable<String, IOException>() {
       @Override
       public String call() throws IOException {
         return resolveExecutable("snyk-to-html", platform);
