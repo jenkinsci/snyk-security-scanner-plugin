@@ -27,6 +27,7 @@ import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.remoting.VirtualChannel;
 import hudson.security.ACL;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
@@ -56,6 +57,7 @@ import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 public class SnykStepBuilder extends Builder implements SimpleBuildStep {
@@ -210,9 +212,18 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       build.setResult(Result.FAILURE);
       return;
     }
-
     env.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
     env.overrideAll(build.getEnvironment(log));
+
+    //workaround until we implement Step interface
+    VirtualChannel nodeChannel = node.getChannel();
+    if (nodeChannel != null) {
+      FilePath snykToolHome = new FilePath(nodeChannel, requireNonNull(installation.getHome()));
+      String customBuildPath = snykToolHome.act(new CustomBuildToolPathCallable());
+      env.put("PATH", customBuildPath);
+
+      LOG.info("Custom build tool path: '{}'", customBuildPath);
+    }
 
     FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
     OutputStream snykTestOutput = snykTestReport.write();
@@ -422,7 +433,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       StandardListBoxModel model = new StandardListBoxModel();
       if (item == null) {
         Jenkins jenkins = Jenkins.getInstance();
-        if (jenkins != null && !jenkins.hasPermission(Jenkins.ADMINISTER)) {
+        if (!jenkins.hasPermission(Jenkins.ADMINISTER)) {
           return model.includeCurrentValue(snykTokenId);
         }
       } else {
