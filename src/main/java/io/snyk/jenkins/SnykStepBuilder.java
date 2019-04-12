@@ -57,7 +57,6 @@ import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
 public class SnykStepBuilder extends Builder implements SimpleBuildStep {
@@ -218,11 +217,14 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     //workaround until we implement Step interface
     VirtualChannel nodeChannel = node.getChannel();
     if (nodeChannel != null) {
-      FilePath snykToolHome = new FilePath(nodeChannel, requireNonNull(installation.getHome()));
-      String customBuildPath = snykToolHome.act(new CustomBuildToolPathCallable());
-      env.put("PATH", customBuildPath);
+      String toolHome = installation.getHome();
+      if (fixEmptyAndTrim(toolHome) != null) {
+        FilePath snykToolHome = new FilePath(nodeChannel, toolHome);
+        String customBuildPath = snykToolHome.act(new CustomBuildToolPathCallable());
+        env.put("PATH", customBuildPath);
 
-      LOG.info("Custom build tool path: '{}'", customBuildPath);
+        LOG.info("Custom build tool path: '{}'", customBuildPath);
+      }
     }
 
     FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
