@@ -126,19 +126,13 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
 
     @Override
     public SnykInstallation[] getInstallations() {
-      Jenkins instance = Jenkins.getInstanceOrNull();
-      if (instance == null) {
-        throw new IllegalStateException("Jenkins has not been started, or was already shut down");
-      }
+      Jenkins instance = Jenkins.getInstance();
       return instance.getDescriptorByType(SnykStepBuilderDescriptor.class).getInstallations();
     }
 
     @Override
     public void setInstallations(SnykInstallation... installations) {
-      Jenkins instance = Jenkins.getInstanceOrNull();
-      if (instance == null) {
-        throw new IllegalStateException("Jenkins has not been started, or was already shut down");
-      }
+      Jenkins instance = Jenkins.getInstance();
       instance.getDescriptorByType(SnykStepBuilderDescriptor.class).setInstallations(installations);
     }
   }
