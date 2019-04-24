@@ -28,10 +28,10 @@ class CustomBuildToolPathCallable implements FilePath.FileCallable<String> {
   public String invoke(File snykToolDirectory, VirtualChannel channel) {
     String oldPath = System.getenv("PATH");
     String home = snykToolDirectory.getAbsolutePath();
-    if (!home.contains(TOOLS_DIRECTORY)) {
-      LOG.info("env.PATH will be not modified, because there are no configured global tools");
-      return oldPath;
-    }
+    // if (!home.contains(TOOLS_DIRECTORY)) {
+    //   LOG.info("env.PATH will be not modified, because there are no configured global tools");
+    //   return oldPath;
+    // }
     String toolsDirectory = home.substring(0, home.indexOf(TOOLS_DIRECTORY) - 1) + File.separator + TOOLS_DIRECTORY;
 
     try (Stream<Path> toolsSubDirectories = Files.walk(Paths.get(toolsDirectory))) {
