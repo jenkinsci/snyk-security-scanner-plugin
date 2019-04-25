@@ -20,14 +20,19 @@ import static org.apache.commons.lang.StringUtils.chomp;
 
 class CustomBuildToolPathCallable implements FilePath.FileCallable<String> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CustomBuildToolPathCallable.class.getName());
   private static final long serialVersionUID = 1L;
+  private static final Logger LOG = LoggerFactory.getLogger(CustomBuildToolPathCallable.class.getName());
+  private static final String TOOLS_DIRECTORY = "tools";
 
   @Override
   public String invoke(File snykToolDirectory, VirtualChannel channel) {
     String oldPath = System.getenv("PATH");
     String home = snykToolDirectory.getAbsolutePath();
-    String toolsDirectory = home.substring(0, home.indexOf("tools") - 1) + File.separator + "tools";
+    if (!home.contains(TOOLS_DIRECTORY)) {
+      LOG.info("env.PATH will be not modified, because there are no configured global tools");
+      return oldPath;
+    }
+    String toolsDirectory = home.substring(0, home.indexOf(TOOLS_DIRECTORY) - 1) + File.separator + TOOLS_DIRECTORY;
 
     try (Stream<Path> toolsSubDirectories = Files.walk(Paths.get(toolsDirectory))) {
       List<String> toolsPaths = new ArrayList<>();
