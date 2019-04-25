@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.FilePath;
 import hudson.remoting.VirtualChannel;
 import org.jenkinsci.remoting.RoleChecker;
@@ -24,6 +25,7 @@ class CustomBuildToolPathCallable implements FilePath.FileCallable<String> {
   private static final Logger LOG = LoggerFactory.getLogger(CustomBuildToolPathCallable.class.getName());
   private static final String TOOLS_DIRECTORY = "tools";
 
+  @SuppressFBWarnings(value = "RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE", justification = "spotbugs issue (java 11)")
   @Override
   public String invoke(File snykToolDirectory, VirtualChannel channel) {
     String oldPath = System.getenv("PATH");
