@@ -56,4 +56,21 @@ public class SnykStepBuilderTest {
                                                     "--docker",
                                                     "image:development-15"));
   }
+
+  @Test
+  public void buildArgumentList_shouldSplitAdditionalArgumentsWithAnyWhitespaceCharacter() {
+    EnvVars env = new EnvVars();
+    SnykStepBuilder snykStepBuilder = new SnykStepBuilder();
+    snykStepBuilder.setAdditionalArguments("--dev\n \n-d");
+
+    ArgumentListBuilder resolvedArguments = snykStepBuilder.buildArgumentList("/usr/bin/snyk", "test", env);
+
+    assertThat(resolvedArguments.toList(), hasSize(6));
+    assertThat(resolvedArguments.toList(), contains("/usr/bin/snyk",
+                                                    "test",
+                                                    "--json",
+                                                    "--severity-threshold=low",
+                                                    "--dev",
+                                                    "-d"));
+  }
 }
