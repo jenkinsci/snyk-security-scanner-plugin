@@ -56,6 +56,7 @@ import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCreden
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
 import static hudson.Util.replaceMacro;
+import static hudson.Util.tokenize;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
@@ -337,7 +338,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       args.add("--project-name=" + replaceMacro(projectName, env));
     }
     if (fixEmptyAndTrim(additionalArguments) != null) {
-      for (String addArg : additionalArguments.split(" ")) {
+      for (String addArg : tokenize(additionalArguments)) {
         if (fixEmptyAndTrim(addArg) != null) {
           args.add(replaceMacro(addArg, env));
         }
