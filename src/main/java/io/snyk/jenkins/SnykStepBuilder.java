@@ -55,6 +55,7 @@ import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
+import static hudson.Util.replaceMacro;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
@@ -229,7 +230,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
 
     FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
     OutputStream snykTestOutput = snykTestReport.write();
-    ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test");
+    ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", env);
 
     try {
       log.getLogger().println("Testing for known issues...");
@@ -267,7 +268,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       if (monitorProjectOnBuild) {
         FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
         OutputStream snykMonitorOutput = snykMonitorReport.write();
-        ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor");
+        ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", env);
 
         log.getLogger().println("Remember project for continuous monitoring...");
         log.getLogger().println("> " + argsForMonitorCommand);
@@ -320,25 +321,25 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
                                            withId(snykTokenId));
   }
 
-  private ArgumentListBuilder buildArgumentList(String snykExecutable, String snykCommand) {
+  ArgumentListBuilder buildArgumentList(String snykExecutable, String snykCommand, @Nonnull EnvVars env) {
     ArgumentListBuilder args = new ArgumentListBuilder(snykExecutable, snykCommand, "--json");
 
     if (fixEmptyAndTrim(severity.getSeverity()) != null) {
       args.add("--severity-threshold=" + severity.getSeverity());
     }
     if (fixEmptyAndTrim(targetFile) != null) {
-      args.add("--file=" + targetFile);
+      args.add("--file=" + replaceMacro(targetFile, env));
     }
     if (fixEmptyAndTrim(organisation) != null) {
-      args.add("--org=" + organisation);
+      args.add("--org=" + replaceMacro(organisation, env));
     }
     if (fixEmptyAndTrim(projectName) != null) {
-      args.add("--project-name=" + projectName);
+      args.add("--project-name=" + replaceMacro(projectName, env));
     }
     if (fixEmptyAndTrim(additionalArguments) != null) {
       for (String addArg : additionalArguments.split(" ")) {
         if (fixEmptyAndTrim(addArg) != null) {
-          args.add(addArg);
+          args.add(replaceMacro(addArg, env));
         }
       }
     }
