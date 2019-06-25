@@ -20,7 +20,9 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
+import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
 import hudson.model.Computer;
 import hudson.model.Item;
 import hudson.model.Node;
@@ -40,7 +42,6 @@ import io.snyk.jenkins.tools.Platform;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
-import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
@@ -61,7 +62,7 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
-public class SnykStepBuilder extends Builder implements SimpleBuildStep {
+public class SnykStepBuilder extends Builder {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykStepBuilder.class.getName());
   private static final String SNYK_REPORT_HTML = "snyk_report.html";
@@ -174,7 +175,12 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
   }
 
   @Override
-  public void perform(@Nonnull Run<?, ?> build, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener log) throws InterruptedException, IOException {
+  public boolean perform(@Nonnull AbstractBuild<?, ?> build, @Nonnull Launcher launcher, @Nonnull BuildListener log) throws InterruptedException, IOException {
+    FilePath workspace = build.getWorkspace();
+    if (workspace == null) {
+      log.getLogger().println("Build agent is not connected");
+      return false;
+    }
     EnvVars env = build.getEnvironment(log);
 
     // look for a snyk installation
@@ -184,7 +190,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     if (installation == null) {
       log.getLogger().println("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry.");
       build.setResult(Result.FAILURE);
-      return;
+      return false;
     }
 
     // install if necessary
@@ -194,7 +200,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     if (node == null) {
       log.getLogger().println("Not running on a build node.");
       build.setResult(Result.FAILURE);
-      return;
+      return false;
     }
 
     installation = installation.forNode(node, log);
@@ -204,17 +210,17 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     if (snykExecutable == null) {
       log.getLogger().println("Can't retrieve the Snyk executable.");
       build.setResult(Result.FAILURE);
-      return;
+      return false;
     }
 
     SnykApiToken snykApiToken = getSnykTokenCredential();
     if (snykApiToken == null) {
       log.getLogger().println("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry.");
       build.setResult(Result.FAILURE);
-      return;
+      return false;
     }
     env.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
-    env.overrideAll(build.getEnvironment(log));
+    env.overrideAll(build.getBuildVariables());
 
     //workaround until we implement Step interface
     VirtualChannel nodeChannel = node.getChannel();
@@ -243,8 +249,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
                              .quiet(true)
                              .pwd(workspace)
                              .join();
-      boolean success = (!failOnIssues || exitCode == 0);
-      build.setResult(success ? Result.SUCCESS : Result.FAILURE);
+      boolean result = (!failOnIssues || exitCode == 0);
+      build.setResult(result ? Result.SUCCESS : Result.FAILURE);
 
       if (LOG.isTraceEnabled()) {
         LOG.trace("Job: '{}'", build);
@@ -258,7 +264,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       if (snykTestReportJson.has("error")) {
         log.getLogger().println("Error result: " + snykTestReportJson.getString("error"));
         build.setResult(Result.FAILURE);
-        return;
+        return false;
       }
 
       if (snykTestReportJson.has("summary") && snykTestReportJson.has("uniqueCount")) {
@@ -304,10 +310,12 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
         ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
         artifactArchiver.perform(build, workspace, launcher, log);
       }
+      return result;
     } catch (IOException ex) {
       Util.displayIOException(ex, log);
       ex.printStackTrace(log.fatalError("Snyk command execution failed"));
       build.setResult(Result.FAILURE);
+      return false;
     }
   }
 
