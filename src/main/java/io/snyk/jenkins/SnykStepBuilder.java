@@ -58,6 +58,9 @@ import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
 import static hudson.Util.replaceMacro;
 import static hudson.Util.tokenize;
+import static io.snyk.jenkins.config.SnykConstants.SNYK_MONITOR_REPORT_JSON;
+import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
+import static io.snyk.jenkins.config.SnykConstants.SNYK_TEST_REPORT_JSON;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
@@ -65,9 +68,6 @@ import static java.util.stream.Collectors.joining;
 public class SnykStepBuilder extends Builder {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykStepBuilder.class.getName());
-  private static final String SNYK_REPORT_HTML = "snyk_report.html";
-  private static final String SNYK_TEST_REPORT_JSON = "snyk_report.json";
-  private static final String SNYK_MONITOR_REPORT_JSON = "snyk_monitor_report.json";
 
   private boolean failOnIssues = true;
   private boolean monitorProjectOnBuild = true;
