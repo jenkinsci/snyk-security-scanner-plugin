@@ -193,6 +193,8 @@ public class SnykSecurityStep extends Step {
 
   public static class Execution extends SynchronousNonBlockingStepExecution<Void> {
 
+    private static final long serialVersionUID = 1L;
+
     private final transient SnykSecurityStep snykSecurityStep;
 
     public Execution(@Nonnull SnykSecurityStep snykSecurityStep, @Nonnull StepContext context) {
