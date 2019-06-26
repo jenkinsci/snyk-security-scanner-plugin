@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
@@ -229,7 +230,10 @@ public class SnykSecurityStep extends Step {
 
       if (LOG.isTraceEnabled()) {
         LOG.trace("Configured EnvVars for build '{}'", build.getId());
-        envVars.forEach((key, value) -> LOG.trace("key={}; value={}", key, value));
+        String envVarsAsString = envVars.entrySet().stream()
+                                        .map(entry -> entry.getKey() + "=" + entry.getValue())
+                                        .collect(Collectors.joining(", ", "{", "}"));
+        LOG.trace(envVarsAsString);
       }
 
       // look for a snyk installation
