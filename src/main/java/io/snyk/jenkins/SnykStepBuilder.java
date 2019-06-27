@@ -38,7 +38,6 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.credentials.SnykApiToken;
-import io.snyk.jenkins.tools.Platform;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
@@ -186,7 +185,6 @@ public class SnykStepBuilder extends Builder {
     // look for a snyk installation
     SnykInstallation installation = findSnykInstallation();
     String snykExecutable;
-    Platform platform;
     if (installation == null) {
       log.getLogger().println("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry.");
       build.setResult(Result.FAILURE);
@@ -196,7 +194,6 @@ public class SnykStepBuilder extends Builder {
     // install if necessary
     Computer computer = workspace.toComputer();
     Node node = computer != null ? computer.getNode() : null;
-    platform = Platform.of(node);
     if (node == null) {
       log.getLogger().println("Not running on a build node.");
       build.setResult(Result.FAILURE);
@@ -205,7 +202,7 @@ public class SnykStepBuilder extends Builder {
 
     installation = installation.forNode(node, log);
     installation = installation.forEnvironment(env);
-    snykExecutable = installation.getSnykExecutable(launcher, platform);
+    snykExecutable = installation.getSnykExecutable(launcher);
 
     if (snykExecutable == null) {
       log.getLogger().println("Can't retrieve the Snyk executable.");
@@ -303,7 +300,7 @@ public class SnykStepBuilder extends Builder {
         }
       }
 
-      generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher, platform), monitorUri);
+      generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher), monitorUri);
 
       if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
         build.addAction(new SnykReportBuildAction(build));

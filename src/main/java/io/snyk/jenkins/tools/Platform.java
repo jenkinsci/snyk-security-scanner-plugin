@@ -5,9 +5,6 @@ import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Map;
 
-import hudson.model.Computer;
-import hudson.model.Node;
-
 /**
  * Supported platform.
  */
@@ -29,26 +26,6 @@ public enum Platform {
     this.binFolder = binFolder;
     this.snykWrapperFileName = snykWrapperFileName;
     this.snykToHtmlWrapperFileName = snykToHtmlWrapperFileName;
-  }
-
-  /**
-   * Determines the platform of the given node.
-   *
-   * @param node the computer node
-   * @return a platform value that represent the given node
-   * @throws ToolDetectionException when the current platform node is not supported or not available
-   */
-  @Nonnull
-  public static Platform of(Node node) throws ToolDetectionException {
-    try {
-      Computer computer = node.toComputer();
-      if (computer == null) {
-        throw new ToolDetectionException("Node '" + node.getDisplayName() + "' has no executors");
-      }
-      return detect(computer.getSystemProperties());
-    } catch (Exception ex) {
-      throw new ToolDetectionException(ex);
-    }
   }
 
   @Nonnull
