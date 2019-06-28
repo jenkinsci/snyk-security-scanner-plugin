@@ -53,22 +53,22 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
     return new SnykInstallation(getName(), translateFor(node, log), getProperties().toList());
   }
 
-  public String getSnykExecutable(@Nonnull Launcher launcher, Platform platform) throws IOException, InterruptedException {
+  public String getSnykExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
     VirtualChannel channel = launcher.getChannel();
     return channel == null ? null : channel.call(new MasterToSlaveCallable<String, IOException>() {
       @Override
       public String call() throws IOException {
-        return resolveExecutable("snyk", platform);
+        return resolveExecutable("snyk", Platform.current());
       }
     });
   }
 
-  public String getReportExecutable(@Nonnull Launcher launcher, Platform platform) throws IOException, InterruptedException {
+  public String getReportExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
     VirtualChannel channel = launcher.getChannel();
     return channel == null ? null : channel.call(new MasterToSlaveCallable<String, IOException>() {
       @Override
       public String call() throws IOException {
-        return resolveExecutable("snyk-to-html", platform);
+        return resolveExecutable("snyk-to-html", Platform.current());
       }
     });
   }
