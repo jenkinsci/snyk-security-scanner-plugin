@@ -5,6 +5,6 @@ import jenkins.model.CauseOfInterruption;
 public final class FoundIssuesCause extends CauseOfInterruption {
   @Override
   public String getShortDescription() {
-    return "Snyk detected vulnerability issues.";
+    return "Snyk has detected security vulnerabilities in your project.";
   }
 }
