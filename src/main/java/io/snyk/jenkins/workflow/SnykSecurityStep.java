@@ -18,6 +18,7 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
 import hudson.model.Computer;
+import hudson.model.Item;
 import hudson.model.Node;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -25,8 +26,11 @@ import hudson.model.TaskListener;
 import hudson.security.ACL;
 import hudson.tasks.ArtifactArchiver;
 import hudson.util.ArgumentListBuilder;
+import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import io.snyk.jenkins.Severity;
 import io.snyk.jenkins.SnykReportBuildAction;
+import io.snyk.jenkins.SnykStepBuilder;
 import io.snyk.jenkins.SnykStepBuilder.SnykStepBuilderDescriptor;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.tools.SnykInstallation;
@@ -40,8 +44,10 @@ import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
 import org.jenkinsci.plugins.workflow.steps.StepExecution;
 import org.jenkinsci.plugins.workflow.steps.SynchronousNonBlockingStepExecution;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,6 +180,12 @@ public class SnykSecurityStep extends Step {
   @Symbol("snykSecurity")
   public static class SnykSecurityStepDescriptor extends StepDescriptor {
 
+    private final SnykStepBuilderDescriptor builderDescriptor;
+
+    public SnykSecurityStepDescriptor() {
+      builderDescriptor = new SnykStepBuilderDescriptor();
+    }
+
     @Override
     public Set<? extends Class<?>> getRequiredContext() {
       return new HashSet<>(Arrays.asList(EnvVars.class, FilePath.class, Launcher.class, Run.class, TaskListener.class));
@@ -188,6 +200,56 @@ public class SnykSecurityStep extends Step {
     @Override
     public String getDisplayName() {
       return "Invoke Snyk Security task";
+    }
+
+    @Override
+    public String getConfigPage() {
+      return getViewPage(SnykStepBuilder.class, "config.jelly");
+    }
+
+    @SuppressWarnings("unused")
+    public SnykInstallation[] getInstallations() {
+      return builderDescriptor.getInstallations();
+    }
+
+    @SuppressWarnings("unused")
+    public boolean hasInstallationsAvailable() {
+      return builderDescriptor.hasInstallationsAvailable();
+    }
+
+    @SuppressWarnings("unused")
+    public ListBoxModel doFillSeverityItems() {
+      return builderDescriptor.doFillSeverityItems();
+    }
+
+    @SuppressWarnings("unused")
+    public ListBoxModel doFillSnykTokenIdItems(@AncestorInPath Item item, @QueryParameter String snykTokenId) {
+      return builderDescriptor.doFillSnykTokenIdItems(item, snykTokenId);
+    }
+
+    @SuppressWarnings("unused")
+    public FormValidation doCheckSeverity(@QueryParameter String value, @QueryParameter String additionalArguments) {
+      return builderDescriptor.doCheckSeverity(value, additionalArguments);
+    }
+
+    @SuppressWarnings("unused")
+    public FormValidation doCheckSnykTokenId(@QueryParameter String value) {
+      return builderDescriptor.doCheckSnykTokenId(value);
+    }
+
+    @SuppressWarnings("unused")
+    public FormValidation doCheckTargetFile(@QueryParameter String value, @QueryParameter String additionalArguments) {
+      return builderDescriptor.doCheckTargetFile(value, additionalArguments);
+    }
+
+    @SuppressWarnings("unused")
+    public FormValidation doCheckOrganisation(@QueryParameter String value, @QueryParameter String additionalArguments) {
+      return builderDescriptor.doCheckOrganisation(value, additionalArguments);
+    }
+
+    @SuppressWarnings("unused")
+    public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild, @QueryParameter String additionalArguments) {
+      return builderDescriptor.doCheckProjectName(value, monitorProjectOnBuild, additionalArguments);
     }
   }
 
