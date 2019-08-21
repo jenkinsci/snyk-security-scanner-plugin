@@ -34,6 +34,7 @@ import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
+import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException;
 import org.jenkinsci.plugins.workflow.steps.Step;
 import org.jenkinsci.plugins.workflow.steps.StepContext;
 import org.jenkinsci.plugins.workflow.steps.StepDescriptor;
@@ -353,6 +354,11 @@ public class SnykSecurityStep extends Step {
         build.setResult(Result.FAILURE);
         return null;
       }
+
+      if (snykSecurityStep.failOnIssues && Result.FAILURE.equals(build.getResult())) {
+        throw new FlowInterruptedException(Result.FAILURE, new FoundIssuesCause());
+      }
+
       return null;
     }
 
