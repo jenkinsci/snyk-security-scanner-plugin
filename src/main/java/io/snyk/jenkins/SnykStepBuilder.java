@@ -420,7 +420,6 @@ public class SnykStepBuilder extends Builder {
       save();
     }
 
-    @SuppressWarnings("unused")
     public boolean hasInstallationsAvailable() {
       if (LOG.isTraceEnabled()) {
         LOG.trace("Available Snyk installations: {}",
