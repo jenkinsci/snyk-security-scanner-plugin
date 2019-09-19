@@ -297,6 +297,7 @@ public class SnykStepBuilder extends Builder {
         JSONObject snykMonitorReportJson = JSONObject.fromObject(snykMonitorReport.readToString());
         if (snykMonitorReportJson.has("uri")) {
           monitorUri = snykMonitorReportJson.getString("uri");
+          log.getLogger().println("Explore the snapshot at " + monitorUri);
         }
       }
 
