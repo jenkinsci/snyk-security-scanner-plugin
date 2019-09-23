@@ -400,6 +400,7 @@ public class SnykSecurityStep extends Step {
           JSONObject snykMonitorReportJson = JSONObject.fromObject(snykMonitorReport.readToString());
           if (snykMonitorReportJson.has("uri")) {
             monitorUri = snykMonitorReportJson.getString("uri");
+            log.getLogger().println("Explore the snapshot at " + monitorUri);
           }
         }
 
@@ -407,9 +408,9 @@ public class SnykSecurityStep extends Step {
 
         if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
           build.addAction(new SnykReportBuildAction(build));
-          ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
-          artifactArchiver.perform(build, workspace, launcher, log);
         }
+        ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
+        artifactArchiver.perform(build, workspace, launcher, log);
       } catch (IOException ex) {
         Util.displayIOException(ex, log);
         ex.printStackTrace(log.fatalError("Snyk command execution failed"));
