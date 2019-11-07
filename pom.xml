@@ -59,7 +59,7 @@
     <dependency>
       <groupId>org.jodd</groupId>
       <artifactId>jodd-lagarto</artifactId>
-      <version>5.0.11</version>
+      <version>5.1.0-20190624</version>
     </dependency>
 
     <dependency>
