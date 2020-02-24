@@ -38,10 +38,12 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.credentials.SnykApiToken;
+import io.snyk.jenkins.model.ObjectMapperHelper;
+import io.snyk.jenkins.model.SnykMonitorResult;
+import io.snyk.jenkins.model.SnykTestResult;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
-import net.sf.json.JSONObject;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -249,23 +251,28 @@ public class SnykStepBuilder extends Builder {
       boolean result = (!failOnIssues || exitCode == 0);
       build.setResult(result ? Result.SUCCESS : Result.FAILURE);
 
+      String snykTestReportAsString = snykTestReport.readToString();
       if (LOG.isTraceEnabled()) {
         LOG.trace("Job: '{}'", build);
         LOG.trace("Command line arguments: {}", argsForTestCommand);
         LOG.trace("Exit code: {}", exitCode);
-        LOG.trace("Command output: {}", snykTestReport.readToString());
+        LOG.trace("Command output: {}", snykTestReportAsString);
       }
 
-      JSONObject snykTestReportJson = JSONObject.fromObject(snykTestReport.readToString());
-      // exit on cli error immediately
-      if (snykTestReportJson.has("error")) {
-        log.getLogger().println("Error result: " + snykTestReportJson.getString("error"));
+      SnykTestResult snykTestResult = ObjectMapperHelper.unmarshallTestResult(snykTestReportAsString);
+      if (snykTestResult == null) {
+        log.getLogger().println("Could not parse generated json report file.");
         build.setResult(Result.FAILURE);
         return false;
       }
-
-      if (snykTestReportJson.has("summary") && snykTestReportJson.has("uniqueCount")) {
-        log.getLogger().println(format("Result: %s known issues | %s", snykTestReportJson.getString("uniqueCount"), snykTestReportJson.getString("summary")));
+      // exit on cli error immediately
+      if (fixEmptyAndTrim(snykTestResult.error) != null) {
+        log.getLogger().println("Error result: " + snykTestResult.error);
+        build.setResult(Result.FAILURE);
+        return false;
+      }
+      if (!snykTestResult.ok) {
+        log.getLogger().println(format("Result: %s known vulnerabilities | %s dependencies", snykTestResult.uniqueCount, snykTestResult.dependencyCount));
       }
 
       String monitorUri = "";
@@ -283,21 +290,21 @@ public class SnykStepBuilder extends Builder {
                            .quiet(true)
                            .pwd(workspace)
                            .join();
+        String snykMonitorReportAsString = snykMonitorReport.readToString();
         if (exitCode != 0) {
           log.getLogger().println("Warning: 'snyk monitor' was not successful. Exit code: " + exitCode);
-          log.getLogger().println(snykMonitorReport.readToString());
+          log.getLogger().println(snykMonitorReportAsString);
         }
 
         if (LOG.isTraceEnabled()) {
           LOG.trace("Command line arguments: {}", argsForMonitorCommand);
           LOG.trace("Exit code: {}", exitCode);
-          LOG.trace("Command output: {}", snykMonitorReport.readToString());
+          LOG.trace("Command output: {}", snykMonitorReportAsString);
         }
 
-        JSONObject snykMonitorReportJson = JSONObject.fromObject(snykMonitorReport.readToString());
-        if (snykMonitorReportJson.has("uri")) {
-          monitorUri = snykMonitorReportJson.getString("uri");
-          log.getLogger().println("Explore the snapshot at " + monitorUri);
+        SnykMonitorResult snykMonitorResult = ObjectMapperHelper.unmarshallMonitorResult(snykMonitorReportAsString);
+        if (snykMonitorResult != null && fixEmptyAndTrim(snykMonitorResult.uri) != null) {
+          log.getLogger().println("Explore the snapshot at " + snykMonitorResult.uri);
         }
       }
 
