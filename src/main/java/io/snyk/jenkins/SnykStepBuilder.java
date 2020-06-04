@@ -235,10 +235,14 @@ public class SnykStepBuilder extends Builder {
     }
 
     FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
-    OutputStream snykTestOutput = snykTestReport.write();
+
     ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", env);
 
+    OutputStream snykTestOutput = null;
+    OutputStream snykMonitorOutput = null;
     try {
+      snykTestOutput = snykTestReport.write();
+
       log.getLogger().println("Testing for known issues...");
       log.getLogger().println("> " + argsForTestCommand);
       int exitCode = launcher.launch()
@@ -278,7 +282,7 @@ public class SnykStepBuilder extends Builder {
       String monitorUri = "";
       if (monitorProjectOnBuild) {
         FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
-        OutputStream snykMonitorOutput = snykMonitorReport.write();
+        snykMonitorOutput = snykMonitorReport.write();
         ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", env);
 
         log.getLogger().println("Remember project for continuous monitoring...");
@@ -321,6 +325,13 @@ public class SnykStepBuilder extends Builder {
       ex.printStackTrace(log.fatalError("Snyk command execution failed"));
       build.setResult(Result.FAILURE);
       return false;
+    } finally {
+      if (snykTestOutput != null) {
+        snykTestOutput.close();
+      }
+      if (snykMonitorOutput != null) {
+        snykMonitorOutput.close();
+      }
     }
   }
 
