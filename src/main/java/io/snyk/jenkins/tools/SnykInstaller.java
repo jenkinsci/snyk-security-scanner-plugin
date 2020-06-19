@@ -103,7 +103,7 @@ public class SnykInstaller extends ToolInstaller {
     }
   }
 
-  private FilePath installSnykAsNpmPackage(FilePath expected, Node node, TaskListener log) {
+  private FilePath installSnykAsNpmPackage(FilePath expected, Node node, TaskListener log) throws ToolDetectionException {
     LOG.info("Install Snyk version '{}' as NPM package on node '{}'", version, node.getDisplayName());
 
     ArgumentListBuilder args = new ArgumentListBuilder();
@@ -121,7 +121,7 @@ public class SnykInstaller extends ToolInstaller {
       expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
     } catch (Exception ex) {
       log.getLogger().println("Snyk Security tool could not installed: " + ex.getMessage());
-      LOG.error("Could not install Snyk as NPM package", ex);
+      throw new ToolDetectionException("Could not install Snyk CLI with npm", ex);
     }
     return expected;
   }
@@ -146,7 +146,7 @@ public class SnykInstaller extends ToolInstaller {
       expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
     } catch (Exception ex) {
       log.getLogger().println("Snyk Security tool could not installed: " + ex.getMessage());
-      LOG.error("Could not install Snyk as single binary", ex);
+      throw new ToolDetectionException("Could not install Snyk CLI from binary", ex);
     }
 
     return expected;

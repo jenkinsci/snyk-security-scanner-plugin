@@ -121,3 +121,5 @@ To configure Jenkins to use experimental update site please follow this [tutoria
 ## Troubleshooting
 
 To troubleshoot the plugin, add a logger to capture all `io.snyk.jenkins` logs. Follow [this article](https://support.cloudbees.com/hc/en-us/articles/204880580-How-do-I-create-a-logger-in-Jenkins-for-troubleshooting-and-diagnostic-information-) to add a logger and re-run the Snyk Security job once again to capture logs.
+
+This plugin will attempt to download and install the Snyk CLI. If the installation of the Snyk CLI fails, your CI job will fail and you should see the error `Snyk Security tool could not installed` in the CI logs. If this is the case, it is likely either a permissions related mis-configuration on your Jenkins master or agents or a network issue.
