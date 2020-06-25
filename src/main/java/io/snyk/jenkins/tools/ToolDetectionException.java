@@ -11,4 +11,8 @@ class ToolDetectionException extends IOException {
   ToolDetectionException(String message) {
     super(message);
   }
+
+  ToolDetectionException(String message, Throwable innerException) {
+    super(message, innerException);
+  }
 }
