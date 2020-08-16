@@ -1,4 +1,3 @@
-sudo: false
 language: java
 dist: trusty
 
@@ -14,16 +13,3 @@ cache:
 install: true
 script: ./mvnw verify --show-version --batch-mode --errors --settings .mvn/settings.xml
 
-jobs:
-  include:
-  - stage: "Release"
-    if: type = push AND tag is present
-    script: true
-    deploy:
-      provider: script
-      script: ./mvnw deploy --show-version --batch-mode --errors --settings .mvn/settings.xml -Drevision=$TRAVIS_TAG
-      on:
-        branch: master OR 2.0.0-dev
-        jdk: oraclejdk8
-        repo: jenkinsci/snyk-security-scanner-plugin
-        tags: true
