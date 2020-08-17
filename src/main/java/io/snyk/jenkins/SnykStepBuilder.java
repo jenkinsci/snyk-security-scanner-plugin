@@ -235,13 +235,16 @@ public class SnykStepBuilder extends Builder {
     }
 
     FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
+    FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
 
     ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", env);
 
     OutputStream snykTestOutput = null;
+    OutputStream snykTestDebugOutput = null;
     OutputStream snykMonitorOutput = null;
     try {
       snykTestOutput = snykTestReport.write();
+      snykTestDebugOutput = snykTestDebug.write();
 
       log.getLogger().println("Testing for known issues...");
       log.getLogger().println("> " + argsForTestCommand);
@@ -249,6 +252,7 @@ public class SnykStepBuilder extends Builder {
                              .cmds(argsForTestCommand)
                              .envs(env)
                              .stdout(snykTestOutput)
+                             .stderr(snykTestDebugOutput)
                              .quiet(true)
                              .pwd(workspace)
                              .join();
@@ -260,7 +264,8 @@ public class SnykStepBuilder extends Builder {
         LOG.trace("Job: '{}'", build);
         LOG.trace("Command line arguments: {}", argsForTestCommand);
         LOG.trace("Exit code: {}", exitCode);
-        LOG.trace("Command output: {}", snykTestReportAsString);
+        LOG.trace("Command standard output: {}", snykTestReportAsString);
+        LOG.trace("Command debug output: {}", snykTestDebug.readToString());
       }
 
       SnykTestResult snykTestResult = ObjectMapperHelper.unmarshallTestResult(snykTestReportAsString);
@@ -328,6 +333,9 @@ public class SnykStepBuilder extends Builder {
     } finally {
       if (snykTestOutput != null) {
         snykTestOutput.close();
+      }
+      if (snykTestDebugOutput != null) {
+        snykTestDebugOutput.close();
       }
       if (snykMonitorOutput != null) {
         snykMonitorOutput.close();

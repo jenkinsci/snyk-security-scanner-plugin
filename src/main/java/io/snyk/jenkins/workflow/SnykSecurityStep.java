@@ -339,16 +339,25 @@ public class SnykSecurityStep extends Step {
       envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
 
       FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
-      OutputStream snykTestOutput = snykTestReport.write();
+      FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
+
       ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", envVars);
 
+      OutputStream snykTestOutput = null;
+      OutputStream snykTestDebugOutput = null;
+      OutputStream snykMonitorOutput = null;
+
       try {
+        snykTestOutput = snykTestReport.write();
+        snykTestDebugOutput = snykTestDebug.write();
+
         log.getLogger().println("Testing for known issues...");
         log.getLogger().println("> " + argsForTestCommand);
         int exitCode = launcher.launch()
                                .cmds(argsForTestCommand)
                                .envs(envVars)
                                .stdout(snykTestOutput)
+                               .stderr(snykTestDebugOutput)
                                .quiet(true)
                                .pwd(workspace)
                                .join();
@@ -359,7 +368,8 @@ public class SnykSecurityStep extends Step {
         if (LOG.isTraceEnabled()) {
           LOG.trace("Command line arguments: {}", argsForTestCommand);
           LOG.trace("Exit code: {}", exitCode);
-          LOG.trace("Command output: {}", snykTestReportAsString);
+          LOG.trace("Command standard output: {}", snykTestReportAsString);
+          LOG.trace("Command debug output: {}", snykTestDebug.readToString());
         }
 
         SnykTestResult snykTestResult = ObjectMapperHelper.unmarshallTestResult(snykTestReportAsString);
@@ -381,7 +391,7 @@ public class SnykSecurityStep extends Step {
         String monitorUri = "";
         if (snykSecurityStep.monitorProjectOnBuild) {
           FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
-          OutputStream snykMonitorOutput = snykMonitorReport.write();
+          snykMonitorOutput = snykMonitorReport.write();
           ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
 
           log.getLogger().println("Remember project for continuous monitoring...");
@@ -423,6 +433,16 @@ public class SnykSecurityStep extends Step {
         ex.printStackTrace(log.fatalError("Snyk command execution failed"));
         build.setResult(Result.FAILURE);
         return null;
+      } finally {
+        if (snykTestOutput != null) {
+          snykTestOutput.close();
+        }
+        if (snykTestDebugOutput != null) {
+          snykTestDebugOutput.close();
+        }
+        if (snykMonitorOutput != null) {
+          snykMonitorOutput.close();
+        }
       }
 
       if (snykSecurityStep.failOnIssues && Result.FAILURE.equals(build.getResult())) {
