@@ -42,6 +42,9 @@
     <f:entry title="Project name" field="projectName">
       <f:textbox/>
     </f:entry>
+    <f:entry title="Scan subprojects?" field="scanSubprojects">
+      <f:checkbox default="true"/>
+    </f:entry>
   </f:section>
 
   <!-- advanced configuration -->

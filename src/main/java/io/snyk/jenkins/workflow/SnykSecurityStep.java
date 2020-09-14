@@ -77,6 +77,7 @@ public class SnykSecurityStep extends Step {
   private String projectName;
   private String snykInstallation;
   private String additionalArguments;
+  private boolean scanSubprojects;
 
   @DataBoundConstructor
   public SnykSecurityStep() {
@@ -171,6 +172,16 @@ public class SnykSecurityStep extends Step {
   @DataBoundSetter
   public void setAdditionalArguments(@CheckForNull String additionalArguments) {
     this.additionalArguments = fixEmptyAndTrim(additionalArguments);
+  }
+
+  @SuppressWarnings("unused")
+  public boolean isScanSubprojects() {
+    return scanSubprojects;
+  }
+
+  @DataBoundSetter
+  public void setScanSubprojects(boolean scanSubprojects) {
+    this.scanSubprojects = scanSubprojects;
   }
 
   @Override
@@ -478,6 +489,9 @@ public class SnykSecurityStep extends Step {
       }
       if (fixEmptyAndTrim(snykSecurityStep.projectName) != null) {
         args.add("--project-name=" + replaceMacro(snykSecurityStep.projectName, env));
+      }
+      if (snykSecurityStep.scanSubprojects) {
+        args.add("--all-projects");
       }
       if (fixEmptyAndTrim(snykSecurityStep.additionalArguments) != null) {
         for (String addArg : tokenize(snykSecurityStep.additionalArguments)) {

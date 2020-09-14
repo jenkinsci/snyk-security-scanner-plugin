@@ -1,15 +1,17 @@
 package io.snyk.jenkins;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
-
+import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
+import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
+import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
+import static hudson.Util.fixEmptyAndTrim;
+import static hudson.Util.fixNull;
+import static hudson.Util.replaceMacro;
+import static hudson.Util.tokenize;
+import static io.snyk.jenkins.config.SnykConstants.SNYK_MONITOR_REPORT_JSON;
+import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
+import static io.snyk.jenkins.config.SnykConstants.SNYK_TEST_REPORT_JSON;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.joining;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
@@ -43,6 +45,15 @@ import io.snyk.jenkins.model.SnykMonitorResult;
 import io.snyk.jenkins.model.SnykTestResult;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
 import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
@@ -51,20 +62,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
-import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
-import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
-import static hudson.Util.fixEmptyAndTrim;
-import static hudson.Util.fixNull;
-import static hudson.Util.replaceMacro;
-import static hudson.Util.tokenize;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_MONITOR_REPORT_JSON;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_TEST_REPORT_JSON;
-import static java.lang.String.format;
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.stream.Collectors.joining;
 
 public class SnykStepBuilder extends Builder {
 
@@ -79,6 +76,7 @@ public class SnykStepBuilder extends Builder {
   private String projectName;
   private String snykInstallation;
   private String additionalArguments;
+  private boolean scanSubprojects;
 
   @DataBoundConstructor
   public SnykStepBuilder() {
@@ -173,6 +171,15 @@ public class SnykStepBuilder extends Builder {
   @DataBoundSetter
   public void setAdditionalArguments(@CheckForNull String additionalArguments) {
     this.additionalArguments = fixEmptyAndTrim(additionalArguments);
+  }
+
+  public boolean getScanSubprojects() {
+    return scanSubprojects;
+  }
+
+  @DataBoundSetter
+  public void setScanSubprojects(boolean scanSubprojects) {
+    this.scanSubprojects = scanSubprojects;
   }
 
   @Override
@@ -281,7 +288,7 @@ public class SnykStepBuilder extends Builder {
         return false;
       }
       if (!snykTestResult.ok) {
-        log.getLogger().println(format("Result: %s known vulnerabilities | %s dependencies", snykTestResult.uniqueCount, snykTestResult.dependencyCount));
+        log.getLogger().printf("Result: %s known vulnerabilities | %s dependencies%n", snykTestResult.uniqueCount, snykTestResult.dependencyCount);
       }
 
       String monitorUri = "";
@@ -368,6 +375,9 @@ public class SnykStepBuilder extends Builder {
     }
     if (fixEmptyAndTrim(projectName) != null) {
       args.add("--project-name=" + replaceMacro(projectName, env));
+    }
+    if (scanSubprojects) {
+      args.add("--all-projects");
     }
     if (fixEmptyAndTrim(additionalArguments) != null) {
       for (String addArg : tokenize(additionalArguments)) {

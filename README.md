@@ -56,6 +56,7 @@ Enable the Snyk Security Scanner in the project configuration page. To add Snyk 
 - **Target file** - The path to the application manifest file to be scanned by Snyk Security Scanner.
 - **Organisation** - The Snyk organisation in which this project should be tested and monitored.
 - **Project name** - A custom name for the Snyk project created for this Jenkins project on every build.
+- **Scan subprojects** - Toggle this if any subprojects should be scanned as well.
 
 #### Advanced Configuration
 
