@@ -346,6 +346,7 @@ public class SnykSecurityStep extends Step {
       OutputStream snykTestOutput = null;
       OutputStream snykTestDebugOutput = null;
       OutputStream snykMonitorOutput = null;
+      OutputStream snykMonitorDebugOutput = null;
 
       try {
         snykTestOutput = snykTestReport.write();
@@ -391,7 +392,11 @@ public class SnykSecurityStep extends Step {
         String monitorUri = "";
         if (snykSecurityStep.monitorProjectOnBuild) {
           FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
+          FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
+
           snykMonitorOutput = snykMonitorReport.write();
+          snykMonitorDebugOutput = snykMonitorDebug.write();
+
           ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
 
           log.getLogger().println("Remember project for continuous monitoring...");
@@ -400,6 +405,7 @@ public class SnykSecurityStep extends Step {
                              .cmds(argsForMonitorCommand)
                              .envs(envVars)
                              .stdout(snykMonitorOutput)
+                             .stderr(snykMonitorDebugOutput)
                              .quiet(true)
                              .pwd(workspace)
                              .join();
@@ -412,7 +418,8 @@ public class SnykSecurityStep extends Step {
           if (LOG.isTraceEnabled()) {
             LOG.trace("Command line arguments: {}", argsForMonitorCommand);
             LOG.trace("Exit code: {}", exitCode);
-            LOG.trace("Command output: {}", snykMonitorReportAsString);
+            LOG.trace("Command standard output: {}", snykMonitorReportAsString);
+            LOG.trace("Command debug output: {}", snykMonitorDebug.readToString());
           }
 
           SnykMonitorResult snykMonitorResult = ObjectMapperHelper.unmarshallMonitorResult(snykMonitorReportAsString);
@@ -442,6 +449,9 @@ public class SnykSecurityStep extends Step {
         }
         if (snykMonitorOutput != null) {
           snykMonitorOutput.close();
+        }
+        if (snykMonitorDebugOutput != null) {
+          snykMonitorDebugOutput.close();
         }
       }
 
