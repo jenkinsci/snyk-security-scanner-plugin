@@ -28,9 +28,15 @@ Snyk Security Scanner is a Jenkins plugin that enables Jenkins users to test the
 
 Configure your Jenkins settings to install the Snyk Security Scanner plugin:
 1. Visit **Manage Jenkins > Manage Plugins > Available** and search for `Snyk Security`. Install the plugin.
-2. Visit **Manage Jenkins > Global Tool Configuration** and add a **Snyk Installation** to have the Snyk CLI available during Jenkins builds. We recommend using the **latest** version to keep up to date with new releases of the Snyk CLI.
+2. Visit **Manage Jenkins > Global Tool Configuration** and add a **Snyk Installation** to have the Snyk CLI available during Jenkins builds. You can choose either:
 
-![Snyk Installer](docs/snyk_configuration_installation_v2.png)
+   - **Auto Installation**: We recommend using the **latest** version to keep up to date with new releases of the Snyk CLI.
+
+   ![Snyk Installer Auto Update](docs/snyk_configuration_installation_auto-update_v2.png)
+
+   - **Manual Installation**: Provide the full path on the Jenkins agent to the Snyk CLI binaries. You can download the binaries from: [Snyk CLI latest release page](https://github.com/snyk/snyk/releases/latest) and [snyk-to-html latest release page](https://github.com/snyk/snyk-to-html/releases/latest). Please be sure that you download correct OS-specific binaries for your Jenkins agent.
+
+   ![Snyk Installer Manual](docs/snyk_configuration_installation_manual_v2.png)
 
 Note: in order to install a pre-released version of the plugin, change the **Update Site** to `http://updates.jenkins-ci.org/experimental/update-center.json` in the **Advanced** settings. See https://jenkins.io/zh/blog/2013/09/23/experimental-plugins-update-center/ for more details.
 
