@@ -1,12 +1,14 @@
 package io.snyk.jenkins.tools;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+
+import javax.annotation.Nonnull;
+
+import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.DataBoundConstructor;
 
 import hudson.EnvVars;
 import hudson.Extension;
@@ -22,11 +24,6 @@ import hudson.tools.ToolInstaller;
 import hudson.tools.ToolProperty;
 import io.snyk.jenkins.SnykStepBuilder.SnykStepBuilderDescriptor;
 import jenkins.model.Jenkins;
-import jenkins.security.MasterToSlaveCallable;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundConstructor;
-
-import static java.lang.String.format;
 
 public class SnykInstallation extends ToolInstallation implements EnvironmentSpecific<SnykInstallation>, NodeSpecific<SnykInstallation> {
 
@@ -55,58 +52,12 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
 
   public String getSnykExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
     VirtualChannel channel = launcher.getChannel();
-    return channel == null ? null : channel.call(new MasterToSlaveCallable<String, IOException>() {
-      @Override
-      public String call() throws IOException {
-        return resolveExecutable("snyk", Platform.current());
-      }
-    });
+    return channel == null ? null : channel.call(new SnykInstallationCallable("snyk", getHome()));
   }
 
   public String getReportExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
     VirtualChannel channel = launcher.getChannel();
-    return channel == null ? null : channel.call(new MasterToSlaveCallable<String, IOException>() {
-      @Override
-      public String call() throws IOException {
-        return resolveExecutable("snyk-to-html", Platform.current());
-      }
-    });
-  }
-
-  private String resolveExecutable(String file, Platform platform) throws IOException {
-    final Path nodeModulesBin = getNodeModulesBin();
-    if (nodeModulesBin != null) {
-      final Path executable = nodeModulesBin.resolve(file);
-      if (!executable.toFile().exists()) {
-        throw new IOException(format("Could not find executable <%s>", executable));
-      }
-      return executable.toAbsolutePath().toString();
-    } else {
-      String root = getHome();
-      if (root == null) {
-        return null;
-      }
-      String wrapperFileName = "snyk".equals(file) ? platform.snykWrapperFileName : platform.snykToHtmlWrapperFileName;
-      final Path executable = Paths.get(root).resolve(wrapperFileName);
-      if (!executable.toFile().exists()) {
-        throw new IOException(format("Could not find executable <%s>", wrapperFileName));
-      }
-      return executable.toAbsolutePath().toString();
-    }
-  }
-
-  private Path getNodeModulesBin() {
-    String root = getHome();
-    if (root == null) {
-      return null;
-    }
-
-    Path nodeModules = Paths.get(root).resolve("node_modules").resolve(".bin");
-    if (!nodeModules.toFile().exists()) {
-      return null;
-    }
-
-    return nodeModules;
+    return channel == null ? null : channel.call(new SnykInstallationCallable("snyk-to-html", getHome()));
   }
 
   @Extension
