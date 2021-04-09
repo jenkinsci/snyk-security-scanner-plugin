@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
+import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.replaceMacro;
@@ -235,8 +236,8 @@ public class SnykSecurityStep extends Step {
     }
 
     @SuppressWarnings("unused")
-    public FormValidation doCheckSnykTokenId(@QueryParameter String value) {
-      return builderDescriptor.doCheckSnykTokenId(value);
+    public FormValidation doCheckSnykTokenId(@AncestorInPath Item item, @QueryParameter String value) {
+      return builderDescriptor.doCheckSnykTokenId(item, value);
     }
 
     @SuppressWarnings("unused")
@@ -330,7 +331,7 @@ public class SnykSecurityStep extends Step {
         return null;
       }
 
-      SnykApiToken snykApiToken = getSnykTokenCredential();
+      SnykApiToken snykApiToken = getSnykTokenCredential(build);
       if (snykApiToken == null) {
         log.getLogger().println("Snyk API token with ID '" + snykSecurityStep.snykTokenId + "' was not found. Please configure the build properly and retry.");
         build.setResult(Result.FAILURE);
@@ -469,9 +470,8 @@ public class SnykSecurityStep extends Step {
                    .findFirst().orElse(null);
     }
 
-    private SnykApiToken getSnykTokenCredential() {
-      return CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList()),
-                                             withId(snykSecurityStep.snykTokenId));
+    private SnykApiToken getSnykTokenCredential(Run<?, ?> run) {
+      return findCredentialById(snykSecurityStep.snykTokenId, SnykApiToken.class, run);
     }
 
     ArgumentListBuilder buildArgumentList(String snykExecutable, String snykCommand, @Nonnull EnvVars env) {

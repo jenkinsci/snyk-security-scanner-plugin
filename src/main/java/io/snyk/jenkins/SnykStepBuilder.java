@@ -53,7 +53,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
+import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
+import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
@@ -212,7 +214,7 @@ public class SnykStepBuilder extends Builder {
       return false;
     }
 
-    SnykApiToken snykApiToken = getSnykTokenCredential();
+    SnykApiToken snykApiToken = getSnykTokenCredential(build);
     if (snykApiToken == null) {
       log.getLogger().println("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry.");
       build.setResult(Result.FAILURE);
@@ -359,9 +361,8 @@ public class SnykStepBuilder extends Builder {
                  .findFirst().orElse(null);
   }
 
-  private SnykApiToken getSnykTokenCredential() {
-    return CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList()),
-                                           withId(snykTokenId));
+  private SnykApiToken getSnykTokenCredential(@Nonnull AbstractBuild<?, ?> build) {
+    return findCredentialById(snykTokenId, SnykApiToken.class, build);
   }
 
   ArgumentListBuilder buildArgumentList(String snykExecutable, String snykCommand, @Nonnull EnvVars env) {
@@ -477,7 +478,7 @@ public class SnykStepBuilder extends Builder {
     public ListBoxModel doFillSnykTokenIdItems(@AncestorInPath Item item, @QueryParameter String snykTokenId) {
       StandardListBoxModel model = new StandardListBoxModel();
       if (item == null) {
-        Jenkins jenkins = Jenkins.getInstance();
+        Jenkins jenkins = Jenkins.get();
         if (!jenkins.hasPermission(Jenkins.ADMINISTER)) {
           return model.includeCurrentValue(snykTokenId);
         }
@@ -502,14 +503,23 @@ public class SnykStepBuilder extends Builder {
       return FormValidation.ok();
     }
 
-    public FormValidation doCheckSnykTokenId(@QueryParameter String value) {
+    public FormValidation doCheckSnykTokenId(@AncestorInPath Item item, @QueryParameter String value) {
+      if (item == null) {
+        if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+          return FormValidation.ok();
+        }
+      } else {
+        if (!item.hasPermission(Item.EXTENDED_READ) && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
+          return FormValidation.ok();
+        }
+      }
       if (fixEmptyAndTrim(value) == null) {
         return FormValidation.error("Snyk API token is required.");
-      } else {
-        if (null == CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.emptyList()),
-                                                    allOf(withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
-          return FormValidation.error("Cannot find currently selected Snyk API token.");
-        }
+      }
+
+      if (null == CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM, Collections.emptyList()),
+                                                  anyOf(withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
+        return FormValidation.error("Cannot find currently selected Snyk API token.");
       }
       return FormValidation.ok();
     }
