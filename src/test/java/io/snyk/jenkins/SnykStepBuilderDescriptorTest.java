@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import hudson.model.Item;
 import hudson.util.FormValidation;
 import hudson.util.FormValidation.Kind;
 import hudson.util.ListBoxModel;
@@ -14,6 +15,7 @@ import jodd.lagarto.dom.Document;
 import jodd.lagarto.dom.LagartoDOMBuilder;
 import jodd.lagarto.dom.Node;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -66,15 +68,16 @@ public class SnykStepBuilderDescriptorTest {
   }
 
   @Test
-  public void doCheckSnykTokenId_shouldReturnError_ifSnykTokenIsEmpty() {
-    Kind snykTokenIdValidation = instance.doCheckSnykTokenId(null).kind;
+  public void doCheckSnykTokenId_shouldReturnError_ifSnykTokenIsEmpty() throws Exception {
+    jenkins.createFreeStyleProject();
+    Kind snykTokenIdValidation = instance.doCheckSnykTokenId(jenkins.getInstance().getItems().get(0),null).kind;
 
     assertThat(snykTokenIdValidation, is(Kind.ERROR));
   }
 
   @Test
   public void doCheckSnykTokenId_shouldReturnError_ifSnykTokenNotFound() {
-    Kind snykTokenIdValidation = instance.doCheckSnykTokenId("any-token").kind;
+    Kind snykTokenIdValidation = instance.doCheckSnykTokenId(null,"any-token").kind;
 
     assertThat(snykTokenIdValidation, is(Kind.ERROR));
   }
@@ -84,7 +87,7 @@ public class SnykStepBuilderDescriptorTest {
     DefaultSnykApiToken snykToken = new DefaultSnykApiToken(CredentialsScope.GLOBAL, "id", "", "snyk-token");
     CredentialsProvider.lookupStores(jenkins.getInstance()).iterator().next().addCredentials(Domain.global(), snykToken);
 
-    Kind snykTokenIdValidation = instance.doCheckSnykTokenId("id").kind;
+    Kind snykTokenIdValidation = instance.doCheckSnykTokenId(null, "id").kind;
 
     assertThat(snykTokenIdValidation, is(Kind.OK));
   }
