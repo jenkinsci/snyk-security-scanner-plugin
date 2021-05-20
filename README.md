@@ -85,7 +85,7 @@ The `snykSecurity` function accepts the following parameters:
 - **failOnIssues** (optional, default **true**) - This specifies if builds should be failed or continued based on issues found by Snyk.
 - **organisation** (optional, default **none**) - The Snyk organisation in which this project should be tested and monitored.
 - **projectName** (optional, default **none**) - A custom name for the Snyk project created for this Jenkins project on every build.
-- **severity** (optional, default **low**) - Only report vulnerabilities of provided level or higher (low/medium/high). Default is low.
+- **severity** (optional, default **low**) - Only report vulnerabilities of provided level or higher (low/medium/high/critical). Default is low.
 - **targetFile** (optional, default **none**) - The path to the manifest file to be used by Snyk.
 
 

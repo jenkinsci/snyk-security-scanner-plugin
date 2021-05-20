@@ -22,6 +22,18 @@ public class SnykStepBuilderTest {
   }
 
   @Test
+  public void buildArgumentList_shouldReturnSeverityThresholdCritical_ifCriticalIsDefined() {
+    EnvVars env = new EnvVars();
+    SnykStepBuilder snykStepBuilder = new SnykStepBuilder();
+    snykStepBuilder.setProjectName("my-project");
+    snykStepBuilder.setSeverity("critical");
+
+    ArgumentListBuilder resolvedArguments = snykStepBuilder.buildArgumentList("/usr/bin/snyk", "test", env);
+
+    assertThat(resolvedArguments.toList(), hasItem("--severity-threshold=critical"));
+  }
+
+  @Test
   public void buildArgumentList_shouldAppendConfigParametersAsSeparateArguments() {
     EnvVars env = new EnvVars();
     SnykStepBuilder snykStepBuilder = new SnykStepBuilder();

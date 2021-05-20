@@ -43,8 +43,8 @@ public class SnykStepBuilderDescriptorTest {
                                  .map(e -> e.value)
                                  .collect(Collectors.toList());
 
-    assertThat(model.size(), is(3));
-    assertThat(model, hasItems(Severity.LOW.getSeverity(), Severity.MEDIUM.getSeverity(), Severity.HIGH.getSeverity()));
+    assertThat(model.size(), is(4));
+    assertThat(model, hasItems(Severity.LOW.getSeverity(), Severity.MEDIUM.getSeverity(), Severity.HIGH.getSeverity(), Severity.CRITICAL.getSeverity()));
   }
 
   @Test
