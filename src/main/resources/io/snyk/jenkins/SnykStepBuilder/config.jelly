@@ -24,6 +24,9 @@
       <f:radio title="Let the build continue" name="failOnIssues" value="false" checked="${instance.failOnIssues == false}"/>
     </div>
   </f:entry>
+  <f:entry title="Fail the build if errors occur" field="failOnError">
+      <f:checkbox checked="${instance == null || instance.failOnError == true}"/>
+  </f:entry>
   <f:entry title="Monitor project on build" field="monitorProjectOnBuild">
     <f:checkbox checked="${instance == null || instance.monitorProjectOnBuild == true}"/>
   </f:entry>

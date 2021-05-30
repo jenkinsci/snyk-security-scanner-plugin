@@ -1,34 +1,11 @@
 package io.snyk.jenkins;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Stream;
-
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.CopyOnWrite;
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Util;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Computer;
-import hudson.model.Item;
-import hudson.model.Node;
-import hudson.model.Result;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.*;
+import hudson.model.*;
 import hudson.remoting.VirtualChannel;
 import hudson.security.ACL;
 import hudson.tasks.ArtifactArchiver;
@@ -38,6 +15,8 @@ import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.credentials.SnykApiToken;
+import io.snyk.jenkins.exception.SnykErrorException;
+import io.snyk.jenkins.exception.SnykIssueException;
 import io.snyk.jenkins.model.ObjectMapperHelper;
 import io.snyk.jenkins.model.SnykMonitorResult;
 import io.snyk.jenkins.model.SnykTestResult;
@@ -52,19 +31,22 @@ import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Stream;
+
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
-import static hudson.Util.fixEmptyAndTrim;
-import static hudson.Util.fixNull;
-import static hudson.Util.replaceMacro;
-import static hudson.Util.tokenize;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_MONITOR_REPORT_JSON;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_TEST_REPORT_JSON;
-import static java.lang.String.format;
+import static hudson.Util.*;
+import static io.snyk.jenkins.config.SnykConstants.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
@@ -73,6 +55,7 @@ public class SnykStepBuilder extends Builder {
   private static final Logger LOG = LoggerFactory.getLogger(SnykStepBuilder.class.getName());
 
   private boolean failOnIssues = true;
+  private boolean failOnError = true;
   private boolean monitorProjectOnBuild = true;
   private Severity severity = Severity.LOW;
   private String snykTokenId;
@@ -95,6 +78,16 @@ public class SnykStepBuilder extends Builder {
   @DataBoundSetter
   public void setFailOnIssues(boolean failOnIssues) {
     this.failOnIssues = failOnIssues;
+  }
+
+  @SuppressWarnings("unused")
+  public boolean isFailOnError() {
+    return failOnError;
+  }
+
+  @DataBoundSetter
+  public void setFailOnError(boolean failOnError) {
+    this.failOnError = failOnError;
   }
 
   @SuppressWarnings("unused")
@@ -178,113 +171,108 @@ public class SnykStepBuilder extends Builder {
   }
 
   @Override
-  public boolean perform(@Nonnull AbstractBuild<?, ?> build, @Nonnull Launcher launcher, @Nonnull BuildListener log) throws InterruptedException, IOException {
-    FilePath workspace = build.getWorkspace();
-    if (workspace == null) {
-      log.getLogger().println("Build agent is not connected");
-      return false;
-    }
-    EnvVars env = build.getEnvironment(log);
+  public boolean perform(@Nonnull AbstractBuild<?, ?> build, @Nonnull Launcher launcher, @Nonnull BuildListener log)
+  throws SnykIssueException, SnykErrorException {
+    int testExitCode = 0;
+    Exception cause = null;
 
-    // look for a snyk installation
-    SnykInstallation installation = findSnykInstallation();
-    String snykExecutable;
-    if (installation == null) {
-      log.getLogger().println("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry.");
-      build.setResult(Result.FAILURE);
-      return false;
-    }
-
-    // install if necessary
-    Computer computer = workspace.toComputer();
-    Node node = computer != null ? computer.getNode() : null;
-    if (node == null) {
-      log.getLogger().println("Not running on a build node.");
-      build.setResult(Result.FAILURE);
-      return false;
-    }
-
-    installation = installation.forNode(node, log);
-    installation = installation.forEnvironment(env);
-    snykExecutable = installation.getSnykExecutable(launcher);
-
-    if (snykExecutable == null) {
-      log.getLogger().println("Can't retrieve the Snyk executable.");
-      build.setResult(Result.FAILURE);
-      return false;
-    }
-
-    SnykApiToken snykApiToken = getSnykTokenCredential(build);
-    if (snykApiToken == null) {
-      log.getLogger().println("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry.");
-      build.setResult(Result.FAILURE);
-      return false;
-    }
-    env.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
-    env.overrideAll(build.getBuildVariables());
-
-    //workaround until we implement Step interface
-    VirtualChannel nodeChannel = node.getChannel();
-    if (nodeChannel != null) {
-      String toolHome = installation.getHome();
-      if (fixEmptyAndTrim(toolHome) != null) {
-        FilePath snykToolHome = new FilePath(nodeChannel, toolHome);
-        String customBuildPath = snykToolHome.act(new CustomBuildToolPathCallable());
-        env.put("PATH", customBuildPath);
-
-        LOG.info("Custom build tool path: '{}'", customBuildPath);
-      }
-    }
-
-    FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
-    FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
-
-    ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", env);
-
-    OutputStream snykTestOutput = null;
-    OutputStream snykTestDebugOutput = null;
-    OutputStream snykMonitorOutput = null;
-    OutputStream snykMonitorDebugOutput = null;
     try {
-      snykTestOutput = snykTestReport.write();
-      snykTestDebugOutput = snykTestDebug.write();
+      FilePath workspace = build.getWorkspace();
+      if (workspace == null) {
+        throw new AbortException("Build agent is not connected");
+      }
+      EnvVars envVars = build.getEnvironment(log);
 
-      log.getLogger().println("Testing for known issues...");
-      log.getLogger().println("> " + argsForTestCommand);
-      int exitCode = launcher.launch()
-                             .cmds(argsForTestCommand)
-                             .envs(env)
-                             .stdout(snykTestOutput)
-                             .stderr(snykTestDebugOutput)
-                             .quiet(true)
-                             .pwd(workspace)
-                             .join();
-      boolean result = (!failOnIssues || exitCode == 0);
-      build.setResult(result ? Result.SUCCESS : Result.FAILURE);
+      // look for a snyk installation
+      SnykInstallation installation = findSnykInstallation();
+      String snykExecutable;
+      if (installation == null) {
+        throw new AbortException("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry.");
+      }
+
+      // install if necessary
+      Computer computer = workspace.toComputer();
+      Node node = computer != null ? computer.getNode() : null;
+      if (node == null) {
+        throw new AbortException("Not running on a build node.");
+      }
+
+      installation = installation.forNode(node, log);
+      installation = installation.forEnvironment(envVars);
+      snykExecutable = installation.getSnykExecutable(launcher);
+
+      if (snykExecutable == null) {
+        throw new AbortException("Can't retrieve the Snyk executable.");
+      }
+
+      SnykApiToken snykApiToken = getSnykTokenCredential(build);
+      if (snykApiToken == null) {
+        throw new AbortException("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry.");
+      }
+      envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
+      envVars.overrideAll(build.getBuildVariables());
+
+      //workaround until we implement Step interface
+      VirtualChannel nodeChannel = node.getChannel();
+      if (nodeChannel != null) {
+        String toolHome = installation.getHome();
+        if (fixEmptyAndTrim(toolHome) != null) {
+          FilePath snykToolHome = new FilePath(nodeChannel, toolHome);
+          String customBuildPath = snykToolHome.act(new CustomBuildToolPathCallable());
+          envVars.put("PATH", customBuildPath);
+
+          LOG.info("Custom build tool path: '{}'", customBuildPath);
+        }
+      }
+
+      FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
+      FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
+
+      ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", envVars);
+
+      try (
+        OutputStream snykTestOutput = snykTestReport.write();
+        OutputStream snykTestDebugOutput = snykTestDebug.write()
+      ) {
+        log.getLogger().println("Testing for known issues...");
+        log.getLogger().println("> " + argsForTestCommand);
+        testExitCode = launcher.launch()
+          .cmds(argsForTestCommand)
+          .envs(envVars)
+          .stdout(snykTestOutput)
+          .stderr(snykTestDebugOutput)
+          .quiet(true)
+          .pwd(workspace)
+          .join();
+      }
 
       String snykTestReportAsString = snykTestReport.readToString();
       if (LOG.isTraceEnabled()) {
         LOG.trace("Job: '{}'", build);
         LOG.trace("Command line arguments: {}", argsForTestCommand);
-        LOG.trace("Exit code: {}", exitCode);
+        LOG.trace("Exit code: {}", testExitCode);
         LOG.trace("Command standard output: {}", snykTestReportAsString);
         LOG.trace("Command debug output: {}", snykTestDebug.readToString());
       }
 
       SnykTestResult snykTestResult = ObjectMapperHelper.unmarshallTestResult(snykTestReportAsString);
       if (snykTestResult == null) {
-        log.getLogger().println("Could not parse generated json report file.");
-        build.setResult(Result.FAILURE);
-        return false;
+        throw new AbortException("Could not parse generated json report file.");
       }
       // exit on cli error immediately
       if (fixEmptyAndTrim(snykTestResult.error) != null) {
-        log.getLogger().println("Error result: " + snykTestResult.error);
-        build.setResult(Result.FAILURE);
-        return false;
+        throw new AbortException("Error result: " + snykTestResult.error);
+      }
+      if (testExitCode >= 2) {
+        throw new AbortException("An error occurred. Exit code is " + testExitCode);
       }
       if (!snykTestResult.ok) {
-        log.getLogger().println(format("Result: %s known vulnerabilities | %s dependencies", snykTestResult.uniqueCount, snykTestResult.dependencyCount));
+        log.getLogger().println("Vulnerabilities found!");
+        log.getLogger().printf(
+          "Result: %s known vulnerabilities | %s dependencies%n",
+          snykTestResult.uniqueCount,
+          snykTestResult.dependencyCount
+        );
       }
 
       String monitorUri = "";
@@ -292,30 +280,34 @@ public class SnykStepBuilder extends Builder {
         FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
         FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
 
-        snykMonitorOutput = snykMonitorReport.write();
-        snykMonitorDebugOutput = snykMonitorDebug.write();
 
-        ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", env);
+        ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
 
         log.getLogger().println("Remember project for continuous monitoring...");
         log.getLogger().println("> " + argsForMonitorCommand);
-        exitCode = launcher.launch()
-                           .cmds(argsForMonitorCommand)
-                           .envs(env)
-                           .stdout(snykMonitorOutput)
-                           .stderr(snykMonitorDebugOutput)
-                           .quiet(true)
-                           .pwd(workspace)
-                           .join();
+        int monitorExitCode;
+        try (
+          OutputStream snykMonitorOutput = snykMonitorReport.write();
+          OutputStream snykMonitorDebugOutput = snykMonitorDebug.write()
+        ) {
+          monitorExitCode = launcher.launch()
+            .cmds(argsForMonitorCommand)
+            .envs(envVars)
+            .stdout(snykMonitorOutput)
+            .stderr(snykMonitorDebugOutput)
+            .quiet(true)
+            .pwd(workspace)
+            .join();
+        }
         String snykMonitorReportAsString = snykMonitorReport.readToString();
-        if (exitCode != 0) {
-          log.getLogger().println("Warning: 'snyk monitor' was not successful. Exit code: " + exitCode);
+        if (monitorExitCode != 0) {
+          log.getLogger().println("Warning: 'snyk monitor' was not successful. Exit code: " + monitorExitCode);
           log.getLogger().println(snykMonitorReportAsString);
         }
 
         if (LOG.isTraceEnabled()) {
           LOG.trace("Command line arguments: {}", argsForMonitorCommand);
-          LOG.trace("Exit code: {}", exitCode);
+          LOG.trace("Exit code: {}", monitorExitCode);
           LOG.trace("Command standard output: {}", snykMonitorReportAsString);
           LOG.trace("Command debug output: {}", snykMonitorDebug.readToString());
         }
@@ -333,26 +325,23 @@ public class SnykStepBuilder extends Builder {
       }
       ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
       artifactArchiver.perform(build, workspace, launcher, log);
-      return result;
-    } catch (IOException ex) {
-      Util.displayIOException(ex, log);
+
+    } catch (IOException | InterruptedException | RuntimeException ex) {
+      if (ex instanceof IOException) {
+        Util.displayIOException((IOException) ex, log);
+      }
       ex.printStackTrace(log.fatalError("Snyk command execution failed"));
-      build.setResult(Result.FAILURE);
-      return false;
-    } finally {
-      if (snykTestOutput != null) {
-        snykTestOutput.close();
-      }
-      if (snykTestDebugOutput != null) {
-        snykTestDebugOutput.close();
-      }
-      if (snykMonitorOutput != null) {
-        snykMonitorOutput.close();
-      }
-      if (snykMonitorDebugOutput != null) {
-        snykMonitorDebugOutput.close();
-      }
+      cause = ex;
     }
+
+    if (failOnIssues && testExitCode == 1) {
+      throw new SnykIssueException();
+    }
+    if (failOnError && cause != null) {
+      throw new SnykErrorException(cause.getMessage());
+    }
+
+    return true;
   }
 
   private SnykInstallation findSnykInstallation() {
