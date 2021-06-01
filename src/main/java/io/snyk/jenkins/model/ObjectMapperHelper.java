@@ -26,7 +26,7 @@ public class ObjectMapperHelper {
     }
 
     try (JsonParser parser = JSON_FACTORY.createParser(content)) {
-      if (parser.nextToken() != JsonToken.START_OBJECT) {
+      if (parser == null || parser.nextToken() != JsonToken.START_OBJECT) {
         return null;
       }
 
@@ -52,6 +52,10 @@ public class ObjectMapperHelper {
 
     try (JsonParser parser = JSON_FACTORY.createParser(content)) {
       JsonToken token = parser.nextToken();
+      if (token == null) {
+        return null;
+      }
+
       if (token == JsonToken.START_ARRAY) {
         List<SnykTestResult> testStatuses = new ArrayList<>();
         while (parser.nextToken() != JsonToken.END_ARRAY) {
