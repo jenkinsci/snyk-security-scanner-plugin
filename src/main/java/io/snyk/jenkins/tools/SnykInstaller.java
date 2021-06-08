@@ -90,17 +90,34 @@ public class SnykInstaller extends ToolInstaller {
 
   private boolean isNpmAvailable(Node node, TaskListener log) {
     Launcher launcher = node.createLauncher(log);
-    Launcher.ProcStarter ps = launcher.new ProcStarter();
-    ps.quiet(true).cmds("npm", "--version");
 
     try {
-      int exitCode = launcher.launch(ps).join();
-      return exitCode == 0;
+      Launcher.ProcStarter psNode = launcher.new ProcStarter();
+      psNode.cmds("node", "--version").stdout(log).stderr(log.getLogger());
+      int exitCode = launcher.launch(psNode).join();
+      if (exitCode != 0) {
+        return false;
+      }
+    } catch (Exception ex) {
+      LOG.info("Node is not available on the node: '{}'", node.getDisplayName());
+      LOG.debug("'node --version' command failed", ex);
+      return false;
+    }
+
+    try {
+      Launcher.ProcStarter psNpm = launcher.new ProcStarter();
+      psNpm.cmds("npm", "--version").stdout(log).stderr(log.getLogger());
+      int exitCode = launcher.launch(psNpm).join();
+      if (exitCode != 0) {
+        return false;
+      }
     } catch (Exception ex) {
       LOG.info("NPM is not available on the node: '{}'", node.getDisplayName());
       LOG.debug("'npm --version' command failed", ex);
       return false;
     }
+
+    return true;
   }
 
   private FilePath installSnykAsNpmPackage(FilePath expected, Node node, TaskListener log) throws ToolDetectionException {
@@ -110,7 +127,7 @@ public class SnykInstaller extends ToolInstaller {
     args.add("npm", "install", "--prefix", expected.getRemote(), "snyk@" + fixEmptyAndTrim(version), "snyk-to-html");
     Launcher launcher = node.createLauncher(log);
     Launcher.ProcStarter ps = launcher.new ProcStarter();
-    ps.quiet(true).cmds(args);
+    ps.cmds(args).stdout(log).stderr(log.getLogger());
 
     try {
       int exitCode = launcher.launch(ps).join();
