@@ -443,7 +443,7 @@ public class SnykSecurityStep extends Step {
     }
 
     private SnykInstallation findSnykInstallation() {
-      SnykStepBuilderDescriptor descriptor = Jenkins.getInstance().getDescriptorByType(SnykStepBuilderDescriptor.class);
+      SnykStepBuilderDescriptor descriptor = Jenkins.get().getDescriptorByType(SnykStepBuilderDescriptor.class);
       return Stream.of(descriptor.getInstallations())
                    .filter(installation -> installation.getName().equals(snykSecurityStep.snykInstallation))
                    .findFirst().orElse(null);
