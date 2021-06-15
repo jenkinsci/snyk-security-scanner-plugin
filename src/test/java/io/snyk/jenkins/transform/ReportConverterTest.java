@@ -12,18 +12,17 @@ public class ReportConverterTest {
   @Test
   public void modifyHeadSection_shouldNotChangeHtml_ifHeadTagNotExists() {
     String inputHtml = "<html><body>text</body></html>";
-
-    String outputHtml = converter.modifyHeadSection(inputHtml);
+    String outputHtml = converter.modifyHeadSection(inputHtml, "/jenkins");
 
     assertThat(outputHtml, equalTo(inputHtml));
   }
 
   @Test
   public void modifyHeadSection_shouldAddExternalCssLink_ifHeadTagExists() {
-    String expectedHtml = "<html><head><link rel=\"stylesheet\" href=\"/plugin/snyk-security-scanner/css/snyk_report.css\"></head><body>text</body></html>";
+    String expectedHtml = "<html><head><link rel=\"stylesheet\" href=\"/jenkins/plugin/snyk-security-scanner/css/snyk_report.css\"></head><body>text</body></html>";
     String inputHtml = "<html><head></head><body>text</body></html>";
 
-    String outputHtml = converter.modifyHeadSection(inputHtml);
+    String outputHtml = converter.modifyHeadSection(inputHtml, "/jenkins");
 
     assertThat(outputHtml, equalTo(expectedHtml));
   }
