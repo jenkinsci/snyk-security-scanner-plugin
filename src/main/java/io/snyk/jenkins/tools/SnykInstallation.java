@@ -1,13 +1,5 @@
 package io.snyk.jenkins.tools;
 
-import javax.annotation.Nonnull;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
@@ -26,6 +18,13 @@ import jenkins.security.MasterToSlaveCallable;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import javax.annotation.Nonnull;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
+
 import static java.lang.String.format;
 
 public class SnykInstallation extends ToolInstallation implements EnvironmentSpecific<SnykInstallation>, NodeSpecific<SnykInstallation> {
@@ -33,14 +32,6 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   @DataBoundConstructor
   public SnykInstallation(@Nonnull String name, @Nonnull String home, List<? extends ToolProperty<?>> properties) {
     super(name, home, properties);
-  }
-
-  @Override
-  public void buildEnvVars(EnvVars env) {
-    String root = getHome();
-    if (root != null) {
-      env.put("PATH+SNYK_HOME", new File(root, "node_modules/.bin").toString());
-    }
   }
 
   @Override
@@ -74,39 +65,16 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   }
 
   private String resolveExecutable(String file, Platform platform) throws IOException {
-    final Path nodeModulesBin = getNodeModulesBin();
-    if (nodeModulesBin != null) {
-      final Path executable = nodeModulesBin.resolve(file);
-      if (!executable.toFile().exists()) {
-        throw new IOException(format("Could not find executable <%s>", executable));
-      }
-      return executable.toAbsolutePath().toString();
-    } else {
-      String root = getHome();
-      if (root == null) {
-        return null;
-      }
-      String wrapperFileName = "snyk".equals(file) ? platform.snykWrapperFileName : platform.snykToHtmlWrapperFileName;
-      final Path executable = Paths.get(root).resolve(wrapperFileName);
-      if (!executable.toFile().exists()) {
-        throw new IOException(format("Could not find executable <%s>", wrapperFileName));
-      }
-      return executable.toAbsolutePath().toString();
-    }
-  }
-
-  private Path getNodeModulesBin() {
     String root = getHome();
     if (root == null) {
       return null;
     }
-
-    Path nodeModules = Paths.get(root).resolve("node_modules").resolve(".bin");
-    if (!nodeModules.toFile().exists()) {
-      return null;
+    String wrapperFileName = "snyk".equals(file) ? platform.snykWrapperFileName : platform.snykToHtmlWrapperFileName;
+    final Path executable = Paths.get(root).resolve(wrapperFileName);
+    if (!executable.toFile().exists()) {
+      throw new IOException(format("Could not find executable <%s>", wrapperFileName));
     }
-
-    return nodeModules;
+    return executable.toAbsolutePath().toString();
   }
 
   @Extension

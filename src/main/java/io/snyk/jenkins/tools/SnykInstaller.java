@@ -1,22 +1,14 @@
 package io.snyk.jenkins.tools;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.time.Instant;
-import java.util.concurrent.TimeUnit;
-
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Functions;
-import hudson.Launcher;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.remoting.VirtualChannel;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolInstaller;
 import hudson.tools.ToolInstallerDescriptor;
-import hudson.util.ArgumentListBuilder;
 import io.snyk.jenkins.tools.internal.DownloadService;
 import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.io.FileUtils;
@@ -24,6 +16,12 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 
 import static hudson.Util.fixEmptyAndTrim;
 import static java.lang.String.format;
@@ -56,11 +54,7 @@ public class SnykInstaller extends ToolInstaller {
     }
 
     log.getLogger().println("Installing Snyk Security tool (version '" + fixEmptyAndTrim(version) + "')");
-    if (isNpmAvailable(node, log)) {
-      return installSnykAsNpmPackage(expected, node, log);
-    } else {
-      return installSnykAsSingleBinary(expected, node, log);
-    }
+    return downloadSnykBinaries(expected, node, log);
   }
 
   private boolean isUpToDate(FilePath expectedLocation) throws IOException, InterruptedException {
@@ -88,62 +82,7 @@ public class SnykInstaller extends ToolInstaller {
     return timestampDifference < updateInterval;
   }
 
-  private boolean isNpmAvailable(Node node, TaskListener log) {
-    Launcher launcher = node.createLauncher(log);
-
-    try {
-      Launcher.ProcStarter psNode = launcher.new ProcStarter();
-      psNode.cmds("node", "--version").stdout(log).stderr(log.getLogger());
-      int exitCode = launcher.launch(psNode).join();
-      if (exitCode != 0) {
-        return false;
-      }
-    } catch (Exception ex) {
-      LOG.info("Node is not available on the node: '{}'", node.getDisplayName());
-      LOG.debug("'node --version' command failed", ex);
-      return false;
-    }
-
-    try {
-      Launcher.ProcStarter psNpm = launcher.new ProcStarter();
-      psNpm.cmds("npm", "--version").stdout(log).stderr(log.getLogger());
-      int exitCode = launcher.launch(psNpm).join();
-      if (exitCode != 0) {
-        return false;
-      }
-    } catch (Exception ex) {
-      LOG.info("NPM is not available on the node: '{}'", node.getDisplayName());
-      LOG.debug("'npm --version' command failed", ex);
-      return false;
-    }
-
-    return true;
-  }
-
-  private FilePath installSnykAsNpmPackage(FilePath expected, Node node, TaskListener log) throws ToolDetectionException {
-    LOG.info("Install Snyk version '{}' as NPM package on node '{}'", version, node.getDisplayName());
-
-    ArgumentListBuilder args = new ArgumentListBuilder();
-    args.add("npm", "install", "--prefix", expected.getRemote(), "snyk@" + fixEmptyAndTrim(version), "snyk-to-html");
-    Launcher launcher = node.createLauncher(log);
-    Launcher.ProcStarter ps = launcher.new ProcStarter();
-    ps.cmds(args).stdout(log).stderr(log.getLogger());
-
-    try {
-      int exitCode = launcher.launch(ps).join();
-      if (exitCode != 0) {
-        log.getLogger().println("Snyk installation was not successful. Exit code: " + exitCode);
-        return expected;
-      }
-      expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
-    } catch (Exception ex) {
-      log.getLogger().println("Snyk Security tool could not installed: " + ex.getMessage());
-      throw new ToolDetectionException("Could not install Snyk CLI with npm", ex);
-    }
-    return expected;
-  }
-
-  private FilePath installSnykAsSingleBinary(FilePath expected, Node node, TaskListener log) throws IOException, InterruptedException {
+  private FilePath downloadSnykBinaries(FilePath expected, Node node, TaskListener log) throws IOException, InterruptedException {
     LOG.info("Install Snyk version '{}' as single binary on node '{}'", version, node.getDisplayName());
 
     final VirtualChannel nodeChannel = node.getChannel();
@@ -155,7 +94,7 @@ public class SnykInstaller extends ToolInstaller {
 
     try {
       URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
-      URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml(platform);
+      URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml("latest", platform);
       expected.mkdirs();
       nodeChannel.call(new Downloader(snykDownloadUrl, expected.child(platform.snykWrapperFileName)));
       nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
