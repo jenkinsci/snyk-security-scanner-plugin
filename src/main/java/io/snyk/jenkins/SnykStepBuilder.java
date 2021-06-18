@@ -21,7 +21,6 @@ import io.snyk.jenkins.model.ObjectMapperHelper;
 import io.snyk.jenkins.model.SnykMonitorResult;
 import io.snyk.jenkins.model.SnykTestResult;
 import io.snyk.jenkins.tools.SnykInstallation;
-import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
@@ -47,7 +46,6 @@ import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredenti
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.*;
 import static io.snyk.jenkins.config.SnykConstants.*;
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
 public class SnykStepBuilder extends Builder {
@@ -318,7 +316,7 @@ public class SnykStepBuilder extends Builder {
         }
       }
 
-      generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher), monitorUri);
+      SnykToHTML.generateReport(build, workspace, launcher, log, installation.getReportExecutable(launcher), monitorUri);
 
       if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
         build.addAction(new SnykReportBuildAction(build));
@@ -378,41 +376,6 @@ public class SnykStepBuilder extends Builder {
     }
 
     return args;
-  }
-
-  private void generateSnykHtmlReport(Run<?, ?> build, @Nonnull FilePath workspace, Launcher launcher, TaskListener log, String reportExecutable, String monitorUri) throws IOException, InterruptedException {
-    EnvVars env = build.getEnvironment(log);
-    ArgumentListBuilder args = new ArgumentListBuilder();
-
-    FilePath snykReportJson = workspace.child(SNYK_TEST_REPORT_JSON);
-    if (!snykReportJson.exists()) {
-      log.getLogger().println("Snyk report json doesn't exist");
-      return;
-    }
-
-    workspace.child(SNYK_REPORT_HTML).write("", UTF_8.name());
-
-    args.add(reportExecutable);
-    args.add("-i", SNYK_TEST_REPORT_JSON, "-o", SNYK_REPORT_HTML);
-    try {
-      int exitCode = launcher.launch()
-                             .cmds(args)
-                             .envs(env)
-                             .quiet(true)
-                             .pwd(workspace)
-                             .join();
-      boolean success = exitCode == 0;
-      if (!success) {
-        log.getLogger().println("Generating Snyk html report was not successful");
-      }
-      String reportWithInlineCSS = workspace.child(SNYK_REPORT_HTML).readToString();
-      String modifiedHtmlReport = ReportConverter.getInstance().modifyHeadSection(reportWithInlineCSS);
-      String finalHtmlReport = ReportConverter.getInstance().injectMonitorLink(modifiedHtmlReport, monitorUri);
-      workspace.child(workspace.getName() + "_" + SNYK_REPORT_HTML).write(finalHtmlReport, UTF_8.name());
-    } catch (IOException ex) {
-      Util.displayIOException(ex, log);
-      ex.printStackTrace(log.fatalError("Snyk-to-Html command execution failed"));
-    }
   }
 
   @Extension
