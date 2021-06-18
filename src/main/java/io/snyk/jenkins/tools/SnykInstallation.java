@@ -94,14 +94,12 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
 
     @Override
     public SnykInstallation[] getInstallations() {
-      Jenkins instance = Jenkins.getInstance();
-      return instance.getDescriptorByType(SnykStepBuilderDescriptor.class).getInstallations();
+      return Jenkins.get().getDescriptorByType(SnykStepBuilderDescriptor.class).getInstallations();
     }
 
     @Override
     public void setInstallations(SnykInstallation... installations) {
-      Jenkins instance = Jenkins.getInstance();
-      instance.getDescriptorByType(SnykStepBuilderDescriptor.class).setInstallations(installations);
+      Jenkins.get().getDescriptorByType(SnykStepBuilderDescriptor.class).setInstallations(installations);
     }
   }
 }
