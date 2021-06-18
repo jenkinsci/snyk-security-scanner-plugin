@@ -6,7 +6,6 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.*;
 import hudson.model.*;
-import hudson.remoting.VirtualChannel;
 import hudson.security.ACL;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
@@ -34,10 +33,8 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
@@ -175,53 +172,41 @@ public class SnykStepBuilder extends Builder {
     Exception cause = null;
 
     try {
-      FilePath workspace = build.getWorkspace();
-      if (workspace == null) {
-        throw new AbortException("Build agent is not connected");
-      }
+      FilePath workspace = Optional.ofNullable(build.getWorkspace()).orElseThrow(() -> new AbortException(
+        "Build agent is not connected"));
       EnvVars envVars = build.getEnvironment(log);
 
-      // look for a snyk installation
-      SnykInstallation installation = findSnykInstallation();
-      String snykExecutable;
-      if (installation == null) {
-        throw new AbortException("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry.");
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Configured EnvVars for build '{}'", build.getId());
+        String envVarsAsString = envVars.entrySet().stream()
+          .map(entry -> entry.getKey() + "=" + entry.getValue())
+          .collect(Collectors.joining(", ", "{", "}"));
+        LOG.trace(envVarsAsString);
       }
 
-      // install if necessary
-      Computer computer = workspace.toComputer();
-      Node node = computer != null ? computer.getNode() : null;
-      if (node == null) {
-        throw new AbortException("Not running on a build node.");
-      }
+      SnykInstallation installation = findSnykInstallation()
+        .orElseThrow(() -> new AbortException("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry."));
+
+      Node node = Optional.ofNullable(workspace.toComputer())
+        .map(Computer::getNode)
+        .orElseThrow(() -> new AbortException("Not running on a build node."));
 
       installation = installation.forNode(node, log);
       installation = installation.forEnvironment(envVars);
-      snykExecutable = installation.getSnykExecutable(launcher);
+      String snykExecutable = Optional.ofNullable(installation.getSnykExecutable(launcher))
+        .orElseThrow(() -> new AbortException("Can't retrieve the Snyk executable."));
 
-      if (snykExecutable == null) {
-        throw new AbortException("Can't retrieve the Snyk executable.");
-      }
-
-      SnykApiToken snykApiToken = getSnykTokenCredential(build);
-      if (snykApiToken == null) {
-        throw new AbortException("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry.");
-      }
+      SnykApiToken snykApiToken = Optional.ofNullable(getSnykTokenCredential(build))
+        .orElseThrow(() -> new AbortException("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry."));
       envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
+
       envVars.overrideAll(build.getBuildVariables());
 
-      //workaround until we implement Step interface
-      VirtualChannel nodeChannel = node.getChannel();
-      if (nodeChannel != null) {
-        String toolHome = installation.getHome();
-        if (fixEmptyAndTrim(toolHome) != null) {
-          FilePath snykToolHome = new FilePath(nodeChannel, toolHome);
-          String customBuildPath = snykToolHome.act(new CustomBuildToolPathCallable());
-          envVars.put("PATH", customBuildPath);
-
-          LOG.info("Custom build tool path: '{}'", customBuildPath);
-        }
-      }
+      // Workaround until we implement Step interface.
+      getInstallationPath(node, installation).ifPresent(installationPath -> {
+        LOG.info("Custom build tool path: '{}'", installationPath);
+        envVars.put("PATH", installationPath);
+      });
 
       FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
       FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
@@ -257,7 +242,6 @@ public class SnykStepBuilder extends Builder {
       if (snykTestResult == null) {
         throw new AbortException("Could not parse generated json report file.");
       }
-      // exit on cli error immediately
       if (fixEmptyAndTrim(snykTestResult.error) != null) {
         throw new AbortException("Error result: " + snykTestResult.error);
       }
@@ -277,8 +261,6 @@ public class SnykStepBuilder extends Builder {
       if (monitorProjectOnBuild) {
         FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
         FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
-
-
         ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
 
         log.getLogger().println("Remember project for continuous monitoring...");
@@ -316,7 +298,14 @@ public class SnykStepBuilder extends Builder {
         }
       }
 
-      SnykToHTML.generateReport(build, workspace, launcher, log, installation.getReportExecutable(launcher), monitorUri);
+      SnykToHTML.generateReport(
+        build,
+        workspace,
+        launcher,
+        log,
+        installation.getReportExecutable(launcher),
+        monitorUri
+      );
 
       if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
         build.addAction(new SnykReportBuildAction(build));
@@ -342,10 +331,24 @@ public class SnykStepBuilder extends Builder {
     return true;
   }
 
-  private SnykInstallation findSnykInstallation() {
+  private Optional<String> getInstallationPath(Node node, SnykInstallation installation) {
+    return Optional.ofNullable(node.getChannel())
+      .flatMap(nodeChannel -> Optional.ofNullable(installation.getHome())
+        .map(Util::fixEmptyAndTrim)
+        .map(toolHome -> new FilePath(nodeChannel, toolHome))
+        .map(toolPath -> {
+          try {
+            return toolPath.act(new CustomBuildToolPathCallable());
+          } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        }));
+  }
+
+  private Optional<SnykInstallation> findSnykInstallation() {
     return Stream.of(((SnykStepBuilderDescriptor) getDescriptor()).getInstallations())
-                 .filter(installation -> installation.getName().equals(snykInstallation))
-                 .findFirst().orElse(null);
+      .filter(installation -> installation.getName().equals(snykInstallation))
+      .findFirst();
   }
 
   private SnykApiToken getSnykTokenCredential(@Nonnull AbstractBuild<?, ?> build) {
@@ -412,8 +415,10 @@ public class SnykStepBuilder extends Builder {
 
     public boolean hasInstallationsAvailable() {
       if (LOG.isTraceEnabled()) {
-        LOG.trace("Available Snyk installations: {}",
-                  Arrays.stream(installations).map(SnykInstallation::getName).collect(joining(",", "[", "]")));
+        LOG.trace(
+          "Available Snyk installations: {}",
+          Arrays.stream(installations).map(SnykInstallation::getName).collect(joining(",", "[", "]"))
+        );
       }
 
       return installations.length > 0;
@@ -422,8 +427,8 @@ public class SnykStepBuilder extends Builder {
     public ListBoxModel doFillSeverityItems() {
       ListBoxModel model = new ListBoxModel();
       Stream.of(Severity.values())
-            .map(Severity::getSeverity)
-            .forEach(model::add);
+        .map(Severity::getSeverity)
+        .forEach(model::add);
       return model;
     }
 
@@ -440,8 +445,8 @@ public class SnykStepBuilder extends Builder {
         }
       }
       return model.includeEmptyValue()
-                  .includeAs(ACL.SYSTEM, item, SnykApiToken.class)
-                  .includeCurrentValue(snykTokenId);
+        .includeAs(ACL.SYSTEM, item, SnykApiToken.class)
+        .includeCurrentValue(snykTokenId);
     }
 
     public FormValidation doCheckSeverity(@QueryParameter String value, @QueryParameter String additionalArguments) {
@@ -450,7 +455,8 @@ public class SnykStepBuilder extends Builder {
       }
 
       if (additionalArguments.contains("--severity-threshold")) {
-        return FormValidation.warning("Option '--severity-threshold' is overridden in additional arguments text area below.");
+        return FormValidation.warning(
+          "Option '--severity-threshold' is overridden in additional arguments text area below.");
       }
       return FormValidation.ok();
     }
@@ -469,8 +475,10 @@ public class SnykStepBuilder extends Builder {
         return FormValidation.error("Snyk API token is required.");
       }
 
-      if (null == CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM, Collections.emptyList()),
-                                                  anyOf(withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
+      if (null == CredentialsMatchers.firstOrNull(
+        lookupCredentials(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM, Collections.emptyList()),
+        anyOf(withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class))
+      )) {
         return FormValidation.error("Cannot find currently selected Snyk API token.");
       }
       return FormValidation.ok();
@@ -487,7 +495,10 @@ public class SnykStepBuilder extends Builder {
       return FormValidation.ok();
     }
 
-    public FormValidation doCheckOrganisation(@QueryParameter String value, @QueryParameter String additionalArguments) {
+    public FormValidation doCheckOrganisation(
+      @QueryParameter String value,
+      @QueryParameter String additionalArguments
+    ) {
       if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(additionalArguments) == null) {
         return FormValidation.ok();
       }
@@ -498,17 +509,23 @@ public class SnykStepBuilder extends Builder {
       return FormValidation.ok();
     }
 
-    public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild, @QueryParameter String additionalArguments) {
+    public FormValidation doCheckProjectName(
+      @QueryParameter String value,
+      @QueryParameter String monitorProjectOnBuild,
+      @QueryParameter String additionalArguments
+    ) {
       if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(monitorProjectOnBuild) == null) {
         return FormValidation.ok();
       }
 
       List<FormValidation> findings = new ArrayList<>(2);
       if ("false".equals(fixEmptyAndTrim(monitorProjectOnBuild))) {
-        findings.add(FormValidation.warning("Project name will be ignored, because the project is not monitored on build."));
+        findings.add(FormValidation.warning(
+          "Project name will be ignored, because the project is not monitored on build."));
       }
       if (fixNull(additionalArguments).contains("--project-name")) {
-        findings.add(FormValidation.warning("Option '--project-name' is overridden in additional arguments text area below."));
+        findings.add(FormValidation.warning(
+          "Option '--project-name' is overridden in additional arguments text area below."));
       }
       return FormValidation.aggregate(findings);
     }

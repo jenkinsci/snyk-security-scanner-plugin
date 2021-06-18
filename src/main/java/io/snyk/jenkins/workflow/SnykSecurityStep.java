@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -262,34 +263,33 @@ public class SnykSecurityStep extends Step {
       this.snykSecurityStep = snykSecurityStep;
     }
 
+    private <T> T fromContext(Class<T> serviceClass) throws AbortException {
+      try {
+        return Optional.ofNullable(getContext().get(serviceClass)).orElseThrow(() -> new AbortException(
+          "Required context parameter '" + serviceClass.getName() + "' is missing."));
+      } catch (InterruptedException | IOException e) {
+        throw new RuntimeException("Failed to get context parameter '" + serviceClass.getName() + "'", e);
+      }
+    }
+
     @Override
     protected Void run() throws SnykIssueException, SnykErrorException {
+      String snykInstallation = snykSecurityStep.snykInstallation;
+      String snykTokenId = snykSecurityStep.snykTokenId;
+      boolean monitorProjectOnBuild = snykSecurityStep.monitorProjectOnBuild;
+      boolean failOnIssues = snykSecurityStep.failOnIssues;
+      boolean failOnError = snykSecurityStep.failOnError;
+
       int testExitCode = 0;
       Exception cause = null;
       TaskListener log = null;
 
       try {
-        log = getContext().get(TaskListener.class);
-        if (log == null) {
-          throw new AbortException("Required context parameter 'TaskListener' is missing.");
-        }
-
-        EnvVars envVars = getContext().get(EnvVars.class);
-        if (envVars == null) {
-          throw new AbortException("Required context parameter 'EnvVars' is missing.");
-        }
-        FilePath workspace = getContext().get(FilePath.class);
-        if (workspace == null) {
-          throw new AbortException("Required context parameter 'FilePath' (workspace) is missing.");
-        }
-        Launcher launcher = getContext().get(Launcher.class);
-        if (launcher == null) {
-          throw new AbortException("Required context parameter 'Launcher' is missing.");
-        }
-        Run build = getContext().get(Run.class);
-        if (build == null) {
-          throw new AbortException("Required context parameter 'Run' is missing.");
-        }
+        log = fromContext(TaskListener.class);
+        Run<?, ?> build = fromContext(Run.class);
+        Launcher launcher = fromContext(Launcher.class);
+        FilePath workspace = fromContext(FilePath.class);
+        EnvVars envVars = fromContext(EnvVars.class);
 
         if (LOG.isTraceEnabled()) {
           LOG.trace("Configured EnvVars for build '{}'", build.getId());
@@ -299,32 +299,20 @@ public class SnykSecurityStep extends Step {
           LOG.trace(envVarsAsString);
         }
 
-        // look for a snyk installation
-        SnykInstallation installation = findSnykInstallation();
-        String snykExecutable;
-        if (installation == null) {
-          throw new AbortException("Snyk installation named '" + snykSecurityStep.snykInstallation + "' was not found. Please configure the build properly and retry.");
-        }
+        SnykInstallation installation = findSnykInstallation()
+          .orElseThrow(() -> new AbortException("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry."));
 
-        // install if necessary
-        Computer computer = workspace.toComputer();
-        Node node = computer != null ? computer.getNode() : null;
-        if (node == null) {
-          throw new AbortException("Not running on a build node.");
-        }
+        Node node = Optional.ofNullable(workspace.toComputer())
+          .map(Computer::getNode)
+          .orElseThrow(() -> new AbortException("Not running on a build node."));
 
         installation = installation.forNode(node, log);
         installation = installation.forEnvironment(envVars);
-        snykExecutable = installation.getSnykExecutable(launcher);
+        String snykExecutable = Optional.ofNullable(installation.getSnykExecutable(launcher)).orElseThrow(() -> new AbortException(
+          "Can't retrieve the Snyk executable."));
 
-        if (snykExecutable == null) {
-          throw new AbortException("Can't retrieve the Snyk executable.");
-        }
-
-        SnykApiToken snykApiToken = getSnykTokenCredential(build);
-        if (snykApiToken == null) {
-          throw new AbortException("Snyk API token with ID '" + snykSecurityStep.snykTokenId + "' was not found. Please configure the build properly and retry.");
-        }
+        SnykApiToken snykApiToken = Optional.ofNullable(getSnykTokenCredential(build))
+          .orElseThrow(() -> new AbortException("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry."));
         envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
 
         FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
@@ -361,7 +349,6 @@ public class SnykSecurityStep extends Step {
         if (snykTestResult == null) {
           throw new AbortException("Could not parse generated json report file.");
         }
-        // exit on cli error immediately
         if (fixEmptyAndTrim(snykTestResult.error) != null) {
           throw new AbortException("Error result: " + snykTestResult.error);
         }
@@ -378,10 +365,9 @@ public class SnykSecurityStep extends Step {
         }
 
         String monitorUri = "";
-        if (snykSecurityStep.monitorProjectOnBuild) {
+        if (monitorProjectOnBuild) {
           FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
           FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
-
 
           ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
 
@@ -445,21 +431,21 @@ public class SnykSecurityStep extends Step {
         cause = ex;
       }
 
-      if (snykSecurityStep.failOnIssues && testExitCode == 1) {
+      if (failOnIssues && testExitCode == 1) {
         throw new SnykIssueException();
       }
-      if (snykSecurityStep.failOnError && cause != null) {
+      if (failOnError && cause != null) {
         throw new SnykErrorException(cause.getMessage());
       }
 
       return null;
     }
 
-    private SnykInstallation findSnykInstallation() {
+    private Optional<SnykInstallation> findSnykInstallation() {
       SnykStepBuilderDescriptor descriptor = Jenkins.get().getDescriptorByType(SnykStepBuilderDescriptor.class);
       return Stream.of(descriptor.getInstallations())
         .filter(installation -> installation.getName().equals(snykSecurityStep.snykInstallation))
-        .findFirst().orElse(null);
+        .findFirst();
     }
 
     private SnykApiToken getSnykTokenCredential(Run<?, ?> run) {
