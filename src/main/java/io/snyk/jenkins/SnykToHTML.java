@@ -11,6 +11,7 @@ import io.snyk.jenkins.transform.ReportConverter;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
+import java.util.Optional;
 
 import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
 import static io.snyk.jenkins.config.SnykConstants.SNYK_TEST_REPORT_JSON;
@@ -23,7 +24,7 @@ public class SnykToHTML {
     Launcher launcher,
     TaskListener log,
     String reportExecutable,
-    String monitorUri
+    Optional<String> monitorUri
   ) throws IOException, InterruptedException {
     EnvVars env = build.getEnvironment(log);
     ArgumentListBuilder args = new ArgumentListBuilder();
@@ -50,8 +51,11 @@ public class SnykToHTML {
         log.getLogger().println("Generating Snyk html report was not successful");
       }
       String reportWithInlineCSS = workspace.child(SNYK_REPORT_HTML).readToString();
-      String modifiedHtmlReport = ReportConverter.getInstance().modifyHeadSection(reportWithInlineCSS);
-      String finalHtmlReport = ReportConverter.getInstance().injectMonitorLink(modifiedHtmlReport, monitorUri);
+      ReportConverter reportConverter = ReportConverter.getInstance();
+      String modifiedHtmlReport = reportConverter.modifyHeadSection(reportWithInlineCSS);
+      String finalHtmlReport = monitorUri
+        .map(uri -> reportConverter.injectMonitorLink(modifiedHtmlReport, uri))
+        .orElse(modifiedHtmlReport);
       workspace.child(workspace.getName() + "_" + SNYK_REPORT_HTML).write(finalHtmlReport, UTF_8.name());
     } catch (IOException ex) {
       Util.displayIOException(ex, log);

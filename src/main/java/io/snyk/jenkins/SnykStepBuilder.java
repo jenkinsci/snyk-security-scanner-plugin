@@ -21,6 +21,7 @@ import io.snyk.jenkins.model.SnykMonitorResult;
 import io.snyk.jenkins.model.SnykTestResult;
 import io.snyk.jenkins.tools.SnykInstallation;
 import jenkins.model.Jenkins;
+import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -42,10 +43,11 @@ import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.*;
+import static io.snyk.jenkins.CLIArgs.buildArgumentList;
 import static io.snyk.jenkins.config.SnykConstants.*;
 import static java.util.stream.Collectors.joining;
 
-public class SnykStepBuilder extends Builder {
+public class SnykStepBuilder extends Builder implements SimpleBuildStep {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykStepBuilder.class.getName());
 
@@ -166,6 +168,16 @@ public class SnykStepBuilder extends Builder {
   }
 
   @Override
+  public void perform(
+    @Nonnull Run<?, ?> run,
+    @Nonnull FilePath workspace,
+    @Nonnull Launcher launcher,
+    @Nonnull TaskListener listener
+  ) throws InterruptedException, IOException {
+
+  }
+
+  @Override
   public boolean perform(@Nonnull AbstractBuild<?, ?> build, @Nonnull Launcher launcher, @Nonnull BuildListener log)
   throws SnykIssueException, SnykErrorException {
     int testExitCode = 0;
@@ -211,7 +223,16 @@ public class SnykStepBuilder extends Builder {
       FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
       FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
 
-      ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", envVars);
+      ArgumentListBuilder argsForTestCommand = buildArgumentList(
+        snykExecutable,
+        "test",
+        envVars,
+        severity,
+        targetFile,
+        organisation,
+        projectName,
+        additionalArguments
+      );
 
       try (
         OutputStream snykTestOutput = snykTestReport.write();
@@ -257,46 +278,20 @@ public class SnykStepBuilder extends Builder {
         );
       }
 
-      String monitorUri = "";
-      if (monitorProjectOnBuild) {
-        FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
-        FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
-        ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
-
-        log.getLogger().println("Remember project for continuous monitoring...");
-        log.getLogger().println("> " + argsForMonitorCommand);
-        int monitorExitCode;
-        try (
-          OutputStream snykMonitorOutput = snykMonitorReport.write();
-          OutputStream snykMonitorDebugOutput = snykMonitorDebug.write()
-        ) {
-          monitorExitCode = launcher.launch()
-            .cmds(argsForMonitorCommand)
-            .envs(envVars)
-            .stdout(snykMonitorOutput)
-            .stderr(snykMonitorDebugOutput)
-            .quiet(true)
-            .pwd(workspace)
-            .join();
-        }
-        String snykMonitorReportAsString = snykMonitorReport.readToString();
-        if (monitorExitCode != 0) {
-          log.getLogger().println("Warning: 'snyk monitor' was not successful. Exit code: " + monitorExitCode);
-          log.getLogger().println(snykMonitorReportAsString);
-        }
-
-        if (LOG.isTraceEnabled()) {
-          LOG.trace("Command line arguments: {}", argsForMonitorCommand);
-          LOG.trace("Exit code: {}", monitorExitCode);
-          LOG.trace("Command standard output: {}", snykMonitorReportAsString);
-          LOG.trace("Command debug output: {}", snykMonitorDebug.readToString());
-        }
-
-        SnykMonitorResult snykMonitorResult = ObjectMapperHelper.unmarshallMonitorResult(snykMonitorReportAsString);
-        if (snykMonitorResult != null && fixEmptyAndTrim(snykMonitorResult.uri) != null) {
-          log.getLogger().println("Explore the snapshot at " + snykMonitorResult.uri);
-        }
-      }
+      Optional<String> monitorUri = monitorProjectOnBuild
+        ? SnykMonitor.execute(
+          workspace,
+          launcher,
+          envVars,
+          log.getLogger(),
+          snykExecutable,
+          severity,
+          targetFile,
+          organisation,
+          projectName,
+          additionalArguments
+        )
+        : Optional.empty();
 
       SnykToHTML.generateReport(
         build,
@@ -353,32 +348,6 @@ public class SnykStepBuilder extends Builder {
 
   private SnykApiToken getSnykTokenCredential(@Nonnull AbstractBuild<?, ?> build) {
     return findCredentialById(snykTokenId, SnykApiToken.class, build);
-  }
-
-  ArgumentListBuilder buildArgumentList(String snykExecutable, String snykCommand, @Nonnull EnvVars env) {
-    ArgumentListBuilder args = new ArgumentListBuilder(snykExecutable, snykCommand, "--json");
-
-    if (fixEmptyAndTrim(severity.getSeverity()) != null) {
-      args.add("--severity-threshold=" + severity.getSeverity());
-    }
-    if (fixEmptyAndTrim(targetFile) != null) {
-      args.add("--file=" + replaceMacro(targetFile, env));
-    }
-    if (fixEmptyAndTrim(organisation) != null) {
-      args.add("--org=" + replaceMacro(organisation, env));
-    }
-    if (fixEmptyAndTrim(projectName) != null) {
-      args.add("--project-name=" + replaceMacro(projectName, env));
-    }
-    if (fixEmptyAndTrim(additionalArguments) != null) {
-      for (String addArg : tokenize(additionalArguments)) {
-        if (fixEmptyAndTrim(addArg) != null) {
-          args.add(replaceMacro(addArg, env));
-        }
-      }
-    }
-
-    return args;
   }
 
   @Extension

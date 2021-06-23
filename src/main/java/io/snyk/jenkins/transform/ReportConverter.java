@@ -3,6 +3,7 @@ package io.snyk.jenkins.transform;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
+import java.util.Optional;
 
 import jodd.jerry.Jerry;
 
@@ -35,11 +36,7 @@ public class ReportConverter {
     return document.html();
   }
 
-  public String injectMonitorLink(@Nonnull String html, @Nullable String monitorUri) {
-    if (monitorUri == null || monitorUri.isEmpty()) {
-      return html;
-    }
-
+  public String injectMonitorLink(@Nonnull String html, @Nonnull String monitorUri) {
     Jerry document = parser.parse(html);
     String monitorHtmlSnippet = format("<center><a target=\"_blank\" href=\"%s\">View On Snyk.io</a></center>", monitorUri);
     // prepend monitor link as first element after body

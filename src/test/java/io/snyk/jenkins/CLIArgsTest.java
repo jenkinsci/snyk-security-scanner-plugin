@@ -4,27 +4,24 @@ import hudson.EnvVars;
 import hudson.util.ArgumentListBuilder;
 import org.junit.Test;
 
+import static io.snyk.jenkins.CLIArgs.buildArgumentList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertThat;
 
-public class SnykStepBuilderTest {
+public class CLIArgsTest {
 
   @Test
   public void buildArgumentList_shouldReturnSeverityThresholdLow_ifSeverityNotDefined() {
     EnvVars env = new EnvVars();
-    SnykStepBuilder snykStepBuilder = new SnykStepBuilder();
-
-    ArgumentListBuilder resolvedArguments = snykStepBuilder.buildArgumentList("/usr/bin/snyk", "test", env);
-
+    ArgumentListBuilder resolvedArguments = buildArgumentList("/usr/bin/snyk", "test", env);
     assertThat(resolvedArguments.toList(), hasItem("--severity-threshold=low"));
   }
 
   @Test
   public void buildArgumentList_shouldReturnSeverityThresholdCritical_ifCriticalIsDefined() {
     EnvVars env = new EnvVars();
-    SnykStepBuilder snykStepBuilder = new SnykStepBuilder();
     snykStepBuilder.setProjectName("my-project");
     snykStepBuilder.setSeverity("critical");
 
@@ -36,7 +33,6 @@ public class SnykStepBuilderTest {
   @Test
   public void buildArgumentList_shouldAppendConfigParametersAsSeparateArguments() {
     EnvVars env = new EnvVars();
-    SnykStepBuilder snykStepBuilder = new SnykStepBuilder();
     snykStepBuilder.setProjectName("my-project");
     snykStepBuilder.setSeverity("high");
 
@@ -55,7 +51,6 @@ public class SnykStepBuilderTest {
     EnvVars env = new EnvVars();
     env.put("BRANCH_NAME", "development");
     env.put("BUILD_NUMBER", "15");
-    SnykStepBuilder snykStepBuilder = new SnykStepBuilder();
     snykStepBuilder.setAdditionalArguments("--docker image:$BRANCH_NAME-${BUILD_NUMBER}");
 
     ArgumentListBuilder resolvedArguments = snykStepBuilder.buildArgumentList("/usr/bin/snyk", "test", env);
@@ -72,7 +67,6 @@ public class SnykStepBuilderTest {
   @Test
   public void buildArgumentList_shouldSplitAdditionalArgumentsWithAnyWhitespaceCharacter() {
     EnvVars env = new EnvVars();
-    SnykStepBuilder snykStepBuilder = new SnykStepBuilder();
     snykStepBuilder.setAdditionalArguments("--dev\n \n-d");
 
     ArgumentListBuilder resolvedArguments = snykStepBuilder.buildArgumentList("/usr/bin/snyk", "test", env);
