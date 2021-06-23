@@ -102,19 +102,11 @@ The `snykSecurity` function accepts the following parameters:
 
 # Development and Release Workflow
 
-We're using Travis CI to automatically build releases. First make sure the following variables are defined in Travis
-[repository settings](https://docs.travis-ci.com/user/environment-variables#defining-variables-in-repository-settings):
-- `JENKINS_USERNAME`
-- `JENKINS_PASSWORD`
-
-> Note! Currently releases are possible only from `master` and `2.0.0-dev` branches.
-
 ## Performing a Plugin Release
 
-1. Create a tag on commit you want to release (form is `x.y.z`). This `x.y.z` will be used as artifact version when deploying to jenkinsci
-repository.
-2. Check that "Release" stage on Travis was successful.
-3. The new version of the plugin should show up in the update center within eight hours.
+1. Clone the repo locally and pull in any changes on `master`.
+2. Set your accounts.jenkins.io username and password in `./mvn/settings.xml`.
+3. Run `mvn release:prepare release:perform`.
 
 ## Experimental Plugin Releases
 

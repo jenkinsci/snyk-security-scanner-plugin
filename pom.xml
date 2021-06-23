@@ -22,10 +22,6 @@
     <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
     <tag>HEAD</tag>
   </scm>
-  <ciManagement>
-    <system>Travis CI</system>
-    <url>https://travis-ci.org/jenkinsci/snyk-security-scanner-plugin</url>
-  </ciManagement>
   <licenses>
     <license>
       <name>MIT License</name>
