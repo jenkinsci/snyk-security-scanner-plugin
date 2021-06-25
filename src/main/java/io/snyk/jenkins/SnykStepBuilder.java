@@ -23,6 +23,7 @@ import io.snyk.jenkins.model.SnykTestResult;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
+import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -50,7 +51,7 @@ import static io.snyk.jenkins.config.SnykConstants.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.joining;
 
-public class SnykStepBuilder extends Builder {
+public class SnykStepBuilder extends Builder implements SimpleBuildStep {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykStepBuilder.class.getName());
 
@@ -171,26 +172,24 @@ public class SnykStepBuilder extends Builder {
   }
 
   @Override
-  public boolean perform(@Nonnull AbstractBuild<?, ?> build, @Nonnull Launcher launcher, @Nonnull BuildListener log)
-  throws SnykIssueException, SnykErrorException {
+  public void perform(
+    @Nonnull Run<?, ?> build,
+    @Nonnull FilePath workspace,
+    @Nonnull Launcher launcher,
+    @Nonnull TaskListener log
+  ) throws IOException {
     int testExitCode = 0;
     Exception cause = null;
 
     try {
-      FilePath workspace = build.getWorkspace();
-      if (workspace == null) {
-        throw new AbortException("Build agent is not connected");
-      }
       EnvVars envVars = build.getEnvironment(log);
 
-      // look for a snyk installation
       SnykInstallation installation = findSnykInstallation();
       String snykExecutable;
       if (installation == null) {
         throw new AbortException("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry.");
       }
 
-      // install if necessary
       Computer computer = workspace.toComputer();
       Node node = computer != null ? computer.getNode() : null;
       if (node == null) {
@@ -199,8 +198,8 @@ public class SnykStepBuilder extends Builder {
 
       installation = installation.forNode(node, log);
       installation = installation.forEnvironment(envVars);
-      snykExecutable = installation.getSnykExecutable(launcher);
 
+      snykExecutable = installation.getSnykExecutable(launcher);
       if (snykExecutable == null) {
         throw new AbortException("Can't retrieve the Snyk executable.");
       }
@@ -210,20 +209,6 @@ public class SnykStepBuilder extends Builder {
         throw new AbortException("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry.");
       }
       envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
-      envVars.overrideAll(build.getBuildVariables());
-
-      //workaround until we implement Step interface
-      VirtualChannel nodeChannel = node.getChannel();
-      if (nodeChannel != null) {
-        String toolHome = installation.getHome();
-        if (fixEmptyAndTrim(toolHome) != null) {
-          FilePath snykToolHome = new FilePath(nodeChannel, toolHome);
-          String customBuildPath = snykToolHome.act(new CustomBuildToolPathCallable());
-          envVars.put("PATH", customBuildPath);
-
-          LOG.info("Custom build tool path: '{}'", customBuildPath);
-        }
-      }
 
       FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
       FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
@@ -279,7 +264,6 @@ public class SnykStepBuilder extends Builder {
       if (monitorProjectOnBuild) {
         FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
         FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
-
 
         ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
 
@@ -340,8 +324,6 @@ public class SnykStepBuilder extends Builder {
     if (failOnError && cause != null) {
       throw new SnykErrorException(cause.getMessage());
     }
-
-    return true;
   }
 
   private SnykInstallation findSnykInstallation() {
@@ -350,7 +332,7 @@ public class SnykStepBuilder extends Builder {
                  .findFirst().orElse(null);
   }
 
-  private SnykApiToken getSnykTokenCredential(@Nonnull AbstractBuild<?, ?> build) {
+  private SnykApiToken getSnykTokenCredential(@Nonnull Run<?, ?> build) {
     return findCredentialById(snykTokenId, SnykApiToken.class, build);
   }
 
