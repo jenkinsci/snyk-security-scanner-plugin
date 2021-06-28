@@ -5,7 +5,8 @@ import java.util.stream.Stream;
 public enum Severity {
   LOW("low"),
   MEDIUM("medium"),
-  HIGH("high");
+  HIGH("high"),
+  CRITICAL("critical");
 
   private final String severity;
 

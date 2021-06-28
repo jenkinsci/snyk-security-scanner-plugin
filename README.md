@@ -83,9 +83,10 @@ The `snykSecurity` function accepts the following parameters:
 - **snykTokenId** - The ID of the API token from the Credentials plugin to be used to authenticate to Snyk.
 - **additionalArguments** (optional, default **none**) - Refer to the [Snyk CLI](https://snyk.io/docs/using-snyk/) help page for information on additional arguments.
 - **failOnIssues** (optional, default **true**) - This specifies if builds should be failed or continued based on issues found by Snyk.
+- **failOnError** (optional, default **true**) - This specifies if builds should be failed or continued based on errors occurring during the scan process.
 - **organisation** (optional, default **none**) - The Snyk organisation in which this project should be tested and monitored.
 - **projectName** (optional, default **none**) - A custom name for the Snyk project created for this Jenkins project on every build.
-- **severity** (optional, default **low**) - Only report vulnerabilities of provided level or higher (low/medium/high). Default is low.
+- **severity** (optional, default **low**) - Only report vulnerabilities of provided level or higher (low/medium/high/critical). Default is low.
 - **targetFile** (optional, default **none**) - The path to the manifest file to be used by Snyk.
 
 
@@ -101,19 +102,11 @@ The `snykSecurity` function accepts the following parameters:
 
 # Development and Release Workflow
 
-We're using Travis CI to automatically build releases. First make sure the following variables are defined in Travis
-[repository settings](https://docs.travis-ci.com/user/environment-variables#defining-variables-in-repository-settings):
-- `JENKINS_USERNAME`
-- `JENKINS_PASSWORD`
-
-> Note! Currently releases are possible only from `master` and `2.0.0-dev` branches.
-
 ## Performing a Plugin Release
 
-1. Create a tag on commit you want to release (form is `x.y.z`). This `x.y.z` will be used as artifact version when deploying to jenkinsci
-repository.
-2. Check that "Release" stage on Travis was successful.
-3. The new version of the plugin should show up in the update center within eight hours.
+1. Clone the repo locally and pull in any changes on `master`.
+2. Set your accounts.jenkins.io username and password in `./mvn/settings.xml`.
+3. Run `mvn release:prepare release:perform`.
 
 ## Experimental Plugin Releases
 

@@ -1,10 +1,11 @@
 package io.snyk.jenkins.transform;
 
+import jenkins.model.Jenkins;
+import jodd.jerry.Jerry;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
-
-import jodd.jerry.Jerry;
 
 import static java.lang.String.format;
 
@@ -25,13 +26,17 @@ public class ReportConverter {
     return Helper.INSTANCE;
   }
 
-  public String modifyHeadSection(@Nonnull String htmlWithInlineCSS) {
+  /**
+   * Jenkins has Content-Security-Policy headers which reject inline styles.
+   * So we must replace it with a URL to a CSS file under the same host.
+   * - https://wiki.jenkins.io/display/JENKINS/Hyperlinks+in+HTML
+   * - https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/style-src
+   */
+  public String modifyHeadSection(@Nonnull String htmlWithInlineCSS, String contextPath) {
+    String cssHref = contextPath + "/plugin/snyk-security-scanner/css/snyk_report.css";
     Jerry document = parser.parse(htmlWithInlineCSS);
-
-    // remove inline css (it's disabled by jenkins)
     document.$("head").$("style").remove();
-    // append external css
-    document.$("head").append("<link rel=\"stylesheet\" href=\"/plugin/snyk-security-scanner/css/snyk_report.css\">");
+    document.$("head").append("<link rel=\"stylesheet\" href=\"" + cssHref + "\">");
     return document.html();
   }
 
