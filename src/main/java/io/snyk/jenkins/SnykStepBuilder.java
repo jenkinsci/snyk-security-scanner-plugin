@@ -6,7 +6,6 @@ import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.*;
 import hudson.model.*;
-import hudson.remoting.VirtualChannel;
 import hudson.security.ACL;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
@@ -14,6 +13,9 @@ import hudson.tasks.Builder;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import io.snyk.jenkins.command.Command;
+import io.snyk.jenkins.command.CommandLine;
+import io.snyk.jenkins.config.SnykConfig;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.exception.SnykErrorException;
 import io.snyk.jenkins.exception.SnykIssueException;
@@ -45,11 +47,12 @@ import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
-import static hudson.Util.*;
+import static hudson.Util.fixEmptyAndTrim;
+import static hudson.Util.fixNull;
 import static io.snyk.jenkins.config.SnykConstants.*;
 import static java.util.stream.Collectors.joining;
 
-public class SnykStepBuilder extends Builder implements SimpleBuildStep {
+public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykStepBuilder.class.getName());
 
@@ -211,16 +214,21 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
       FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
 
-      ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", envVars);
+      ArgumentListBuilder testCommand = CommandLine.asArgumentList(
+        snykExecutable,
+        Command.TEST,
+        this,
+        envVars
+      );
 
       try (
         OutputStream snykTestOutput = snykTestReport.write();
         OutputStream snykTestDebugOutput = snykTestDebug.write()
       ) {
         log.getLogger().println("Testing for known issues...");
-        log.getLogger().println("> " + argsForTestCommand);
+        log.getLogger().println("> " + testCommand);
         testExitCode = launcher.launch()
-          .cmds(argsForTestCommand)
+          .cmds(testCommand)
           .envs(envVars)
           .stdout(snykTestOutput)
           .stderr(snykTestDebugOutput)
@@ -232,7 +240,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
       String snykTestReportAsString = snykTestReport.readToString();
       if (LOG.isTraceEnabled()) {
         LOG.trace("Job: '{}'", build);
-        LOG.trace("Command line arguments: {}", argsForTestCommand);
+        LOG.trace("Command line arguments: {}", testCommand);
         LOG.trace("Exit code: {}", testExitCode);
         LOG.trace("Command standard output: {}", snykTestReportAsString);
         LOG.trace("Command debug output: {}", snykTestDebug.readToString());
@@ -263,17 +271,22 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
         FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
         FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
 
-        ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
+        ArgumentListBuilder monitorCommand = CommandLine.asArgumentList(
+          snykExecutable,
+          Command.MONITOR,
+          this,
+          envVars
+        );
 
         log.getLogger().println("Remember project for continuous monitoring...");
-        log.getLogger().println("> " + argsForMonitorCommand);
+        log.getLogger().println("> " + monitorCommand);
         int monitorExitCode;
         try (
           OutputStream snykMonitorOutput = snykMonitorReport.write();
           OutputStream snykMonitorDebugOutput = snykMonitorDebug.write()
         ) {
           monitorExitCode = launcher.launch()
-            .cmds(argsForMonitorCommand)
+            .cmds(monitorCommand)
             .envs(envVars)
             .stdout(snykMonitorOutput)
             .stderr(snykMonitorDebugOutput)
@@ -288,7 +301,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
         }
 
         if (LOG.isTraceEnabled()) {
-          LOG.trace("Command line arguments: {}", argsForMonitorCommand);
+          LOG.trace("Command line arguments: {}", monitorCommand);
           LOG.trace("Exit code: {}", monitorExitCode);
           LOG.trace("Command standard output: {}", snykMonitorReportAsString);
           LOG.trace("Command debug output: {}", snykMonitorDebug.readToString());
@@ -332,32 +345,6 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
 
   private SnykApiToken getSnykTokenCredential(@Nonnull Run<?, ?> build) {
     return findCredentialById(snykTokenId, SnykApiToken.class, build);
-  }
-
-  ArgumentListBuilder buildArgumentList(String snykExecutable, String snykCommand, @Nonnull EnvVars env) {
-    ArgumentListBuilder args = new ArgumentListBuilder(snykExecutable, snykCommand, "--json");
-
-    if (fixEmptyAndTrim(severity.getSeverity()) != null) {
-      args.add("--severity-threshold=" + severity.getSeverity());
-    }
-    if (fixEmptyAndTrim(targetFile) != null) {
-      args.add("--file=" + replaceMacro(targetFile, env));
-    }
-    if (fixEmptyAndTrim(organisation) != null) {
-      args.add("--org=" + replaceMacro(organisation, env));
-    }
-    if (fixEmptyAndTrim(projectName) != null) {
-      args.add("--project-name=" + replaceMacro(projectName, env));
-    }
-    if (fixEmptyAndTrim(additionalArguments) != null) {
-      for (String addArg : tokenize(additionalArguments)) {
-        if (fixEmptyAndTrim(addArg) != null) {
-          args.add(replaceMacro(addArg, env));
-        }
-      }
-    }
-
-    return args;
   }
 
   @Extension

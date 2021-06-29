@@ -11,6 +11,9 @@ import io.snyk.jenkins.SnykReportBuildAction;
 import io.snyk.jenkins.SnykStepBuilder;
 import io.snyk.jenkins.SnykStepBuilder.SnykStepBuilderDescriptor;
 import io.snyk.jenkins.SnykToHTML;
+import io.snyk.jenkins.command.Command;
+import io.snyk.jenkins.command.CommandLine;
+import io.snyk.jenkins.config.SnykConfig;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.exception.SnykErrorException;
 import io.snyk.jenkins.exception.SnykIssueException;
@@ -39,10 +42,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
-import static hudson.Util.*;
+import static hudson.Util.fixEmptyAndTrim;
 import static io.snyk.jenkins.config.SnykConstants.*;
 
-public class SnykSecurityStep extends Step {
+public class SnykSecurityStep extends Step implements SnykConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykSecurityStep.class.getName());
 
@@ -323,16 +326,21 @@ public class SnykSecurityStep extends Step {
         FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
         FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
 
-        ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", envVars);
+        ArgumentListBuilder testCommand = CommandLine.asArgumentList(
+          snykExecutable,
+          Command.TEST,
+          snykSecurityStep,
+          envVars
+        );
 
         try (
           OutputStream snykTestOutput = snykTestReport.write();
           OutputStream snykTestDebugOutput = snykTestDebug.write()
         ) {
           log.getLogger().println("Testing for known issues...");
-          log.getLogger().println("> " + argsForTestCommand);
+          log.getLogger().println("> " + testCommand);
           testExitCode = launcher.launch()
-            .cmds(argsForTestCommand)
+            .cmds(testCommand)
             .envs(envVars)
             .stdout(snykTestOutput)
             .stderr(snykTestDebugOutput)
@@ -344,7 +352,7 @@ public class SnykSecurityStep extends Step {
         String snykTestReportAsString = snykTestReport.readToString();
         if (LOG.isTraceEnabled()) {
           LOG.trace("Job: '{}'", build);
-          LOG.trace("Command line arguments: {}", argsForTestCommand);
+          LOG.trace("Command line arguments: {}", testCommand);
           LOG.trace("Exit code: {}", testExitCode);
           LOG.trace("Command standard output: {}", snykTestReportAsString);
           LOG.trace("Command debug output: {}", snykTestDebug.readToString());
@@ -376,10 +384,15 @@ public class SnykSecurityStep extends Step {
           FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
 
 
-          ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
+          ArgumentListBuilder monitorCommand = CommandLine.asArgumentList(
+            snykExecutable,
+            Command.MONITOR,
+            snykSecurityStep,
+            envVars
+          );
 
           log.getLogger().println("Remember project for continuous monitoring...");
-          log.getLogger().println("> " + argsForMonitorCommand);
+          log.getLogger().println("> " + monitorCommand);
 
           int monitorExitCode;
           try (
@@ -387,7 +400,7 @@ public class SnykSecurityStep extends Step {
             OutputStream snykMonitorDebugOutput = snykMonitorDebug.write()
           ) {
             monitorExitCode = launcher.launch()
-              .cmds(argsForMonitorCommand)
+              .cmds(monitorCommand)
               .envs(envVars)
               .stdout(snykMonitorOutput)
               .stderr(snykMonitorDebugOutput)
@@ -402,7 +415,7 @@ public class SnykSecurityStep extends Step {
           }
 
           if (LOG.isTraceEnabled()) {
-            LOG.trace("Command line arguments: {}", argsForMonitorCommand);
+            LOG.trace("Command line arguments: {}", monitorCommand);
             LOG.trace("Exit code: {}", monitorExitCode);
             LOG.trace("Command standard output: {}", snykMonitorReportAsString);
             LOG.trace("Command debug output: {}", snykMonitorDebug.readToString());
@@ -457,32 +470,6 @@ public class SnykSecurityStep extends Step {
 
     private SnykApiToken getSnykTokenCredential(Run<?, ?> run) {
       return findCredentialById(snykSecurityStep.snykTokenId, SnykApiToken.class, run);
-    }
-
-    ArgumentListBuilder buildArgumentList(String snykExecutable, String snykCommand, @Nonnull EnvVars env) {
-      ArgumentListBuilder args = new ArgumentListBuilder(snykExecutable, snykCommand, "--json");
-
-      if (fixEmptyAndTrim(snykSecurityStep.severity.getSeverity()) != null) {
-        args.add("--severity-threshold=" + snykSecurityStep.severity.getSeverity());
-      }
-      if (fixEmptyAndTrim(snykSecurityStep.targetFile) != null) {
-        args.add("--file=" + replaceMacro(snykSecurityStep.targetFile, env));
-      }
-      if (fixEmptyAndTrim(snykSecurityStep.organisation) != null) {
-        args.add("--org=" + replaceMacro(snykSecurityStep.organisation, env));
-      }
-      if (fixEmptyAndTrim(snykSecurityStep.projectName) != null) {
-        args.add("--project-name=" + replaceMacro(snykSecurityStep.projectName, env));
-      }
-      if (fixEmptyAndTrim(snykSecurityStep.additionalArguments) != null) {
-        for (String addArg : tokenize(snykSecurityStep.additionalArguments)) {
-          if (fixEmptyAndTrim(addArg) != null) {
-            args.add(replaceMacro(addArg, env));
-          }
-        }
-      }
-
-      return args;
     }
   }
 }
