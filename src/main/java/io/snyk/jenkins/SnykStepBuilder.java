@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
-import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
@@ -180,11 +179,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
 
       SnykInstallation installation = SnykInstallation.install(snykInstallation, workspace, envVars, log);
 
-      SnykApiToken snykApiToken = getSnykTokenCredential(build);
-      if (snykApiToken == null) {
-        throw new AbortException("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry.");
-      }
-      envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
+      envVars.put("SNYK_TOKEN", SnykApiToken.getToken(snykTokenId, build));
 
       testExitCode = SnykTest.testProject(workspace, launcher, installation, this, envVars, log);
 
@@ -214,10 +209,6 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
     if (failOnError && cause != null) {
       throw new SnykErrorException(cause.getMessage());
     }
-  }
-
-  private SnykApiToken getSnykTokenCredential(@Nonnull Run<?, ?> build) {
-    return findCredentialById(snykTokenId, SnykApiToken.class, build);
   }
 
   @Extension

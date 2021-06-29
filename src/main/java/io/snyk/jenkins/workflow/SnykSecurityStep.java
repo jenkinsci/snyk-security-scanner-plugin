@@ -292,11 +292,7 @@ public class SnykSecurityStep extends Step implements SnykConfig {
           log
         );
 
-        SnykApiToken snykApiToken = getSnykTokenCredential(build);
-        if (snykApiToken == null) {
-          throw new AbortException("Snyk API token with ID '" + snykSecurityStep.snykTokenId + "' was not found. Please configure the build properly and retry.");
-        }
-        envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
+        envVars.put("SNYK_TOKEN", SnykApiToken.getToken(snykSecurityStep.snykTokenId, build));
 
         testExitCode = SnykTest.testProject(workspace, launcher, installation, snykSecurityStep, envVars, log);
 
@@ -335,10 +331,6 @@ public class SnykSecurityStep extends Step implements SnykConfig {
       }
 
       return null;
-    }
-
-    private SnykApiToken getSnykTokenCredential(Run<?, ?> run) {
-      return findCredentialById(snykSecurityStep.snykTokenId, SnykApiToken.class, run);
     }
   }
 }
