@@ -4,13 +4,13 @@ import hudson.*;
 import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.tasks.ArtifactArchiver;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.snyk.jenkins.*;
+import io.snyk.jenkins.Severity;
+import io.snyk.jenkins.SnykStepFlow;
+import io.snyk.jenkins.SnykStepBuilder;
 import io.snyk.jenkins.SnykStepBuilder.SnykStepBuilderDescriptor;
 import io.snyk.jenkins.config.SnykConfig;
-import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.exception.SnykErrorException;
 import io.snyk.jenkins.exception.SnykIssueException;
 import io.snyk.jenkins.tools.SnykInstallation;
@@ -20,24 +20,18 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
 import static hudson.Util.fixEmptyAndTrim;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
 
 public class SnykSecurityStep extends Step implements SnykConfig {
-
-  private static final Logger LOG = LoggerFactory.getLogger(SnykSecurityStep.class.getName());
 
   private boolean failOnIssues = true;
   private boolean failOnError = true;
@@ -255,64 +249,24 @@ public class SnykSecurityStep extends Step implements SnykConfig {
       TaskListener log = null;
 
       try {
-        log = getContext().get(TaskListener.class);
-        if (log == null) {
-          throw new AbortException("Required context parameter 'TaskListener' is missing.");
-        }
+        StepContext context = getContext();
 
-        EnvVars envVars = getContext().get(EnvVars.class);
-        if (envVars == null) {
-          throw new AbortException("Required context parameter 'EnvVars' is missing.");
-        }
-        FilePath workspace = getContext().get(FilePath.class);
-        if (workspace == null) {
-          throw new AbortException("Required context parameter 'FilePath' (workspace) is missing.");
-        }
-        Launcher launcher = getContext().get(Launcher.class);
-        if (launcher == null) {
-          throw new AbortException("Required context parameter 'Launcher' is missing.");
-        }
-        Run build = getContext().get(Run.class);
-        if (build == null) {
-          throw new AbortException("Required context parameter 'Run' is missing.");
-        }
+        log = Optional.ofNullable(context.get(TaskListener.class))
+          .orElseThrow(() -> new AbortException("Required context parameter 'TaskListener' is missing."));
 
-        if (LOG.isTraceEnabled()) {
-          LOG.trace("Configured EnvVars for build '{}'", build.getId());
-          String envVarsAsString = envVars.entrySet().stream()
-            .map(entry -> entry.getKey() + "=" + entry.getValue())
-            .collect(Collectors.joining(", ", "{", "}"));
-          LOG.trace(envVarsAsString);
-        }
+        EnvVars envVars = Optional.ofNullable(context.get(EnvVars.class))
+          .orElseThrow(() -> new AbortException("Required context parameter 'EnvVars' is missing."));
 
-        SnykInstallation installation = SnykInstallation.install(
-          snykSecurityStep.snykInstallation,
-          workspace,
-          envVars,
-          log
-        );
+        FilePath workspace = Optional.ofNullable(context.get(FilePath.class))
+          .orElseThrow(() -> new AbortException("Required context parameter 'FilePath' (workspace) is missing."));
 
-        envVars.put("SNYK_TOKEN", SnykApiToken.getToken(snykSecurityStep.snykTokenId, build));
+        Launcher launcher = Optional.ofNullable(context.get(Launcher.class))
+          .orElseThrow(() -> new AbortException("Required context parameter 'Launcher' is missing."));
 
-        testExitCode = SnykTest.testProject(workspace, launcher, installation, snykSecurityStep, envVars, log);
+        Run build = Optional.ofNullable(context.get(Run.class))
+          .orElseThrow(() -> new AbortException("Required context parameter 'Run' is missing."));
 
-        if (snykSecurityStep.monitorProjectOnBuild) {
-          SnykMonitor.monitorProject(workspace, launcher, installation, snykSecurityStep, envVars, log);
-        }
-
-        SnykToHTML.generateReport(
-          build,
-          workspace,
-          launcher,
-          installation,
-          log
-        );
-
-        if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
-          build.addAction(new SnykReportBuildAction(build));
-        }
-        ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
-        artifactArchiver.perform(build, workspace, launcher, log);
+        testExitCode = SnykStepFlow.perform(snykSecurityStep, workspace, envVars, log, build, launcher);
       } catch (IOException | InterruptedException | RuntimeException ex) {
         if (log != null) {
           if (ex instanceof IOException) {

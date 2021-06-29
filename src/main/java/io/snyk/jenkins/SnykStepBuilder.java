@@ -7,7 +7,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.*;
 import hudson.model.*;
 import hudson.security.ACL;
-import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
@@ -30,10 +29,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
@@ -41,7 +37,6 @@ import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
 import static java.util.stream.Collectors.joining;
 
 public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykConfig {
@@ -177,24 +172,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
     try {
       EnvVars envVars = build.getEnvironment(log);
 
-      SnykInstallation installation = SnykInstallation.install(snykInstallation, workspace, envVars, log);
-
-      envVars.put("SNYK_TOKEN", SnykApiToken.getToken(snykTokenId, build));
-
-      testExitCode = SnykTest.testProject(workspace, launcher, installation, this, envVars, log);
-
-      if (monitorProjectOnBuild) {
-        SnykMonitor.monitorProject(workspace, launcher, installation, this, envVars, log);
-      }
-
-      SnykToHTML.generateReport(build, workspace, launcher, installation, log);
-
-      if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
-        build.addAction(new SnykReportBuildAction(build));
-      }
-      ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
-      artifactArchiver.perform(build, workspace, launcher, log);
-
+      testExitCode = SnykStepFlow.perform(this, workspace, envVars, log, build, launcher);
     } catch (IOException | InterruptedException | RuntimeException ex) {
       if (ex instanceof IOException) {
         Util.displayIOException((IOException) ex, log);

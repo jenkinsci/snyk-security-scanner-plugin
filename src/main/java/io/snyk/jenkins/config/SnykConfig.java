@@ -10,4 +10,10 @@ public interface SnykConfig {
   String getProjectName();
 
   String getAdditionalArguments();
+
+  String getSnykInstallation();
+
+  String getSnykTokenId();
+
+  boolean isMonitorProjectOnBuild();
 }
