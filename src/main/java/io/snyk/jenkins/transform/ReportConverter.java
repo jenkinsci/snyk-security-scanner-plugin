@@ -1,13 +1,9 @@
 package io.snyk.jenkins.transform;
 
-import jenkins.model.Jenkins;
 import jodd.jerry.Jerry;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Objects;
-
-import static java.lang.String.format;
 
 public class ReportConverter {
 
@@ -40,15 +36,4 @@ public class ReportConverter {
     return document.html();
   }
 
-  public String injectMonitorLink(@Nonnull String html, @Nullable String monitorUri) {
-    if (monitorUri == null || monitorUri.isEmpty()) {
-      return html;
-    }
-
-    Jerry document = parser.parse(html);
-    String monitorHtmlSnippet = format("<center><a target=\"_blank\" href=\"%s\">View On Snyk.io</a></center>", monitorUri);
-    // prepend monitor link as first element after body
-    document.$("body").prepend(monitorHtmlSnippet);
-    return document.html();
-  }
 }

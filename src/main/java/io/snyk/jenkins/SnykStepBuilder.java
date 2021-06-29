@@ -10,18 +10,12 @@ import hudson.security.ACL;
 import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import io.snyk.jenkins.command.Command;
-import io.snyk.jenkins.command.CommandLine;
 import io.snyk.jenkins.config.SnykConfig;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.exception.SnykErrorException;
 import io.snyk.jenkins.exception.SnykIssueException;
-import io.snyk.jenkins.model.ObjectMapperHelper;
-import io.snyk.jenkins.model.SnykMonitorResult;
-import io.snyk.jenkins.model.SnykTestResult;
 import io.snyk.jenkins.tools.SnykInstallation;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
@@ -36,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -211,109 +204,13 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
       }
       envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
 
-      FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
-      FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
+      testExitCode = SnykTest.testProject(workspace, launcher, snykExecutable, this, envVars, log);
 
-      ArgumentListBuilder testCommand = CommandLine.asArgumentList(
-        snykExecutable,
-        Command.TEST,
-        this,
-        envVars
-      );
-
-      try (
-        OutputStream snykTestOutput = snykTestReport.write();
-        OutputStream snykTestDebugOutput = snykTestDebug.write()
-      ) {
-        log.getLogger().println("Testing for known issues...");
-        log.getLogger().println("> " + testCommand);
-        testExitCode = launcher.launch()
-          .cmds(testCommand)
-          .envs(envVars)
-          .stdout(snykTestOutput)
-          .stderr(snykTestDebugOutput)
-          .quiet(true)
-          .pwd(workspace)
-          .join();
-      }
-
-      String snykTestReportAsString = snykTestReport.readToString();
-      if (LOG.isTraceEnabled()) {
-        LOG.trace("Job: '{}'", build);
-        LOG.trace("Command line arguments: {}", testCommand);
-        LOG.trace("Exit code: {}", testExitCode);
-        LOG.trace("Command standard output: {}", snykTestReportAsString);
-        LOG.trace("Command debug output: {}", snykTestDebug.readToString());
-      }
-
-      SnykTestResult snykTestResult = ObjectMapperHelper.unmarshallTestResult(snykTestReportAsString);
-      if (snykTestResult == null) {
-        throw new AbortException("Could not parse generated json report file.");
-      }
-      // exit on cli error immediately
-      if (fixEmptyAndTrim(snykTestResult.error) != null) {
-        throw new AbortException("Error result: " + snykTestResult.error);
-      }
-      if (testExitCode >= 2) {
-        throw new AbortException("An error occurred. Exit code is " + testExitCode);
-      }
-      if (!snykTestResult.ok) {
-        log.getLogger().println("Vulnerabilities found!");
-        log.getLogger().printf(
-          "Result: %s known vulnerabilities | %s dependencies%n",
-          snykTestResult.uniqueCount,
-          snykTestResult.dependencyCount
-        );
-      }
-
-      String monitorUri = "";
       if (monitorProjectOnBuild) {
-        FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
-        FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
-
-        ArgumentListBuilder monitorCommand = CommandLine.asArgumentList(
-          snykExecutable,
-          Command.MONITOR,
-          this,
-          envVars
-        );
-
-        log.getLogger().println("Remember project for continuous monitoring...");
-        log.getLogger().println("> " + monitorCommand);
-        int monitorExitCode;
-        try (
-          OutputStream snykMonitorOutput = snykMonitorReport.write();
-          OutputStream snykMonitorDebugOutput = snykMonitorDebug.write()
-        ) {
-          monitorExitCode = launcher.launch()
-            .cmds(monitorCommand)
-            .envs(envVars)
-            .stdout(snykMonitorOutput)
-            .stderr(snykMonitorDebugOutput)
-            .quiet(true)
-            .pwd(workspace)
-            .join();
-        }
-        String snykMonitorReportAsString = snykMonitorReport.readToString();
-        if (monitorExitCode != 0) {
-          log.getLogger().println("Warning: 'snyk monitor' was not successful. Exit code: " + monitorExitCode);
-          log.getLogger().println(snykMonitorReportAsString);
-        }
-
-        if (LOG.isTraceEnabled()) {
-          LOG.trace("Command line arguments: {}", monitorCommand);
-          LOG.trace("Exit code: {}", monitorExitCode);
-          LOG.trace("Command standard output: {}", snykMonitorReportAsString);
-          LOG.trace("Command debug output: {}", snykMonitorDebug.readToString());
-        }
-
-        SnykMonitorResult snykMonitorResult = ObjectMapperHelper.unmarshallMonitorResult(snykMonitorReportAsString);
-        if (snykMonitorResult != null && fixEmptyAndTrim(snykMonitorResult.uri) != null) {
-          log.getLogger().println("Explore the snapshot at " + snykMonitorResult.uri);
-        }
+        SnykMonitor.monitorProject(workspace, launcher, snykExecutable, this, envVars, log);
       }
 
-      SnykToHTML.generateReport(build, workspace, launcher, log, installation.getReportExecutable(launcher), monitorUri);
+      SnykToHTML.generateReport(build, workspace, launcher, log, installation.getReportExecutable(launcher));
 
       if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
         build.addAction(new SnykReportBuildAction(build));

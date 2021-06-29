@@ -23,8 +23,7 @@ public class SnykToHTML {
     @Nonnull FilePath workspace,
     Launcher launcher,
     TaskListener log,
-    String reportExecutable,
-    String monitorUri
+    String reportExecutable
   ) throws IOException, InterruptedException {
     EnvVars env = build.getEnvironment(log);
     ArgumentListBuilder args = new ArgumentListBuilder();
@@ -51,11 +50,10 @@ public class SnykToHTML {
         log.getLogger().println("Generating Snyk html report was not successful");
       }
       String reportWithInlineCSS = workspace.child(SNYK_REPORT_HTML).readToString();
-      String modifiedHtmlReport = ReportConverter.getInstance().modifyHeadSection(
+      String finalHtmlReport = ReportConverter.getInstance().modifyHeadSection(
         reportWithInlineCSS,
         Jenkins.get().servletContext.getContextPath()
       );
-      String finalHtmlReport = ReportConverter.getInstance().injectMonitorLink(modifiedHtmlReport, monitorUri);
       workspace.child(workspace.getName() + "_" + SNYK_REPORT_HTML).write(finalHtmlReport, UTF_8.name());
     } catch (IOException ex) {
       Util.displayIOException(ex, log);
