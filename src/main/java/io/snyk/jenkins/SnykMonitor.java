@@ -10,6 +10,7 @@ import io.snyk.jenkins.command.CommandLine;
 import io.snyk.jenkins.config.SnykConfig;
 import io.snyk.jenkins.model.ObjectMapperHelper;
 import io.snyk.jenkins.model.SnykMonitorResult;
+import io.snyk.jenkins.tools.SnykInstallation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ public class SnykMonitor {
   public static int monitorProject(
     FilePath workspace,
     Launcher launcher,
-    String snykExecutable,
+    SnykInstallation installation,
     SnykConfig config,
     EnvVars envVars,
     TaskListener log
@@ -38,7 +39,7 @@ public class SnykMonitor {
     FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
 
     ArgumentListBuilder monitorCommand = CommandLine.asArgumentList(
-      snykExecutable,
+      installation.getSnykExecutable(launcher),
       Command.MONITOR,
       config,
       envVars

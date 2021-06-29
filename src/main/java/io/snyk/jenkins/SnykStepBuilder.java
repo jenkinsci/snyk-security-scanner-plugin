@@ -42,7 +42,7 @@ import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredenti
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
-import static io.snyk.jenkins.config.SnykConstants.*;
+import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
 import static java.util.stream.Collectors.joining;
 
 public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykConfig {
@@ -178,25 +178,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
     try {
       EnvVars envVars = build.getEnvironment(log);
 
-      SnykInstallation installation = findSnykInstallation();
-      String snykExecutable;
-      if (installation == null) {
-        throw new AbortException("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry.");
-      }
-
-      Computer computer = workspace.toComputer();
-      Node node = computer != null ? computer.getNode() : null;
-      if (node == null) {
-        throw new AbortException("Not running on a build node.");
-      }
-
-      installation = installation.forNode(node, log);
-      installation = installation.forEnvironment(envVars);
-
-      snykExecutable = installation.getSnykExecutable(launcher);
-      if (snykExecutable == null) {
-        throw new AbortException("Can't retrieve the Snyk executable.");
-      }
+      SnykInstallation installation = SnykInstallation.install(snykInstallation, workspace, envVars, log);
 
       SnykApiToken snykApiToken = getSnykTokenCredential(build);
       if (snykApiToken == null) {
@@ -204,13 +186,13 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
       }
       envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
 
-      testExitCode = SnykTest.testProject(workspace, launcher, snykExecutable, this, envVars, log);
+      testExitCode = SnykTest.testProject(workspace, launcher, installation, this, envVars, log);
 
       if (monitorProjectOnBuild) {
-        SnykMonitor.monitorProject(workspace, launcher, snykExecutable, this, envVars, log);
+        SnykMonitor.monitorProject(workspace, launcher, installation, this, envVars, log);
       }
 
-      SnykToHTML.generateReport(build, workspace, launcher, log, installation.getReportExecutable(launcher));
+      SnykToHTML.generateReport(build, workspace, launcher, installation, log);
 
       if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
         build.addAction(new SnykReportBuildAction(build));
@@ -232,12 +214,6 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
     if (failOnError && cause != null) {
       throw new SnykErrorException(cause.getMessage());
     }
-  }
-
-  private SnykInstallation findSnykInstallation() {
-    return Stream.of(((SnykStepBuilderDescriptor) getDescriptor()).getInstallations())
-                 .filter(installation -> installation.getName().equals(snykInstallation))
-                 .findFirst().orElse(null);
   }
 
   private SnykApiToken getSnykTokenCredential(@Nonnull Run<?, ?> build) {

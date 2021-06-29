@@ -7,6 +7,7 @@ import hudson.Util;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
+import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
 
@@ -22,8 +23,8 @@ public class SnykToHTML {
     Run<?, ?> build,
     @Nonnull FilePath workspace,
     Launcher launcher,
-    TaskListener log,
-    String reportExecutable
+    SnykInstallation installation,
+    TaskListener log
   ) throws IOException, InterruptedException {
     EnvVars env = build.getEnvironment(log);
     ArgumentListBuilder args = new ArgumentListBuilder();
@@ -36,7 +37,7 @@ public class SnykToHTML {
 
     workspace.child(SNYK_REPORT_HTML).write("", UTF_8.name());
 
-    args.add(reportExecutable);
+    args.add(installation.getReportExecutable(launcher));
     args.add("-i", SNYK_TEST_REPORT_JSON, "-o", SNYK_REPORT_HTML);
     try {
       int exitCode = launcher.launch()

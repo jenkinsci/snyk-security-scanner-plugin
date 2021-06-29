@@ -1,7 +1,9 @@
 package io.snyk.jenkins.workflow;
 
 import hudson.*;
-import hudson.model.*;
+import hudson.model.Item;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.tasks.ArtifactArchiver;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
@@ -12,7 +14,6 @@ import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.exception.SnykErrorException;
 import io.snyk.jenkins.exception.SnykIssueException;
 import io.snyk.jenkins.tools.SnykInstallation;
-import jenkins.model.Jenkins;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.workflow.steps.*;
 import org.kohsuke.stapler.AncestorInPath;
@@ -29,7 +30,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
 import static hudson.Util.fixEmptyAndTrim;
@@ -285,27 +285,12 @@ public class SnykSecurityStep extends Step implements SnykConfig {
           LOG.trace(envVarsAsString);
         }
 
-        // look for a snyk installation
-        SnykInstallation installation = findSnykInstallation();
-        String snykExecutable;
-        if (installation == null) {
-          throw new AbortException("Snyk installation named '" + snykSecurityStep.snykInstallation + "' was not found. Please configure the build properly and retry.");
-        }
-
-        // install if necessary
-        Computer computer = workspace.toComputer();
-        Node node = computer != null ? computer.getNode() : null;
-        if (node == null) {
-          throw new AbortException("Not running on a build node.");
-        }
-
-        installation = installation.forNode(node, log);
-        installation = installation.forEnvironment(envVars);
-        snykExecutable = installation.getSnykExecutable(launcher);
-
-        if (snykExecutable == null) {
-          throw new AbortException("Can't retrieve the Snyk executable.");
-        }
+        SnykInstallation installation = SnykInstallation.install(
+          snykSecurityStep.snykInstallation,
+          workspace,
+          envVars,
+          log
+        );
 
         SnykApiToken snykApiToken = getSnykTokenCredential(build);
         if (snykApiToken == null) {
@@ -313,18 +298,18 @@ public class SnykSecurityStep extends Step implements SnykConfig {
         }
         envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
 
-        testExitCode = SnykTest.testProject(workspace, launcher, snykExecutable, snykSecurityStep, envVars, log);
+        testExitCode = SnykTest.testProject(workspace, launcher, installation, snykSecurityStep, envVars, log);
 
         if (snykSecurityStep.monitorProjectOnBuild) {
-          SnykMonitor.monitorProject(workspace, launcher, snykExecutable, snykSecurityStep, envVars, log);
+          SnykMonitor.monitorProject(workspace, launcher, installation, snykSecurityStep, envVars, log);
         }
 
         SnykToHTML.generateReport(
           build,
           workspace,
           launcher,
-          log,
-          installation.getReportExecutable(launcher)
+          installation,
+          log
         );
 
         if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
@@ -350,13 +335,6 @@ public class SnykSecurityStep extends Step implements SnykConfig {
       }
 
       return null;
-    }
-
-    private SnykInstallation findSnykInstallation() {
-      SnykStepBuilderDescriptor descriptor = Jenkins.get().getDescriptorByType(SnykStepBuilderDescriptor.class);
-      return Stream.of(descriptor.getInstallations())
-                   .filter(installation -> installation.getName().equals(snykSecurityStep.snykInstallation))
-                   .findFirst().orElse(null);
     }
 
     private SnykApiToken getSnykTokenCredential(Run<?, ?> run) {

@@ -1,12 +1,10 @@
 package io.snyk.jenkins.tools;
 
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.Launcher;
+import hudson.*;
+import hudson.model.Computer;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.Node;
 import hudson.model.TaskListener;
-import hudson.remoting.VirtualChannel;
 import hudson.slaves.NodeSpecific;
 import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
@@ -24,6 +22,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import static java.lang.String.format;
 
@@ -45,36 +45,53 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   }
 
   public String getSnykExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
-    VirtualChannel channel = launcher.getChannel();
-    return channel == null ? null : channel.call(new MasterToSlaveCallable<String, IOException>() {
-      @Override
-      public String call() throws IOException {
-        return resolveExecutable("snyk", Platform.current());
-      }
-    });
+    return resolveExecutable(launcher, "snyk");
   }
 
   public String getReportExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
-    VirtualChannel channel = launcher.getChannel();
-    return channel == null ? null : channel.call(new MasterToSlaveCallable<String, IOException>() {
-      @Override
-      public String call() throws IOException {
-        return resolveExecutable("snyk-to-html", Platform.current());
-      }
-    });
+    return resolveExecutable(launcher, "snyk-to-html");
   }
 
-  private String resolveExecutable(String file, Platform platform) throws IOException {
-    String root = getHome();
-    if (root == null) {
-      return null;
-    }
-    String wrapperFileName = "snyk".equals(file) ? platform.snykWrapperFileName : platform.snykToHtmlWrapperFileName;
-    final Path executable = Paths.get(root).resolve(wrapperFileName);
-    if (!executable.toFile().exists()) {
-      throw new IOException(format("Could not find executable <%s>", wrapperFileName));
-    }
-    return executable.toAbsolutePath().toString();
+  private String resolveExecutable(Launcher launcher, String name)
+  throws IOException, InterruptedException {
+    return Optional.ofNullable(launcher.getChannel())
+      .orElseThrow(() -> new IOException("Failed to get snyk executable. Node does not support channels."))
+      .call(new MasterToSlaveCallable<String, IOException>() {
+        @Override
+        public String call() throws IOException {
+          Platform platform = Platform.current();
+          String filename = "snyk".equals(name)
+            ? platform.snykWrapperFileName
+            : platform.snykToHtmlWrapperFileName;
+
+          String root = Optional.ofNullable(getHome())
+            .orElseThrow(() -> new IOException(format(
+              "Failed to resolve executable <%s>. Could not find home.",
+              filename
+            )));
+
+          final Path executable = Paths.get(root).resolve(filename).toAbsolutePath();
+          if (!executable.toFile().exists()) {
+            throw new IOException(format("Could not find executable <%s>", filename));
+          }
+          return executable.toString();
+        }
+      });
+  }
+
+  public static SnykInstallation install(String name, FilePath workspace, EnvVars env, TaskListener listener)
+  throws IOException, InterruptedException {
+    Node node = Optional.ofNullable(workspace.toComputer())
+      .map(Computer::getNode)
+      .orElseThrow(() -> new AbortException("Not running on a build node."));
+
+    SnykStepBuilderDescriptor descriptor = Jenkins.get().getDescriptorByType(SnykStepBuilderDescriptor.class);
+    return Stream.of(descriptor.getInstallations())
+      .filter(installation -> installation.getName().equals(name))
+      .findFirst()
+      .orElseThrow(() -> new IOException("Snyk installation named '" + name + "' was not found. Please configure the build properly and retry."))
+      .forNode(node, listener)
+      .forEnvironment(env);
   }
 
   @Extension

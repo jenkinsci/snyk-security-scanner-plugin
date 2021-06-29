@@ -11,6 +11,7 @@ import io.snyk.jenkins.command.CommandLine;
 import io.snyk.jenkins.config.SnykConfig;
 import io.snyk.jenkins.model.ObjectMapperHelper;
 import io.snyk.jenkins.model.SnykTestResult;
+import io.snyk.jenkins.tools.SnykInstallation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +29,7 @@ public class SnykTest {
   public static int testProject(
     FilePath workspace,
     Launcher launcher,
-    String snykExecutable,
+    SnykInstallation installation,
     SnykConfig config,
     EnvVars envVars,
     TaskListener log
@@ -41,7 +42,7 @@ public class SnykTest {
     FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
 
     ArgumentListBuilder testCommand = CommandLine.asArgumentList(
-      snykExecutable,
+      installation.getSnykExecutable(launcher),
       Command.TEST,
       config,
       envVars
