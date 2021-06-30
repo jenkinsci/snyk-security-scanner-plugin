@@ -1,23 +1,24 @@
 [![Snyk logo](https://snyk.io/style/asset/logo/snyk-print.svg)](https://snyk.io)
 
+[![Latest Release](https://img.shields.io/github/v/release/jenkinsci/snyk-security-scanner-plugin)](https://github.com/jenkinsci/snyk-security-scanner-plugin/releases)
+
 [![Known Vulnerabilities](https://snyk.io/test/github/jenkinsci/snyk-security-scanner-plugin/badge.svg)](https://snyk.io/test/github/jenkinsci/snyk-security-scanner-plugin)
 
 ***
 
 # Table of Contents
-- [Introduction](#introduction)
+- [Snyk Security Scanner](#Snyk Security Scanner)
 - [Configuration](#configuration)
   - [Global Configuration](#global-configuration)
   - [Project Configuration](#project-configuration)
     - [Freestyle Jobs](#freestyle-jobs)
     - [Pipeline Jobs](#pipeline-jobs)
-- [Migration from v1](#migration-from-v1)
 - [Release Workflow](#release-workflow)
   - [Performing a Plugin Release](#performing-a-plugin-release)
   - [Experimental Plugin Releases](#experimental-plugin-releases)
 
 
-# Introduction
+# Snyk Security Scanner
 
 Snyk Security Scanner is a Jenkins plugin that enables Jenkins users to test their applications against the [Snyk vulnerability database](https://snyk.io/vuln).
 
@@ -54,9 +55,10 @@ Enable the Snyk Security Scanner in the project configuration page. To add Snyk 
 
 #### Basic Configuration
 
-![Basic configuration](docs/snyk_buildstep_basic_v2.png)
+![Basic configuration](docs/snyk_buildstep_basic.png)
 
 - **When issues are found** - This specifies if builds should be failed or continued based on issues found by Snyk.
+- **Fail the build if errors occur** - This specifies if builds should be failed or continued based on errors occurring during the Snyk scan.
 - **Monitor project on build** - Take a current application dependencies snapshot for continuous monitoring by Snyk.
 - **Snyk token** - The ID for the API token from the Credentials plugin to be used to authenticate with Snyk (credential type must be "Snyk API token").
 - **Target file** - The path to the application manifest file to be scanned by Snyk Security Scanner.
@@ -70,7 +72,7 @@ To see the advanced configuration for the plugin, click the "Advanced" button. T
 - **Snyk installation** - The Snyk installation as configured in the **Global Tool Configuration**.
 - **Additional arguments** - Refer to the [Snyk CLI](https://snyk.io/docs/using-snyk/) help page for information on additional arguments.
 
-![Advanced configuration](docs/snyk_buildstep_advanced_v2.png)
+![Advanced configuration](docs/snyk_buildstep_advanced.png)
 
 
 ### Pipeline Jobs
@@ -88,16 +90,6 @@ The `snykSecurity` function accepts the following parameters:
 - **projectName** (optional, default **none**) - A custom name for the Snyk project created for this Jenkins project on every build.
 - **severity** (optional, default **low**) - Only report vulnerabilities of provided level or higher (low/medium/high/critical). Default is low.
 - **targetFile** (optional, default **none**) - The path to the manifest file to be used by Snyk.
-
-
-# Migration from v1
-
-**Note:** the new v2 of the plugin contains incompatible changes to v1 and will require you to adapt your Jenkins jobs. You have to perform global configuration steps as described [here](#global-configuration).
-
-- The plugin does not require Docker installation on master or worker nodes. Add a Snyk installer in **Global Tool Configuration** page to make the CLI available.
-- You don't need to pass Snyk API token as `SNYK_TOKEN` environment variable to the job. Add a credential of type "Snyk API token".
-- The parameters `Runtime Arguments`, `Docker Image`, `HTTP Proxy` and `HTTPS Proxy` are now obsolete.
-- Pipeline syntax was changed, see [Pipeline jobs](#pipeline-jobs) section for documentation.
 
 
 # Development and Release Workflow
