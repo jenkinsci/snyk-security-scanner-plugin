@@ -26,7 +26,7 @@ public class ObjectMapperHelper {
     }
 
     try (JsonParser parser = JSON_FACTORY.createParser(content)) {
-      if (parser == null || parser.nextToken() != JsonToken.START_OBJECT) {
+      if (parser.nextToken() != JsonToken.START_OBJECT) {
         return null;
       }
 
