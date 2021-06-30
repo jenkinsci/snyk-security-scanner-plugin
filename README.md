@@ -7,7 +7,7 @@
 ***
 
 # Table of Contents
-- [Snyk Security Scanner](#Snyk Security Scanner)
+- [Snyk Security Scanner](#snyk-security-scanner)
 - [Configuration](#configuration)
   - [Global Configuration](#global-configuration)
   - [Project Configuration](#project-configuration)
