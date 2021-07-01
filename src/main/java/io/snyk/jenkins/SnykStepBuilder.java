@@ -4,7 +4,10 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.*;
+import hudson.CopyOnWrite;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.AbstractProject;
 import hudson.model.Item;
 import hudson.model.Run;
@@ -31,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -171,32 +173,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
     @Nonnull FilePath workspace,
     @Nonnull Launcher launcher,
     @Nonnull TaskListener log
-  ) throws IOException {
-    SnykConfig config = this;
-    int testExitCode = 0;
-    Exception cause = null;
-    SnykContext context = null;
-
-    try {
-      context = SnykContext.forFreestyleProject(build, workspace, launcher, log);
-      testExitCode = SnykStepFlow.perform(context, config);
-    } catch (IOException | InterruptedException | RuntimeException ex) {
-      if (context != null) {
-        TaskListener listener = context.getTaskListener();
-        if (ex instanceof IOException) {
-          Util.displayIOException((IOException) ex, listener);
-        }
-        ex.printStackTrace(listener.fatalError("Snyk command execution failed"));
-      }
-      cause = ex;
-    }
-
-    if (config.isFailOnIssues() && testExitCode == 1) {
-      throw new SnykIssueException();
-    }
-    if (config.isFailOnError() && cause != null) {
-      throw new SnykErrorException(cause.getMessage());
-    }
+  ) throws SnykIssueException, SnykErrorException {
+    SnykStepFlow.perform(this, () -> SnykContext.forFreestyleProject(build, workspace, launcher, log));
   }
 
   @Extension

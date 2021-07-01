@@ -1,6 +1,9 @@
 package io.snyk.jenkins.workflow;
 
-import hudson.*;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.Item;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -24,7 +27,6 @@ import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -167,31 +169,7 @@ public class SnykSecurityStep extends Step implements SnykConfig {
 
     @Override
     protected Void run() throws SnykIssueException, SnykErrorException {
-      int testExitCode = 0;
-      Exception cause = null;
-      SnykContext context = null;
-
-      try {
-        context = SnykContext.forPipelineProject(getContext());
-        testExitCode = SnykStepFlow.perform(context, config);
-      } catch (IOException | InterruptedException | RuntimeException ex) {
-        if (context != null) {
-          TaskListener listener = context.getTaskListener();
-          if (ex instanceof IOException) {
-            Util.displayIOException((IOException) ex, listener);
-          }
-          ex.printStackTrace(listener.fatalError("Snyk command execution failed"));
-        }
-        cause = ex;
-      }
-
-      if (config.isFailOnIssues() && testExitCode == 1) {
-        throw new SnykIssueException();
-      }
-      if (config.isFailOnError() && cause != null) {
-        throw new SnykErrorException(cause.getMessage());
-      }
-
+      SnykStepFlow.perform(config, () -> SnykContext.forPipelineProject(getContext()));
       return null;
     }
   }

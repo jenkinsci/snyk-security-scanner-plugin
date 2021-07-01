@@ -1,6 +1,5 @@
 package io.snyk.jenkins;
 
-import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -57,39 +56,46 @@ public class SnykContext {
     return taskListener.getLogger();
   }
 
-  public static SnykContext forFreestyleProject(Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener)
-  throws IOException, InterruptedException {
-    return new SnykContext(
-      workspace,
-      launcher,
-      build.getEnvironment(listener),
-      build,
-      listener
-    );
+  public static SnykContext forFreestyleProject(Run<?, ?> build, FilePath workspace, Launcher launcher, TaskListener listener) {
+    try {
+      return new SnykContext(
+        workspace,
+        launcher,
+        build.getEnvironment(listener),
+        build,
+        listener
+      );
+    } catch (IOException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public static SnykContext forPipelineProject(StepContext context) throws IOException, InterruptedException {
-    TaskListener listener = Optional.ofNullable(context.get(TaskListener.class))
-      .orElseThrow(() -> new AbortException("Required context parameter 'TaskListener' is missing."));
+  public static SnykContext forPipelineProject(StepContext context) {
+    try {
+      TaskListener listener = Optional.ofNullable(context.get(TaskListener.class))
+        .orElseThrow(() -> new RuntimeException("Required context parameter 'TaskListener' is missing."));
 
-    EnvVars envVars = Optional.ofNullable(context.get(EnvVars.class))
-      .orElseThrow(() -> new AbortException("Required context parameter 'EnvVars' is missing."));
+      EnvVars envVars = Optional.ofNullable(context.get(EnvVars.class))
+        .orElseThrow(() -> new RuntimeException("Required context parameter 'EnvVars' is missing."));
 
-    FilePath workspace = Optional.ofNullable(context.get(FilePath.class))
-      .orElseThrow(() -> new AbortException("Required context parameter 'FilePath' (workspace) is missing."));
+      FilePath workspace = Optional.ofNullable(context.get(FilePath.class))
+        .orElseThrow(() -> new RuntimeException("Required context parameter 'FilePath' (workspace) is missing."));
 
-    Launcher launcher = Optional.ofNullable(context.get(Launcher.class))
-      .orElseThrow(() -> new AbortException("Required context parameter 'Launcher' is missing."));
+      Launcher launcher = Optional.ofNullable(context.get(Launcher.class))
+        .orElseThrow(() -> new RuntimeException("Required context parameter 'Launcher' is missing."));
 
-    Run build = Optional.ofNullable(context.get(Run.class))
-      .orElseThrow(() -> new AbortException("Required context parameter 'Run' is missing."));
+      Run<?, ?> build = Optional.ofNullable(context.get(Run.class))
+        .orElseThrow(() -> new RuntimeException("Required context parameter 'Run' is missing."));
 
-    return new SnykContext(
-      workspace,
-      launcher,
-      envVars,
-      build,
-      listener
-    );
+      return new SnykContext(
+        workspace,
+        launcher,
+        envVars,
+        build,
+        listener
+      );
+    } catch (IOException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
