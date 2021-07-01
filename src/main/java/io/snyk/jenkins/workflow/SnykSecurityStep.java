@@ -154,6 +154,48 @@ public class SnykSecurityStep extends Step implements SnykConfig {
     return new SnykSecurityStep.Execution(this, context);
   }
 
+  public static class Execution extends SynchronousNonBlockingStepExecution<Void> {
+
+    private static final long serialVersionUID = 1L;
+
+    private final transient SnykConfig config;
+
+    public Execution(@Nonnull SnykConfig config, @Nonnull StepContext context) {
+      super(context);
+      this.config = config;
+    }
+
+    @Override
+    protected Void run() throws SnykIssueException, SnykErrorException {
+      int testExitCode = 0;
+      Exception cause = null;
+      SnykContext context = null;
+
+      try {
+        context = SnykContext.forPipelineProject(getContext());
+        testExitCode = SnykStepFlow.perform(context, config);
+      } catch (IOException | InterruptedException | RuntimeException ex) {
+        if (context != null) {
+          TaskListener listener = context.getTaskListener();
+          if (ex instanceof IOException) {
+            Util.displayIOException((IOException) ex, listener);
+          }
+          ex.printStackTrace(listener.fatalError("Snyk command execution failed"));
+        }
+        cause = ex;
+      }
+
+      if (config.isFailOnIssues() && testExitCode == 1) {
+        throw new SnykIssueException();
+      }
+      if (config.isFailOnError() && cause != null) {
+        throw new SnykErrorException(cause.getMessage());
+      }
+
+      return null;
+    }
+  }
+
   @Extension
   @Symbol("snykSecurity")
   public static class SnykSecurityStepDescriptor extends StepDescriptor {
@@ -228,48 +270,6 @@ public class SnykSecurityStep extends Step implements SnykConfig {
     @SuppressWarnings("unused")
     public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild, @QueryParameter String additionalArguments) {
       return builderDescriptor.doCheckProjectName(value, monitorProjectOnBuild, additionalArguments);
-    }
-  }
-
-  public static class Execution extends SynchronousNonBlockingStepExecution<Void> {
-
-    private static final long serialVersionUID = 1L;
-
-    private final transient SnykConfig config;
-
-    public Execution(@Nonnull SnykConfig config, @Nonnull StepContext context) {
-      super(context);
-      this.config = config;
-    }
-
-    @Override
-    protected Void run() throws SnykIssueException, SnykErrorException {
-      int testExitCode = 0;
-      Exception cause = null;
-      SnykContext context = null;
-
-      try {
-        context = SnykContext.forPipelineProject(getContext());
-        testExitCode = SnykStepFlow.perform(context, config);
-      } catch (IOException | InterruptedException | RuntimeException ex) {
-        if (context != null) {
-          TaskListener listener = context.getTaskListener();
-          if (ex instanceof IOException) {
-            Util.displayIOException((IOException) ex, listener);
-          }
-          ex.printStackTrace(listener.fatalError("Snyk command execution failed"));
-        }
-        cause = ex;
-      }
-
-      if (config.isFailOnIssues() && testExitCode == 1) {
-        throw new SnykIssueException();
-      }
-      if (config.isFailOnError() && cause != null) {
-        throw new SnykErrorException(cause.getMessage());
-      }
-
-      return null;
     }
   }
 }
