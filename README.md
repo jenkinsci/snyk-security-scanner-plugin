@@ -1,116 +1,229 @@
-[![Snyk logo](https://snyk.io/style/asset/logo/snyk-print.svg)](https://snyk.io)
+# Snyk Security
 
-[![Latest Release](https://img.shields.io/github/v/release/jenkinsci/snyk-security-scanner-plugin)](https://github.com/jenkinsci/snyk-security-scanner-plugin/releases)
+[![Homepage](https://img.shields.io/jenkins/plugin/v/snyk-security-scanner.svg)](https://plugins.jenkins.io/snyk-security-scanner)
+[![Changelog](https://img.shields.io/github/release/jenkinsci/snyk-security-scanner-plugin.svg?label=changelog)](https://github.com/jenkinsci/snyk-security-scanner-plugin/releases)
+[![Installs](https://img.shields.io/jenkins/plugin/i/snyk-security-scanner.svg)](https://plugins.jenkins.io/snyk-security-scanner)
+[![Vulnerabilities](https://snyk.io/test/github/jenkinsci/snyk-security-scanner-plugin/badge.svg)](https://snyk.io/test/github/jenkinsci/snyk-security-scanner-plugin)
 
-[![Known Vulnerabilities](https://snyk.io/test/github/jenkinsci/snyk-security-scanner-plugin/badge.svg)](https://snyk.io/test/github/jenkinsci/snyk-security-scanner-plugin)
+[![Snyk](https://snyk.io/style/asset/logo/snyk-print.svg)](https://snyk.io)
 
-***
+Test and monitor your projects for vulnerabilities with Jenkins. Officially maintained by [Snyk](https://snyk.io).
 
-# Table of Contents
-- [Snyk Security Scanner](#snyk-security-scanner)
-- [Configuration](#configuration)
-  - [Global Configuration](#global-configuration)
-  - [Project Configuration](#project-configuration)
-    - [Freestyle Jobs](#freestyle-jobs)
-    - [Pipeline Jobs](#pipeline-jobs)
-- [Release Workflow](#release-workflow)
-  - [Performing a Plugin Release](#performing-a-plugin-release)
-  - [Experimental Plugin Releases](#experimental-plugin-releases)
+## Usage
 
+To use the plugin up you will need to take the following steps in order:
 
-# Snyk Security Scanner
+1. [Install the Snyk Security Plugin](#1-install-the-snyk-security-plugin)
+2. [Configure a Snyk Installation](#2-configure-a-snyk-installation)
+3. [Configure a Snyk API Token Credential](#3-configure-a-snyk-api-token-credential)
+4. [Add Snyk Security to your Project](#4-add-snyk-security-to-your-project)
+5. [Run a Build and View Your Snyk Report](#5-view-your-snyk-security-report)
 
-Snyk Security Scanner is a Jenkins plugin that enables Jenkins users to test their applications against the [Snyk vulnerability database](https://snyk.io/vuln).
+## 1. Install the Snyk Security Plugin
 
+- Go to "Manage Jenkins" > "Manage Plugins" > "Available".
+- Search for "Snyk Security".
+- Install the plugin.
 
-# Configuration
+## 2. Configure a Snyk Installation
 
-## Global Configuration
+- Go to "Manage Jenkins" > "Global Tool Configuration"
+- Add a "Snyk Installation"
+- Configure the Installation
+- Remember the "Name" as you'll need it when configuring the build step.
 
-Configure your Jenkins settings to install the Snyk Security Scanner plugin:
-1. Visit **Manage Jenkins > Manage Plugins > Available** and search for `Snyk Security`. Install the plugin.
-2. Visit **Manage Jenkins > Global Tool Configuration** and add a **Snyk Installation** to have the Snyk CLI available during Jenkins builds. You can choose either:
+### Automatic Installations
 
-   - **Auto Installation**: We recommend using the **latest** version to keep up to date with new releases of the Snyk CLI.
+The plugin can download the latest version of Snyk's binaries and keep them up-to-date for you.
 
-   ![Snyk Installer Auto Update](docs/snyk_configuration_installation_auto-update_v2.png)
+<blockquote>
+<details>
+<summary>📷 Show Preview</summary>
 
-   - **Manual Installation**: Provide the full path on the Jenkins agent to the Snyk CLI binaries. You can download the binaries from: [Snyk CLI latest release page](https://github.com/snyk/snyk/releases/latest) and [snyk-to-html latest release page](https://github.com/snyk/snyk-to-html/releases/latest). Please be sure that you download correct OS-specific binaries for your Jenkins agent.
+![Snyk Installer Auto Update](docs/snyk_configuration_installation_auto-update_v2.png)
 
-   ![Snyk Installer Manual](docs/snyk_configuration_installation_manual_v2.png)
+</details>
+</blockquote>
 
-Note: in order to install a pre-released version of the plugin, change the **Update Site** to `http://updates.jenkins-ci.org/experimental/update-center.json` in the **Advanced** settings. See https://jenkins.io/zh/blog/2013/09/23/experimental-plugins-update-center/ for more details.
+### Manual Installations
 
-3. Add a Snyk API Token to Jenkins to allow the Snyk Security Scanner to identify with Snyk.
-Visit **Credentials > System**. Specify a meaningful credential ID value in the **ID** field (i.e. `my-org-snyk-api-token`).
+- Download the following binaries. Choose the binary suitable for your agent's operating system:
+  - [Snyk CLI](https://github.com/snyk/snyk/releases/latest)
+  - [snyk-to-html](https://github.com/snyk/snyk-to-html/releases/latest)
+- Place the binaries in a single directory on your agent.
+  - Do not change the filename of the binaries.
+  - Make sure you have the correct permissions to execute the binaries.
+- Provide the absolute path to the directory under "Installation
+directory".
+
+<blockquote>
+<details>
+<summary>📷 Show Preview</summary>
+
+![Snyk Installer Manual](docs/snyk_configuration_installation_manual_v2.png)
+
+</details>
+</blockquote>
+
+## 3. Configure a Snyk API Token Credential
+
+- [Get your Snyk API Token](https://support.snyk.io/hc/en-us/articles/360004037537-Authentication-for-third-party-tools)
+- Go to "Manage Jenkins" > "Manage Credentials"
+- Choose a Store
+- Choose a Domain
+- Go to "Add Credentials"
+- Select "Snyk API Token"
+- Configure the Credentials
+- Remember the "ID" as you'll need it when configuring the build step.
+
+<blockquote>
+<details>
+<summary>📷 Show Preview</summary>
 
 ![Snyk API Token](docs/snyk_configuration_token_v2.png)
 
+</details>
+</blockquote>
 
-## Project Configuration
+## 4. Add Snyk Security to your Project
 
-### Freestyle Jobs
+This step will depend on if you're using Freestyle Projects or Pipeline Projects.
 
-Enable the Snyk Security Scanner in the project configuration page. To add Snyk Security Scanner to the project's build, select **Build > Add build step > Invoke Snyk Security Task**.
+### Freestyle Projects
 
-#### Basic Configuration
+- Select a project
+- Go to "Configure"
+- Under "Build", select "Add build step" select "Invoke Snyk Security Task"
+- Configure as needed. Click the "?" icons for more information about each option.
 
-![Basic configuration](docs/snyk_buildstep_basic.png)
+<blockquote>
+<details>
+<summary>📷 Show Preview</summary>
 
-- **When issues are found** - This specifies if builds should be failed or continued based on issues found by Snyk.
-- **Fail the build if errors occur** - This specifies if builds should be failed or continued based on errors occurring during the Snyk scan.
-- **Monitor project on build** - Take a current application dependencies snapshot for continuous monitoring by Snyk.
-- **Snyk token** - The ID for the API token from the Credentials plugin to be used to authenticate with Snyk (credential type must be "Snyk API token").
-- **Target file** - The path to the application manifest file to be scanned by Snyk Security Scanner.
-- **Organisation** - The Snyk organisation in which this project should be tested and monitored.
-- **Project name** - A custom name for the Snyk project created for this Jenkins project on every build.
+![Basic configuration](docs/snyk_buildstep.png)
 
-#### Advanced Configuration
+</details>
+</blockquote>
 
-To see the advanced configuration for the plugin, click the "Advanced" button. This section allows you to specify Snyk installation as well as additional runtime arguments for the Snyk Security Scanner.
+### Pipeline Projects
 
-- **Snyk installation** - The Snyk installation as configured in the **Global Tool Configuration**.
-- **Additional arguments** - Refer to the [Snyk CLI](https://snyk.io/docs/using-snyk/) help page for information on additional arguments.
+Use the `snykSecurity` step as part of your pipeline script. You can use the "Snippet Generator" to generate the code
+from a web form and copy it into your pipeline.
 
-![Advanced configuration](docs/snyk_buildstep_advanced.png)
+<blockquote>
+<details>
+<summary>📷 Show Example</summary>
 
+```groovy
+pipeline {
+  agent any
 
-### Pipeline Jobs
+  stages {
+    stage('Build') {
+      steps {
+        echo 'Building...'
+      }
+    }
+    stage('Test') {
+      steps {
+        echo 'Testing...'
+        snykSecurity(
+          snykInstallation: '<Your Snyk Installation Name>',
+          snykTokenId: '<Your Snyk Token ID>',
+          // place other parameters here
+        )
+      }
+    }
+    stage('Deploy') {
+      steps {
+        echo 'Deploying...'
+      }
+    }
+  }
+}
+```
 
-The Snyk Security Scanner pipeline integration exposes the `snykSecurity` function to scan your dependencies as part of your pipeline script. We recommend to use "Snippet Generator" to generate needed step statement you may copy into your Jenkinsfile.
+</details>
+</blockquote>
 
-The `snykSecurity` function accepts the following parameters:
+You can pass the following parameters to your `snykSecurity` step.
 
-- **snykInstallation** - Snyk installation name as configured in the **Global Tool Configuration**.
-- **snykTokenId** - The ID of the API token from the Credentials plugin to be used to authenticate to Snyk.
-- **additionalArguments** (optional, default **none**) - Refer to the [Snyk CLI](https://snyk.io/docs/using-snyk/) help page for information on additional arguments.
-- **failOnIssues** (optional, default **true**) - This specifies if builds should be failed or continued based on issues found by Snyk.
-- **failOnError** (optional, default **true**) - This specifies if builds should be failed or continued based on errors occurring during the scan process.
-- **organisation** (optional, default **none**) - The Snyk organisation in which this project should be tested and monitored.
-- **projectName** (optional, default **none**) - A custom name for the Snyk project created for this Jenkins project on every build.
-- **severity** (optional, default **low**) - Only report vulnerabilities of provided level or higher (low/medium/high/critical). Default is low.
-- **targetFile** (optional, default **none**) - The path to the manifest file to be used by Snyk.
+#### `snykInstallation` (required)
 
+Snyk Installation Name. As configured in "[2. Configure a Snyk Installation](#2-configure-a-snyk-installation)".
 
-# Development and Release Workflow
+#### `snykTokenId` (required)
 
-## Performing a Plugin Release
+Snyk API Token Credential ID. As configured in "[3. Configure a Snyk API Token Credential](#3-configure-a-snyk-api-token-credential)".
 
-1. Clone the repo locally and pull in any changes on `master`.
-2. Set your accounts.jenkins.io username and password in `./mvn/settings.xml`.
-3. Run `mvn release:prepare release:perform`.
+#### `failOnIssues` (optional, default `true`)
 
-## Experimental Plugin Releases
+Whether the step should fail if issues and vulnerabilities are found.
 
-To simplify delivery of beta versions of plugins to interested users, the Jenkins project published an *experimental update center*. It will
-include alpha and beta versions of plugins, which are not usually included in the regular update sites.
+#### `failOnError` (optional, default `true`)
 
-Releases that contain `alpha` or `beta` in their version number will only show up in the experimental update site, e.g. `2.0.0-alpha-1`.
+Whether the step should fail if Snyk fails to scan the project due to an error. Errors include scenarios like: failing
+to download Snyk's binaries, improper Jenkins setup, bad configuration and server errors.
 
-To configure Jenkins to use experimental update site please follow this [tutorial](https://jenkins.io/doc/developer/publishing/releasing-experimental-updates).
+#### `organisation` (optional, default: *automatic*)
+
+The Snyk Organisation in which this project should be tested and monitored. See `--org`
+under [Snyk CLI docs](https://snyk.io/docs/using-snyk/) for default behaviour.
+
+#### `projectName` (optional, default: *automatic*)
+
+A custom name for the Snyk project created for this Jenkins project on every build. See `--project-name`
+under [Snyk CLI docs](https://snyk.io/docs/using-snyk/) for default behaviour.
+
+#### `targetFile` (optional, default: *automatic*)
+
+The path to the manifest file to be used by Snyk. See `--file` under [Snyk CLI docs](https://snyk.io/docs/using-snyk/)
+for default behaviour.
+
+#### `severity` (optional, default: *automatic*)
+
+The minimum severity to detect. Can be one of the following: `low`, `medium`, `high`
+, `critical`. See `--severity-threshold` under [Snyk CLI docs](https://snyk.io/docs/using-snyk/) for default behaviour.
+
+#### `additionalArguments` (optional, default: *none*)
+
+See [Snyk CLI docs](https://snyk.io/docs/using-snyk/) for information on additional arguments.
+
+## 5. View your Snyk Security Report
+
+- Complete a new build of your project.
+- Go to the build's page.
+- Click on "Snyk Security Report" in the sidebar to see the results.
+
+<blockquote>
+<details>
+<summary>📷 Show Preview</summary>
+
+![Snyk Build Report](docs/snyk_build_report.png)
+
+</details>
+</blockquote>
+
+If there are any errors you may not see the report. See [Troubleshooting](#troubleshooting).
 
 ## Troubleshooting
 
-To troubleshoot the plugin, add a logger to capture all `io.snyk.jenkins` logs. Follow [this article](https://support.cloudbees.com/hc/en-us/articles/204880580-How-do-I-create-a-logger-in-Jenkins-for-troubleshooting-and-diagnostic-information-) to add a logger and re-run the Snyk Security job once again to capture logs.
+### Increase Logging
 
-This plugin will attempt to download and install the Snyk CLI. If the installation of the Snyk CLI fails, your CI job will fail and you should see the error `Snyk Security tool could not installed` in the CI logs. If this is the case, it is likely either a permissions related mis-configuration on your Jenkins master or agents or a network issue.
+To see more information on your steps, you can increase logging and re-run your steps.
+
+- View the "Console Output" for a specific build.
+- Add a logger to capture all `io.snyk.jenkins` logs.
+  Follow [this article](https://support.cloudbees.com/hc/en-us/articles/204880580-How-do-I-create-a-logger-in-Jenkins-for-troubleshooting-and-diagnostic-information-)
+  .
+- Add `--debug` to "Additional Arguments" to capture all Snyk CLI logs. Debug output is available under `*.debug` files
+  in your build workspace.
+
+### Failed Installations
+
+By default, Snyk Installations will download Snyk's binaries over the network from `static.snyk.io`. If this fails there
+may be a network or proxy issue. If you cannot fix the issue, you can use a [Manual Installation](#2-configure-a-snyk-installation) instead.
+
+---
+
+Made with 💜 by Snyk
