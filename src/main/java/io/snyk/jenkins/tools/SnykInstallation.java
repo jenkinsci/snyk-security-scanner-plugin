@@ -1,6 +1,9 @@
 package io.snyk.jenkins.tools;
 
-import hudson.*;
+import hudson.AbortException;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.Launcher;
 import hudson.model.Computer;
 import hudson.model.EnvironmentSpecific;
 import hudson.model.Node;
@@ -10,6 +13,7 @@ import hudson.tools.ToolDescriptor;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolInstaller;
 import hudson.tools.ToolProperty;
+import io.snyk.jenkins.SnykContext;
 import io.snyk.jenkins.SnykStepBuilder.SnykStepBuilderDescriptor;
 import jenkins.model.Jenkins;
 import jenkins.security.MasterToSlaveCallable;
@@ -79,9 +83,9 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       });
   }
 
-  public static SnykInstallation install(String name, FilePath workspace, EnvVars env, TaskListener listener)
+  public static SnykInstallation install(SnykContext context, String name)
   throws IOException, InterruptedException {
-    Node node = Optional.ofNullable(workspace.toComputer())
+    Node node = Optional.ofNullable(context.getWorkspace().toComputer())
       .map(Computer::getNode)
       .orElseThrow(() -> new AbortException("Not running on a build node."));
 
@@ -90,8 +94,8 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       .filter(installation -> installation.getName().equals(name))
       .findFirst()
       .orElseThrow(() -> new IOException("Snyk installation named '" + name + "' was not found. Please configure the build properly and retry."))
-      .forNode(node, listener)
-      .forEnvironment(env);
+      .forNode(node, context.getTaskListener())
+      .forEnvironment(context.getEnvVars());
   }
 
   @Extension

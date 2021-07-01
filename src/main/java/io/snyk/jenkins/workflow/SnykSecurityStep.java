@@ -7,9 +7,10 @@ import hudson.model.TaskListener;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.snyk.jenkins.Severity;
-import io.snyk.jenkins.SnykStepFlow;
+import io.snyk.jenkins.SnykContext;
 import io.snyk.jenkins.SnykStepBuilder;
 import io.snyk.jenkins.SnykStepBuilder.SnykStepBuilderDescriptor;
+import io.snyk.jenkins.SnykStepFlow;
 import io.snyk.jenkins.config.SnykConfig;
 import io.snyk.jenkins.exception.SnykErrorException;
 import io.snyk.jenkins.exception.SnykIssueException;
@@ -26,7 +27,6 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 import static hudson.Util.fixEmptyAndTrim;
@@ -235,52 +235,37 @@ public class SnykSecurityStep extends Step implements SnykConfig {
 
     private static final long serialVersionUID = 1L;
 
-    private final transient SnykSecurityStep snykSecurityStep;
+    private final transient SnykConfig config;
 
-    public Execution(@Nonnull SnykSecurityStep snykSecurityStep, @Nonnull StepContext context) {
+    public Execution(@Nonnull SnykConfig config, @Nonnull StepContext context) {
       super(context);
-      this.snykSecurityStep = snykSecurityStep;
+      this.config = config;
     }
 
     @Override
     protected Void run() throws SnykIssueException, SnykErrorException {
       int testExitCode = 0;
       Exception cause = null;
-      TaskListener log = null;
+      SnykContext context = null;
 
       try {
-        StepContext context = getContext();
-
-        log = Optional.ofNullable(context.get(TaskListener.class))
-          .orElseThrow(() -> new AbortException("Required context parameter 'TaskListener' is missing."));
-
-        EnvVars envVars = Optional.ofNullable(context.get(EnvVars.class))
-          .orElseThrow(() -> new AbortException("Required context parameter 'EnvVars' is missing."));
-
-        FilePath workspace = Optional.ofNullable(context.get(FilePath.class))
-          .orElseThrow(() -> new AbortException("Required context parameter 'FilePath' (workspace) is missing."));
-
-        Launcher launcher = Optional.ofNullable(context.get(Launcher.class))
-          .orElseThrow(() -> new AbortException("Required context parameter 'Launcher' is missing."));
-
-        Run build = Optional.ofNullable(context.get(Run.class))
-          .orElseThrow(() -> new AbortException("Required context parameter 'Run' is missing."));
-
-        testExitCode = SnykStepFlow.perform(snykSecurityStep, workspace, envVars, log, build, launcher);
+        context = SnykContext.forPipelineProject(getContext());
+        testExitCode = SnykStepFlow.perform(context, config);
       } catch (IOException | InterruptedException | RuntimeException ex) {
-        if (log != null) {
+        if (context != null) {
+          TaskListener listener = context.getTaskListener();
           if (ex instanceof IOException) {
-            Util.displayIOException((IOException) ex, log);
+            Util.displayIOException((IOException) ex, listener);
           }
-          ex.printStackTrace(log.fatalError("Snyk command execution failed"));
+          ex.printStackTrace(listener.fatalError("Snyk command execution failed"));
         }
         cause = ex;
       }
 
-      if (snykSecurityStep.failOnIssues && testExitCode == 1) {
+      if (config.isFailOnIssues() && testExitCode == 1) {
         throw new SnykIssueException();
       }
-      if (snykSecurityStep.failOnError && cause != null) {
+      if (config.isFailOnError() && cause != null) {
         throw new SnykErrorException(cause.getMessage());
       }
 

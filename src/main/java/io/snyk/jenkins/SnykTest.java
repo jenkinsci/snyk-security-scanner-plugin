@@ -4,7 +4,6 @@ import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import io.snyk.jenkins.command.Command;
 import io.snyk.jenkins.command.CommandLine;
@@ -27,14 +26,14 @@ public class SnykTest {
   private static final Logger LOG = LoggerFactory.getLogger(SnykTest.class);
 
   public static int testProject(
-    FilePath workspace,
-    Launcher launcher,
-    SnykInstallation installation,
+    SnykContext context,
     SnykConfig config,
-    EnvVars envVars,
-    TaskListener log
+    SnykInstallation installation
   ) throws IOException, InterruptedException {
-    PrintStream logger = log.getLogger();
+    PrintStream logger = context.getLogger();
+    FilePath workspace = context.getWorkspace();
+    Launcher launcher = context.getLauncher();
+    EnvVars envVars = context.getEnvVars();
 
     int testExitCode;
 

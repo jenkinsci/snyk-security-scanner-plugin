@@ -16,4 +16,9 @@ public interface SnykConfig {
   String getSnykTokenId();
 
   boolean isMonitorProjectOnBuild();
+
+  boolean isFailOnIssues();
+
+  boolean isFailOnError();
+
 }

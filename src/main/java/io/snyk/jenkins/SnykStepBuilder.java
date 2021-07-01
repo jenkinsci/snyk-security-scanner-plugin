@@ -5,7 +5,10 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.*;
-import hudson.model.*;
+import hudson.model.AbstractProject;
+import hudson.model.Item;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.security.ACL;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
@@ -29,7 +32,10 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
@@ -166,25 +172,29 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
     @Nonnull Launcher launcher,
     @Nonnull TaskListener log
   ) throws IOException {
+    SnykConfig config = this;
     int testExitCode = 0;
     Exception cause = null;
+    SnykContext context = null;
 
     try {
-      EnvVars envVars = build.getEnvironment(log);
-
-      testExitCode = SnykStepFlow.perform(this, workspace, envVars, log, build, launcher);
+      context = SnykContext.forFreestyleProject(build, workspace, launcher, log);
+      testExitCode = SnykStepFlow.perform(context, config);
     } catch (IOException | InterruptedException | RuntimeException ex) {
-      if (ex instanceof IOException) {
-        Util.displayIOException((IOException) ex, log);
+      if (context != null) {
+        TaskListener listener = context.getTaskListener();
+        if (ex instanceof IOException) {
+          Util.displayIOException((IOException) ex, listener);
+        }
+        ex.printStackTrace(listener.fatalError("Snyk command execution failed"));
       }
-      ex.printStackTrace(log.fatalError("Snyk command execution failed"));
       cause = ex;
     }
 
-    if (failOnIssues && testExitCode == 1) {
+    if (config.isFailOnIssues() && testExitCode == 1) {
       throw new SnykIssueException();
     }
-    if (failOnError && cause != null) {
+    if (config.isFailOnError() && cause != null) {
       throw new SnykErrorException(cause.getMessage());
     }
   }

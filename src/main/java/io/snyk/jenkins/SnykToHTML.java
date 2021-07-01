@@ -4,14 +4,12 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 
 import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
@@ -20,13 +18,14 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class SnykToHTML {
   public static void generateReport(
-    Run<?, ?> build,
-    @Nonnull FilePath workspace,
-    Launcher launcher,
-    SnykInstallation installation,
-    TaskListener log
+    SnykContext context,
+    SnykInstallation installation
   ) throws IOException, InterruptedException {
-    EnvVars env = build.getEnvironment(log);
+    TaskListener log = context.getTaskListener();
+    FilePath workspace = context.getWorkspace();
+    Launcher launcher = context.getLauncher();
+    EnvVars env = context.getEnvVars();
+
     ArgumentListBuilder args = new ArgumentListBuilder();
 
     FilePath snykReportJson = workspace.child(SNYK_TEST_REPORT_JSON);
