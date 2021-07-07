@@ -52,16 +52,15 @@ public class SnykStepFlow {
     context.getEnvVars().put("SNYK_TOKEN", SnykApiToken.getToken(context, config.getSnykTokenId()));
 
     String testJson = SnykTest.testProject(context, config, installation, testExitCode);
-
-    if (config.isMonitorProjectOnBuild()) {
-      SnykMonitor.monitorProject(context, config, installation);
-    }
-
     String report = SnykToHTML.generateReport(context, installation, testJson);
 
     Run<?, ?> run = context.getRun();
     if (run.getActions(SnykReportBuildAction.class).isEmpty()) {
       run.addAction(new SnykReportBuildAction(report));
+    }
+
+    if (config.isMonitorProjectOnBuild()) {
+      SnykMonitor.monitorProject(context, config, installation);
     }
   }
 }
