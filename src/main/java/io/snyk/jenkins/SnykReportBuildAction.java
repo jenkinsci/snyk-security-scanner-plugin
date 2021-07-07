@@ -1,16 +1,15 @@
 package io.snyk.jenkins;
 
-import javax.annotation.Nonnull;
-
 import hudson.model.Run;
 import jenkins.model.RunAction2;
 
 public class SnykReportBuildAction implements RunAction2 {
 
   private Run<?, ?> run;
+  private String report;
 
-  public SnykReportBuildAction(@Nonnull Run<?, ?> run) {
-    this.run = run;
+  public SnykReportBuildAction(String report) {
+    this.report = report;
   }
 
   @Override
@@ -24,7 +23,7 @@ public class SnykReportBuildAction implements RunAction2 {
   }
 
   @SuppressWarnings("unused")
-  public Run getRun() {
+  public Run<?, ?> getRun() {
     return run;
   }
 
@@ -41,5 +40,10 @@ public class SnykReportBuildAction implements RunAction2 {
   @Override
   public String getUrlName() {
     return "snykReport";
+  }
+
+  @SuppressWarnings("unused")
+  public String getReport() {
+    return report;
   }
 }
