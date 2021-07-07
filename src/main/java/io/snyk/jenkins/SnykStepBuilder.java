@@ -4,24 +4,24 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import hudson.*;
-import hudson.model.*;
-import hudson.remoting.VirtualChannel;
+import hudson.CopyOnWrite;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.model.AbstractProject;
+import hudson.model.Item;
+import hudson.model.Run;
+import hudson.model.TaskListener;
 import hudson.security.ACL;
-import hudson.tasks.ArtifactArchiver;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import hudson.util.ArgumentListBuilder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import io.snyk.jenkins.config.SnykConfig;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.exception.SnykErrorException;
 import io.snyk.jenkins.exception.SnykIssueException;
-import io.snyk.jenkins.model.ObjectMapperHelper;
-import io.snyk.jenkins.model.SnykMonitorResult;
-import io.snyk.jenkins.model.SnykTestResult;
 import io.snyk.jenkins.tools.SnykInstallation;
-import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import org.jenkinsci.Symbol;
@@ -34,8 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,14 +42,12 @@ import java.util.stream.Stream;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
-import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
 import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
-import static hudson.Util.*;
-import static io.snyk.jenkins.config.SnykConstants.*;
-import static java.nio.charset.StandardCharsets.UTF_8;
+import static hudson.Util.fixEmptyAndTrim;
+import static hudson.Util.fixNull;
 import static java.util.stream.Collectors.joining;
 
-public class SnykStepBuilder extends Builder implements SimpleBuildStep {
+public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykStepBuilder.class.getName());
 
@@ -177,224 +173,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep {
     @Nonnull FilePath workspace,
     @Nonnull Launcher launcher,
     @Nonnull TaskListener log
-  ) throws IOException {
-    int testExitCode = 0;
-    Exception cause = null;
-
-    try {
-      EnvVars envVars = build.getEnvironment(log);
-
-      SnykInstallation installation = findSnykInstallation();
-      String snykExecutable;
-      if (installation == null) {
-        throw new AbortException("Snyk installation named '" + snykInstallation + "' was not found. Please configure the build properly and retry.");
-      }
-
-      Computer computer = workspace.toComputer();
-      Node node = computer != null ? computer.getNode() : null;
-      if (node == null) {
-        throw new AbortException("Not running on a build node.");
-      }
-
-      installation = installation.forNode(node, log);
-      installation = installation.forEnvironment(envVars);
-
-      snykExecutable = installation.getSnykExecutable(launcher);
-      if (snykExecutable == null) {
-        throw new AbortException("Can't retrieve the Snyk executable.");
-      }
-
-      SnykApiToken snykApiToken = getSnykTokenCredential(build);
-      if (snykApiToken == null) {
-        throw new AbortException("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry.");
-      }
-      envVars.put("SNYK_TOKEN", snykApiToken.getToken().getPlainText());
-
-      FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
-      FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
-
-      ArgumentListBuilder argsForTestCommand = buildArgumentList(snykExecutable, "test", envVars);
-
-      try (
-        OutputStream snykTestOutput = snykTestReport.write();
-        OutputStream snykTestDebugOutput = snykTestDebug.write()
-      ) {
-        log.getLogger().println("Testing for known issues...");
-        log.getLogger().println("> " + argsForTestCommand);
-        testExitCode = launcher.launch()
-          .cmds(argsForTestCommand)
-          .envs(envVars)
-          .stdout(snykTestOutput)
-          .stderr(snykTestDebugOutput)
-          .quiet(true)
-          .pwd(workspace)
-          .join();
-      }
-
-      String snykTestReportAsString = snykTestReport.readToString();
-      if (LOG.isTraceEnabled()) {
-        LOG.trace("Job: '{}'", build);
-        LOG.trace("Command line arguments: {}", argsForTestCommand);
-        LOG.trace("Exit code: {}", testExitCode);
-        LOG.trace("Command standard output: {}", snykTestReportAsString);
-        LOG.trace("Command debug output: {}", snykTestDebug.readToString());
-      }
-
-      SnykTestResult snykTestResult = ObjectMapperHelper.unmarshallTestResult(snykTestReportAsString);
-      if (snykTestResult == null) {
-        throw new AbortException("Could not parse generated json report file.");
-      }
-      // exit on cli error immediately
-      if (fixEmptyAndTrim(snykTestResult.error) != null) {
-        throw new AbortException("Error result: " + snykTestResult.error);
-      }
-      if (testExitCode >= 2) {
-        throw new AbortException("An error occurred. Exit code is " + testExitCode);
-      }
-      if (!snykTestResult.ok) {
-        log.getLogger().println("Vulnerabilities found!");
-        log.getLogger().printf(
-          "Result: %s known vulnerabilities | %s dependencies%n",
-          snykTestResult.uniqueCount,
-          snykTestResult.dependencyCount
-        );
-      }
-
-      String monitorUri = "";
-      if (monitorProjectOnBuild) {
-        FilePath snykMonitorReport = workspace.child(SNYK_MONITOR_REPORT_JSON);
-        FilePath snykMonitorDebug = workspace.child(SNYK_MONITOR_REPORT_JSON + ".debug");
-
-        ArgumentListBuilder argsForMonitorCommand = buildArgumentList(snykExecutable, "monitor", envVars);
-
-        log.getLogger().println("Remember project for continuous monitoring...");
-        log.getLogger().println("> " + argsForMonitorCommand);
-        int monitorExitCode;
-        try (
-          OutputStream snykMonitorOutput = snykMonitorReport.write();
-          OutputStream snykMonitorDebugOutput = snykMonitorDebug.write()
-        ) {
-          monitorExitCode = launcher.launch()
-            .cmds(argsForMonitorCommand)
-            .envs(envVars)
-            .stdout(snykMonitorOutput)
-            .stderr(snykMonitorDebugOutput)
-            .quiet(true)
-            .pwd(workspace)
-            .join();
-        }
-        String snykMonitorReportAsString = snykMonitorReport.readToString();
-        if (monitorExitCode != 0) {
-          log.getLogger().println("Warning: 'snyk monitor' was not successful. Exit code: " + monitorExitCode);
-          log.getLogger().println(snykMonitorReportAsString);
-        }
-
-        if (LOG.isTraceEnabled()) {
-          LOG.trace("Command line arguments: {}", argsForMonitorCommand);
-          LOG.trace("Exit code: {}", monitorExitCode);
-          LOG.trace("Command standard output: {}", snykMonitorReportAsString);
-          LOG.trace("Command debug output: {}", snykMonitorDebug.readToString());
-        }
-
-        SnykMonitorResult snykMonitorResult = ObjectMapperHelper.unmarshallMonitorResult(snykMonitorReportAsString);
-        if (snykMonitorResult != null && fixEmptyAndTrim(snykMonitorResult.uri) != null) {
-          log.getLogger().println("Explore the snapshot at " + snykMonitorResult.uri);
-        }
-      }
-
-      generateSnykHtmlReport(build, workspace, launcher, log, installation.getReportExecutable(launcher), monitorUri);
-
-      if (build.getActions(SnykReportBuildAction.class).isEmpty()) {
-        build.addAction(new SnykReportBuildAction(build));
-      }
-      ArtifactArchiver artifactArchiver = new ArtifactArchiver(workspace.getName() + "_" + SNYK_REPORT_HTML);
-      artifactArchiver.perform(build, workspace, launcher, log);
-
-    } catch (IOException | InterruptedException | RuntimeException ex) {
-      if (ex instanceof IOException) {
-        Util.displayIOException((IOException) ex, log);
-      }
-      ex.printStackTrace(log.fatalError("Snyk command execution failed"));
-      cause = ex;
-    }
-
-    if (failOnIssues && testExitCode == 1) {
-      throw new SnykIssueException();
-    }
-    if (failOnError && cause != null) {
-      throw new SnykErrorException(cause.getMessage());
-    }
-  }
-
-  private SnykInstallation findSnykInstallation() {
-    return Stream.of(((SnykStepBuilderDescriptor) getDescriptor()).getInstallations())
-                 .filter(installation -> installation.getName().equals(snykInstallation))
-                 .findFirst().orElse(null);
-  }
-
-  private SnykApiToken getSnykTokenCredential(@Nonnull Run<?, ?> build) {
-    return findCredentialById(snykTokenId, SnykApiToken.class, build);
-  }
-
-  ArgumentListBuilder buildArgumentList(String snykExecutable, String snykCommand, @Nonnull EnvVars env) {
-    ArgumentListBuilder args = new ArgumentListBuilder(snykExecutable, snykCommand, "--json");
-
-    if (fixEmptyAndTrim(severity.getSeverity()) != null) {
-      args.add("--severity-threshold=" + severity.getSeverity());
-    }
-    if (fixEmptyAndTrim(targetFile) != null) {
-      args.add("--file=" + replaceMacro(targetFile, env));
-    }
-    if (fixEmptyAndTrim(organisation) != null) {
-      args.add("--org=" + replaceMacro(organisation, env));
-    }
-    if (fixEmptyAndTrim(projectName) != null) {
-      args.add("--project-name=" + replaceMacro(projectName, env));
-    }
-    if (fixEmptyAndTrim(additionalArguments) != null) {
-      for (String addArg : tokenize(additionalArguments)) {
-        if (fixEmptyAndTrim(addArg) != null) {
-          args.add(replaceMacro(addArg, env));
-        }
-      }
-    }
-
-    return args;
-  }
-
-  private void generateSnykHtmlReport(Run<?, ?> build, @Nonnull FilePath workspace, Launcher launcher, TaskListener log, String reportExecutable, String monitorUri) throws IOException, InterruptedException {
-    EnvVars env = build.getEnvironment(log);
-    ArgumentListBuilder args = new ArgumentListBuilder();
-
-    FilePath snykReportJson = workspace.child(SNYK_TEST_REPORT_JSON);
-    if (!snykReportJson.exists()) {
-      log.getLogger().println("Snyk report json doesn't exist");
-      return;
-    }
-
-    workspace.child(SNYK_REPORT_HTML).write("", UTF_8.name());
-
-    args.add(reportExecutable);
-    args.add("-i", SNYK_TEST_REPORT_JSON, "-o", SNYK_REPORT_HTML);
-    try {
-      int exitCode = launcher.launch()
-                             .cmds(args)
-                             .envs(env)
-                             .quiet(true)
-                             .pwd(workspace)
-                             .join();
-      boolean success = exitCode == 0;
-      if (!success) {
-        log.getLogger().println("Generating Snyk html report was not successful");
-      }
-      String reportWithInlineCSS = workspace.child(SNYK_REPORT_HTML).readToString();
-      String modifiedHtmlReport = ReportConverter.getInstance().modifyHeadSection(reportWithInlineCSS, Jenkins.get().servletContext.getContextPath());
-      String finalHtmlReport = ReportConverter.getInstance().injectMonitorLink(modifiedHtmlReport, monitorUri);
-      workspace.child(workspace.getName() + "_" + SNYK_REPORT_HTML).write(finalHtmlReport, UTF_8.name());
-    } catch (IOException ex) {
-      Util.displayIOException(ex, log);
-      ex.printStackTrace(log.fatalError("Snyk-to-Html command execution failed"));
-    }
+  ) throws SnykIssueException, SnykErrorException {
+    SnykStepFlow.perform(this, () -> SnykContext.forFreestyleProject(build, workspace, launcher, log));
   }
 
   @Extension

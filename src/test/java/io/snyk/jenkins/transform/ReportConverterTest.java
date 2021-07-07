@@ -28,24 +28,4 @@ public class ReportConverterTest {
     assertThat(output, equalTo(expected));
   }
 
-  @Test
-  public void injectMonitorLink_shouldNotChangeHtml_ifMonitorUriIsEmpty() {
-    ReportConverter converter = ReportConverter.getInstance();
-    String input = "<html><head></head><body>report text</body></html>";
-
-    String output = converter.injectMonitorLink(input, "");
-
-    assertThat(output, equalTo(input));
-  }
-
-  @Test
-  public void injectMonitorLink_shouldAddMonitorLink_ifMonitorUriIsNotEmpty() {
-    ReportConverter converter = ReportConverter.getInstance();
-    String input = "<html><head></head><body>report text</body></html>";
-
-    String output = converter.injectMonitorLink(input, "https://app.snyk.io/my-monitor-report");
-
-    String expected = "<html><head></head><body><center><a target=\"_blank\" href=\"https://app.snyk.io/my-monitor-report\">View On Snyk.io</a></center>report text</body></html>";
-    assertThat(output, equalTo(expected));
-  }
 }
