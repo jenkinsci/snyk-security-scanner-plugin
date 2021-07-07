@@ -39,7 +39,7 @@ public class SnykReportBuildAction implements RunAction2 {
 
   @Override
   public String getUrlName() {
-    return "snykReport";
+    return "snyk";
   }
 
   @SuppressWarnings("unused")
