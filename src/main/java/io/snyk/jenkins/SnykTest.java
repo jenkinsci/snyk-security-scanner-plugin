@@ -1,6 +1,5 @@
 package io.snyk.jenkins;
 
-import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -69,13 +68,13 @@ public class SnykTest {
 
     SnykTestResult result = ObjectMapperHelper.unmarshallTestResult(stdout);
     if (result == null) {
-      throw new AbortException("Failed to parse test output.");
+      throw new RuntimeException("Failed to parse test output.");
     }
     if (fixEmptyAndTrim(result.error) != null) {
-      throw new AbortException("An error occurred. " + result.error);
+      throw new RuntimeException("An error occurred. " + result.error);
     }
     if (exitCode >= 2) {
-      throw new AbortException("An error occurred. (Exit Code: " + exitCode + ")");
+      throw new RuntimeException("An error occurred. (Exit Code: " + exitCode + ")");
     }
     if (!result.ok) {
       logger.println("Vulnerabilities found!");
