@@ -10,6 +10,7 @@ import jenkins.model.Jenkins;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.time.Instant;
 
 import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
@@ -25,6 +26,7 @@ public class SnykToHTML {
       FilePath workspace = context.getWorkspace();
       Launcher launcher = context.getLauncher();
       EnvVars env = context.getEnvVars();
+      PrintStream logger = context.getLogger();
 
       FilePath snykReportJson = workspace.child(SNYK_TEST_REPORT_JSON);
       if (!snykReportJson.exists()) {
@@ -44,6 +46,7 @@ public class SnykToHTML {
           .cmds(args)
           .envs(env)
           .stdout(reportWriter)
+          .stderr(logger)
           .quiet(true)
           .pwd(workspace)
           .join();
