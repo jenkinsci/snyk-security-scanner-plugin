@@ -1,5 +1,8 @@
 package io.snyk.jenkins.model;
 
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -7,13 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import static java.util.Objects.requireNonNull;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertThat;
 
 public class ObjectMapperHelperTest {
 
@@ -23,26 +22,6 @@ public class ObjectMapperHelperTest {
   public static void setupAll() throws Exception {
     URL testDirectoryUrl = ObjectMapperHelper.class.getClassLoader().getResource("./fixtures");
     TEST_FIXTURES_DIRECTORY = new File(requireNonNull(testDirectoryUrl).toURI());
-  }
-
-  @Test
-  public void unmarshallMonitorResult_withURI() throws IOException {
-    Path monitorReportPath = Paths.get(TEST_FIXTURES_DIRECTORY.getAbsolutePath(), "monitor", "snyk_monitor_with_uri.json");
-    String monitorReport = new String(Files.readAllBytes(monitorReportPath));
-
-    SnykMonitorResult snykMonitorResult = ObjectMapperHelper.unmarshallMonitorResult(monitorReport);
-
-    assertThat(snykMonitorResult.uri, equalTo("http://localhost:8000/org/dummy-user/project/long-uuid-here/history/long-uuid-here-again"));
-  }
-
-  @Test
-  public void unmarshallMonitorResult_withoutURI() throws IOException {
-    Path monitorReportPath = Paths.get(TEST_FIXTURES_DIRECTORY.getAbsolutePath(), "monitor", "snyk_monitor_without_uri.json");
-    String monitorReport = new String(Files.readAllBytes(monitorReportPath));
-
-    SnykMonitorResult snykMonitorResult = ObjectMapperHelper.unmarshallMonitorResult(monitorReport);
-
-    assertThat(snykMonitorResult.uri, nullValue());
   }
 
   @Test

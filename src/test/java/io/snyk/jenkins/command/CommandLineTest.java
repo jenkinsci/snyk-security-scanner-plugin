@@ -15,13 +15,13 @@ import static org.mockito.Mockito.when;
 public class CommandLineTest {
 
   @Test
-  public void shouldAlwaysIncludeJsonFlag() {
+  public void shouldIncludeCommand() {
     EnvVars env = new EnvVars();
     SnykConfig config = Mockito.mock(SnykConfig.class);
 
     ArgumentListBuilder result = CommandLine.asArgumentList("/usr/bin/snyk", Command.TEST, config, env);
 
-    assertThat(result.toList(), equalTo(asList("/usr/bin/snyk", "test", "--json")));
+    assertThat(result.toList(), equalTo(asList("/usr/bin/snyk", "test")));
   }
 
   @Test
@@ -49,7 +49,6 @@ public class CommandLineTest {
     assertThat(result.toList(), equalTo(asList(
       "/usr/bin/snyk",
       "test",
-      "--json",
       "--severity-threshold=high",
       "--project-name=my-project"
     )));
@@ -81,7 +80,6 @@ public class CommandLineTest {
     assertThat(result.toList(), equalTo(asList(
       "/usr/bin/snyk",
       "test",
-      "--json",
       "--dev",
       "-d"
     )));

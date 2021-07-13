@@ -1,13 +1,13 @@
 package io.snyk.jenkins.model;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ObjectMapperHelper {
 
@@ -18,31 +18,6 @@ public class ObjectMapperHelper {
   }
 
   private ObjectMapperHelper() {
-  }
-
-  public static SnykMonitorResult unmarshallMonitorResult(String content) throws IOException {
-    if (content == null || content.isEmpty()) {
-      return null;
-    }
-
-    try (JsonParser parser = JSON_FACTORY.createParser(content)) {
-      if (parser.nextToken() != JsonToken.START_OBJECT) {
-        return null;
-      }
-
-      SnykMonitorResult snykMonitorResult = new SnykMonitorResult();
-      while (parser.nextToken() != JsonToken.END_OBJECT) {
-        String fieldName = parser.getCurrentName();
-
-        if ("uri".equals(fieldName)) {
-          parser.nextToken();
-          snykMonitorResult.uri = parser.getText();
-        } else {
-          parser.skipChildren();
-        }
-      }
-      return snykMonitorResult;
-    }
   }
 
   public static SnykTestResult unmarshallTestResult(String content) throws IOException {

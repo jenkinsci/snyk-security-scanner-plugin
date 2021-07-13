@@ -1,5 +1,0 @@
-{
-  "ok": false,
-  "error": "connect ECONNREFUSED 127.0.0.1:8000",
-  "path": "/home/jenkins/projects/snyk-security-scanner-plugin"
-}

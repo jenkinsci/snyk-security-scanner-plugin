@@ -12,7 +12,7 @@ import java.util.function.Function;
 public class CommandLine {
   public static ArgumentListBuilder asArgumentList(String executablePath, Command command, SnykConfig config, EnvVars env) {
     Function<String, String> replaceMacroWithEnv = str -> Util.replaceMacro(str, env);
-    ArgumentListBuilder args = new ArgumentListBuilder(executablePath, command.commandName(), "--json");
+    ArgumentListBuilder args = new ArgumentListBuilder(executablePath, command.commandName());
 
     Optional.ofNullable(config.getSeverity())
       .map(Util::fixEmptyAndTrim)
@@ -37,12 +37,10 @@ public class CommandLine {
     Optional.ofNullable(config.getAdditionalArguments())
       .map(Util::fixEmptyAndTrim)
       .map(Util::tokenize)
-      .ifPresent(values -> {
-        Arrays.stream(values)
-          .map(Util::fixEmptyAndTrim)
-          .map(replaceMacroWithEnv)
-          .forEach(args::add);
-      });
+      .ifPresent(values -> Arrays.stream(values)
+        .map(Util::fixEmptyAndTrim)
+        .map(replaceMacroWithEnv)
+        .forEach(args::add));
 
     return args;
   }

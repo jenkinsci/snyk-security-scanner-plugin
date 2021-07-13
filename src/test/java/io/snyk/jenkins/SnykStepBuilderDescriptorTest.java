@@ -1,12 +1,8 @@
 package io.snyk.jenkins;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.domains.Domain;
-import hudson.model.Item;
 import hudson.util.FormValidation;
 import hudson.util.FormValidation.Kind;
 import hudson.util.ListBoxModel;
@@ -15,15 +11,17 @@ import jodd.lagarto.dom.Document;
 import jodd.lagarto.dom.LagartoDOMBuilder;
 import jodd.lagarto.dom.Node;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.core.IsIterableContaining.hasItems;
 
 public class SnykStepBuilderDescriptorTest {
 
