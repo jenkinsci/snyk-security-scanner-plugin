@@ -24,7 +24,7 @@ public class SnykTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykTest.class);
 
-  public static int testProject(
+  public static boolean testProject(
     SnykContext context,
     SnykConfig config,
     SnykInstallation installation
@@ -85,6 +85,6 @@ public class SnykTest {
       );
     }
 
-    return exitCode;
+    return exitCode == 1;
   }
 }

@@ -19,7 +19,7 @@ public class SnykStepFlow {
 
   public static void perform(SnykConfig config, Supplier<SnykContext> contextSupplier)
   throws SnykIssueException, SnykErrorException {
-    int testExitCode = 0;
+    boolean foundIssues = false;
     Exception cause = null;
     SnykContext context = null;
 
@@ -33,7 +33,7 @@ public class SnykStepFlow {
 
       context.getEnvVars().put("SNYK_TOKEN", SnykApiToken.getToken(context, config.getSnykTokenId()));
 
-      testExitCode = SnykStepFlow.testProject(context, config, installation);
+      foundIssues = SnykStepFlow.testProject(context, config, installation);
 
       if (config.isMonitorProjectOnBuild()) {
         SnykMonitor.monitorProject(context, config, installation);
@@ -49,7 +49,7 @@ public class SnykStepFlow {
       cause = ex;
     }
 
-    if (config.isFailOnIssues() && testExitCode == 1) {
+    if (config.isFailOnIssues() && foundIssues) {
       throw new SnykIssueException();
     }
     if (config.isFailOnError() && cause != null) {
@@ -57,13 +57,13 @@ public class SnykStepFlow {
     }
   }
 
-  private static int testProject(SnykContext context, SnykConfig config, SnykInstallation installation)
+  private static boolean testProject(SnykContext context, SnykConfig config, SnykInstallation installation)
   throws IOException, InterruptedException {
-    int exitCode = SnykTest.testProject(context, config, installation);
+    boolean foundIssues = SnykTest.testProject(context, config, installation);
     FilePath report = SnykToHTML.generateReport(context, installation);
     archiveReport(context, report);
     addSidebarLink(context);
-    return exitCode;
+    return foundIssues;
   }
 
   private static void archiveReport(SnykContext context, FilePath report) throws IOException, InterruptedException {
