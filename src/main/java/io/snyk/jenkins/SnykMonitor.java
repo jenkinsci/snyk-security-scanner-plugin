@@ -14,11 +14,11 @@ import java.io.PrintStream;
 
 public class SnykMonitor {
 
-  public static int monitorProject(
+  public static void monitorProject(
     SnykContext context,
     SnykConfig config,
     SnykInstallation installation
-    ) throws IOException, InterruptedException {
+  ) throws IOException, InterruptedException {
     PrintStream logger = context.getLogger();
     FilePath workspace = context.getWorkspace();
     Launcher launcher = context.getLauncher();
@@ -45,7 +45,5 @@ public class SnykMonitor {
     if (exitCode != 0) {
       logger.println("Failed to monitor project. (Exit Code: " + exitCode + ")");
     }
-
-    return exitCode;
   }
 }
