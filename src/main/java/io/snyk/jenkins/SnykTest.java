@@ -40,12 +40,14 @@ public class SnykTest {
     FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
     FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
 
-    ArgumentListBuilder testCommand = CommandLine.asArgumentList(
-      installation.getSnykExecutable(launcher),
-      Command.TEST,
-      config,
-      envVars
-    );
+    ArgumentListBuilder testCommand = CommandLine
+      .asArgumentList(
+        installation.getSnykExecutable(launcher),
+        Command.TEST,
+        config,
+        envVars
+      )
+      .add("--json");
 
     try (
       OutputStream snykTestOutput = snykTestReport.write();
