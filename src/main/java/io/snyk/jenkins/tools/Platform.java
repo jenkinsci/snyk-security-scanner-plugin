@@ -23,12 +23,12 @@ public enum Platform {
   }
 
   @Nonnull
-  public static Platform current() throws ToolDetectionException {
+  public static Platform current() {
     return detect(System.getProperties());
   }
 
   @Nonnull
-  private static Platform detect(@Nonnull Map<Object, Object> systemProperties) throws ToolDetectionException {
+  private static Platform detect(@Nonnull Map<Object, Object> systemProperties) {
     String arch = ((String) systemProperties.get("os.name")).toLowerCase(Locale.ENGLISH);
     if (arch.contains("linux")) {
       return Paths.get("/etc/alpine-release").toFile().exists() ? LINUX_ALPINE : LINUX;
@@ -37,6 +37,6 @@ public enum Platform {
     } else if (arch.contains("windows")) {
       return WINDOWS;
     }
-    throw new ToolDetectionException(arch + " is not supported CPU type");
+    throw new RuntimeException("Unsupported platform. (OS: " + arch + ")");
   }
 }

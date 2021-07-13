@@ -58,7 +58,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       .orElseThrow(() -> new RuntimeException("Failed to find Snyk Executable. Build Node does not support channels."))
       .call(new MasterToSlaveCallable<String, IOException>() {
         @Override
-        public String call() throws IOException {
+        public String call() {
           Platform platform = Platform.current();
           String filename = "snyk".equals(name)
             ? platform.snykWrapperFileName

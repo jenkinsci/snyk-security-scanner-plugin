@@ -37,12 +37,10 @@ public class CommandLine {
     Optional.ofNullable(config.getAdditionalArguments())
       .map(Util::fixEmptyAndTrim)
       .map(Util::tokenize)
-      .ifPresent(values -> {
-        Arrays.stream(values)
-          .map(Util::fixEmptyAndTrim)
-          .map(replaceMacroWithEnv)
-          .forEach(args::add);
-      });
+      .ifPresent(values -> Arrays.stream(values)
+        .map(Util::fixEmptyAndTrim)
+        .map(replaceMacroWithEnv)
+        .forEach(args::add));
 
     return args;
   }

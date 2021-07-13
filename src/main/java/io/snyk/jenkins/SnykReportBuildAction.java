@@ -24,7 +24,7 @@ public class SnykReportBuildAction implements RunAction2 {
   }
 
   @SuppressWarnings("unused")
-  public Run getRun() {
+  public Run<?, ?> getRun() {
     return run;
   }
 
