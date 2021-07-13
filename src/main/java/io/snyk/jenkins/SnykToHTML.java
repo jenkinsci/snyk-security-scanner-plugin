@@ -9,6 +9,7 @@ import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.time.Instant;
 
 import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
@@ -37,13 +38,16 @@ public class SnykToHTML {
         .add(installation.getReportExecutable(launcher))
         .add("-i", SNYK_TEST_REPORT_JSON);
 
-      int exitCode = launcher.launch()
-        .cmds(args)
-        .envs(env)
-        .stdout(reportPath.write())
-        .quiet(true)
-        .pwd(workspace)
-        .join();
+      int exitCode;
+      try (OutputStream reportWriter = reportPath.write()) {
+        exitCode = launcher.launch()
+          .cmds(args)
+          .envs(env)
+          .stdout(reportWriter)
+          .quiet(true)
+          .pwd(workspace)
+          .join();
+      }
 
       if (exitCode != 0) {
         throw new RuntimeException("Exited with non-zero exit code. (Exit Code: " + exitCode + ")");
