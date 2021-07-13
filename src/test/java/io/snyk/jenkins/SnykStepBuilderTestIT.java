@@ -22,6 +22,6 @@ public class SnykStepBuilderTestIT {
     FreeStyleBuild build = freeStyleProject.scheduleBuild2(0).get();
 
     jenkins.assertBuildStatus(Result.FAILURE, build);
-    jenkins.assertLogContains("Please configure the build properly and retry.", build);
+    jenkins.assertLogContains("Failed to install Snyk.", build);
   }
 }
