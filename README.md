@@ -216,8 +216,8 @@ To see more information on your steps, you can increase logging and re-run your 
 - Add a logger to capture all `io.snyk.jenkins` logs.
   Follow [this article](https://support.cloudbees.com/hc/en-us/articles/204880580-How-do-I-create-a-logger-in-Jenkins-for-troubleshooting-and-diagnostic-information-)
   .
-- Add `--debug` to "Additional Arguments" to capture all Snyk CLI logs. Debug output is available under `*.debug` files
-  in your build workspace.
+- Add `--debug` to "Additional Arguments" to capture all Snyk CLI logs. Debug output is available under "Console Output"
+  for your build.
 
 ### Failed Installations
 
