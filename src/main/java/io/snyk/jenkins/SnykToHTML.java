@@ -47,6 +47,8 @@ public class SnykToHTML {
 
       int exitCode;
       try (OutputStream reportWriter = stdoutPath.write()) {
+        logger.println("Generating report...");
+        logger.println("> " + command);
         exitCode = launcher.launch()
           .cmds(command)
           .envs(env)
