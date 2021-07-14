@@ -82,7 +82,7 @@ public class SnykStepFlow {
   private static void addSidebarLink(SnykContext context) {
     Run<?, ?> run = context.getRun();
     if (run.getActions(SnykReportBuildAction.class).isEmpty()) {
-      run.addAction(new SnykReportBuildAction(run));
+      run.addAction(new SnykReportBuildAction());
     }
   }
 }

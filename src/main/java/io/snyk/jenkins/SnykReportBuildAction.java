@@ -6,11 +6,7 @@ import org.kohsuke.stapler.Stapler;
 
 public class SnykReportBuildAction implements RunAction2 {
 
-  private Run<?, ?> run;
-
-  public SnykReportBuildAction(@Nonnull Run<?, ?> run) {
-    this.run = run;
-  }
+  private transient Run<?, ?> run;
 
   @Override
   public void onAttached(Run<?, ?> run) {
