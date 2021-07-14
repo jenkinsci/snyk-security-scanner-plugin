@@ -54,26 +54,12 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   }
 
   private String resolveExecutable(Launcher launcher, String name) throws IOException, InterruptedException {
+    String home = Optional.ofNullable(getHome())
+      .orElseThrow(() -> new RuntimeException("Failed to find Snyk Executable. Installation Home is not configured."));
+
     return Optional.ofNullable(launcher.getChannel())
       .orElseThrow(() -> new RuntimeException("Failed to find Snyk Executable. Build Node does not support channels."))
-      .call(new MasterToSlaveCallable<String, IOException>() {
-        @Override
-        public String call() {
-          Platform platform = Platform.current();
-          String filename = "snyk".equals(name)
-            ? platform.snykWrapperFileName
-            : platform.snykToHtmlWrapperFileName;
-
-          String root = Optional.ofNullable(getHome())
-            .orElseThrow(() -> new RuntimeException("Failed to find Snyk Executable. Installation Home is not configured."));
-
-          final Path executable = Paths.get(root).resolve(filename).toAbsolutePath();
-          if (!executable.toFile().exists()) {
-            throw new RuntimeException("Failed to find Snyk Executable. Executable does not exist. (" + executable.toAbsolutePath() + ")");
-          }
-          return executable.toString();
-        }
-      });
+      .call(new ResolveExecutable(home, name));
   }
 
   public static SnykInstallation install(SnykContext context, String name) throws IOException, InterruptedException {
@@ -88,6 +74,32 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       .orElseThrow(() -> new RuntimeException("Failed to install Snyk. Installation named '" + name + "' was not found. Please make sure it's configured in Jenkins under Global Tool Configuration."))
       .forNode(node, context.getTaskListener())
       .forEnvironment(context.getEnvVars());
+  }
+
+  private static class ResolveExecutable extends MasterToSlaveCallable<String, IOException> {
+    private static final long serialVersionUID = 1L;
+
+    private final String home;
+    private final String name;
+
+    public ResolveExecutable(String home, String name) {
+      this.home = home;
+      this.name = name;
+    }
+
+    @Override
+    public String call() {
+      Platform platform = Platform.current();
+      String filename = "snyk".equals(name)
+        ? platform.snykWrapperFileName
+        : platform.snykToHtmlWrapperFileName;
+
+      final Path executable = Paths.get(home).resolve(filename).toAbsolutePath();
+      if (!executable.toFile().exists()) {
+        throw new RuntimeException("Failed to find Snyk Executable. Executable does not exist. (" + executable.toAbsolutePath() + ")");
+      }
+      return executable.toString();
+    }
   }
 
   @Extension
