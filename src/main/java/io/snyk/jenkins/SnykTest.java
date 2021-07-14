@@ -18,13 +18,13 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 
 import static hudson.Util.fixEmptyAndTrim;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_TEST_REPORT_JSON;
+import static io.snyk.jenkins.Utils.getURLSafeDateTime;
 
 public class SnykTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykTest.class);
 
-  public static boolean testProject(
+  public static Result testProject(
     SnykContext context,
     SnykConfig config,
     SnykInstallation installation
@@ -34,7 +34,7 @@ public class SnykTest {
     Launcher launcher = context.getLauncher();
     EnvVars envVars = context.getEnvVars();
 
-    FilePath stdoutPath = workspace.child(SNYK_TEST_REPORT_JSON);
+    FilePath stdoutPath = workspace.child(getURLSafeDateTime() + "_snyk_report.json");
 
     ArgumentListBuilder command = CommandLine
       .asArgumentList(
@@ -85,6 +85,17 @@ public class SnykTest {
       );
     }
 
-    return exitCode == 1;
+    return new Result(stdoutPath, exitCode);
   }
+
+  public static class Result {
+    public final FilePath testJsonPath;
+    public final boolean foundIssues;
+
+    public Result(FilePath testJsonPath, int exitCode) {
+      this.testJsonPath = testJsonPath;
+      this.foundIssues = exitCode == 1;
+    }
+  }
+
 }

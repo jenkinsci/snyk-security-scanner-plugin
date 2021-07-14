@@ -13,10 +13,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.time.Instant;
 
-import static io.snyk.jenkins.config.SnykConstants.SNYK_REPORT_HTML;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_TEST_REPORT_JSON;
+import static io.snyk.jenkins.Utils.getURLSafeDateTime;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class SnykToHTML {
@@ -25,7 +23,8 @@ public class SnykToHTML {
 
   public static FilePath generateReport(
     SnykContext context,
-    SnykInstallation installation
+    SnykInstallation installation,
+    FilePath testJsonPath
   ) {
     try {
       FilePath workspace = context.getWorkspace();
@@ -33,17 +32,15 @@ public class SnykToHTML {
       EnvVars env = context.getEnvVars();
       PrintStream logger = context.getLogger();
 
-      FilePath snykReportJson = workspace.child(SNYK_TEST_REPORT_JSON);
-      if (!snykReportJson.exists()) {
-        throw new RuntimeException("Snyk Report JSON does not exist.");
+      if (!testJsonPath.exists()) {
+        throw new RuntimeException("Snyk Test JSON does not exist.");
       }
 
-      FilePath stdoutPath = workspace.child(getURLSafeDateTime() + "_" + SNYK_REPORT_HTML);
-      stdoutPath.write("", UTF_8.name());
+      FilePath stdoutPath = workspace.child(getURLSafeDateTime() + "_snyk_report.html");
 
       ArgumentListBuilder command = new ArgumentListBuilder()
         .add(installation.getReportExecutable(launcher))
-        .add("-i", SNYK_TEST_REPORT_JSON);
+        .add("-i", testJsonPath.getRemote());
 
       int exitCode;
       try (OutputStream reportWriter = stdoutPath.write()) {
@@ -82,11 +79,5 @@ public class SnykToHTML {
     } catch (IOException | InterruptedException | RuntimeException ex) {
       throw new RuntimeException("Failed to generate report.", ex);
     }
-  }
-
-  private static String getURLSafeDateTime() {
-    return Instant.now().toString()
-      .replaceAll(":", "-")
-      .replaceAll("\\.", "-");
   }
 }

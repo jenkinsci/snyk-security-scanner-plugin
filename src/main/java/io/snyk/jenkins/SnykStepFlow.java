@@ -59,11 +59,15 @@ public class SnykStepFlow {
 
   private static boolean testProject(SnykContext context, SnykConfig config, SnykInstallation installation)
   throws IOException, InterruptedException {
-    boolean foundIssues = SnykTest.testProject(context, config, installation);
-    FilePath report = SnykToHTML.generateReport(context, installation);
+    SnykTest.Result testResult = SnykTest.testProject(context, config, installation);
+    FilePath report = SnykToHTML.generateReport(context, installation, testResult.testJsonPath);
     archiveReport(context, report);
     addSidebarLink(context);
-    return foundIssues;
+
+    testResult.testJsonPath.delete();
+    report.delete();
+
+    return testResult.foundIssues;
   }
 
   private static void archiveReport(SnykContext context, FilePath report) throws IOException, InterruptedException {
