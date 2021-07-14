@@ -1,9 +1,8 @@
 package io.snyk.jenkins;
 
-import javax.annotation.Nonnull;
-
 import hudson.model.Run;
 import jenkins.model.RunAction2;
+import org.kohsuke.stapler.Stapler;
 
 public class SnykReportBuildAction implements RunAction2 {
 
@@ -41,5 +40,10 @@ public class SnykReportBuildAction implements RunAction2 {
   @Override
   public String getUrlName() {
     return "snykReport";
+  }
+
+  @SuppressWarnings("unused")
+  public String getArtifactHref() {
+    return "../artifact/" + Stapler.getCurrentRequest().getParameter("artifact");
   }
 }
