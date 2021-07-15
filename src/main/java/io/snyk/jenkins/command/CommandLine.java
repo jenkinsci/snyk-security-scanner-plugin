@@ -6,6 +6,8 @@ import hudson.util.ArgumentListBuilder;
 import io.snyk.jenkins.config.SnykConfig;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -43,5 +45,16 @@ public class CommandLine {
         .forEach(args::add));
 
     return args;
+  }
+
+  public static Map<String, String> asEnvVars(String snykToken, EnvVars envVars) {
+    return new HashMap<String, String>() {{
+      putAll(envVars);
+      Optional.ofNullable(snykToken).ifPresent(token -> put("SNYK_TOKEN", token));
+    }};
+  }
+
+  public static Map<String, String> asEnvVars(EnvVars envVars) {
+    return asEnvVars(null, envVars);
   }
 }
