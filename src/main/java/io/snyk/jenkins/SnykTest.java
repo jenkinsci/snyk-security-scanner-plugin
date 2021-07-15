@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Map;
 
 import static hudson.Util.fixEmptyAndTrim;
 import static io.snyk.jenkins.Utils.getURLSafeDateTime;
@@ -27,7 +28,8 @@ public class SnykTest {
   public static Result testProject(
     SnykContext context,
     SnykConfig config,
-    SnykInstallation installation
+    SnykInstallation installation,
+    String snykToken
   ) throws IOException, InterruptedException {
     PrintStream logger = context.getLogger();
     FilePath workspace = context.getWorkspace();
@@ -45,13 +47,15 @@ public class SnykTest {
       )
       .add("--json");
 
+    Map<String, String> commandEnvVars = CommandLine.asEnvVars(snykToken, envVars);
+
     int exitCode;
     try (OutputStream stdoutWriter = stdoutPath.write()) {
       logger.println("Testing project...");
       logger.println("> " + command);
       exitCode = launcher.launch()
         .cmds(command)
-        .envs(envVars)
+        .envs(commandEnvVars)
         .stdout(stdoutWriter)
         .stderr(logger)
         .quiet(true)

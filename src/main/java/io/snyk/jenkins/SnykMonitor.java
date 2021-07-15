@@ -11,13 +11,15 @@ import io.snyk.jenkins.tools.SnykInstallation;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Map;
 
 public class SnykMonitor {
 
   public static void monitorProject(
     SnykContext context,
     SnykConfig config,
-    SnykInstallation installation
+    SnykInstallation installation,
+    String snykToken
   ) throws IOException, InterruptedException {
     PrintStream logger = context.getLogger();
     FilePath workspace = context.getWorkspace();
@@ -31,11 +33,13 @@ public class SnykMonitor {
       envVars
     );
 
+    Map<String, String> commandEnvVars = CommandLine.asEnvVars(snykToken, envVars);
+
     logger.println("Monitoring project...");
     logger.println("> " + command);
     int exitCode = launcher.launch()
         .cmds(command)
-        .envs(envVars)
+        .envs(commandEnvVars)
         .stdout(logger)
         .stderr(logger)
         .quiet(true)

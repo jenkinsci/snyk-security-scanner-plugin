@@ -4,6 +4,7 @@ import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.util.ArgumentListBuilder;
+import io.snyk.jenkins.command.CommandLine;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.transform.ReportConverter;
 import jenkins.model.Jenkins;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Map;
 
 import static io.snyk.jenkins.Utils.getURLSafeDateTime;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -42,13 +44,15 @@ public class SnykToHTML {
         .add(installation.getReportExecutable(launcher))
         .add("-i", testJsonPath.getRemote());
 
+      Map<String, String> commandEnvVars = CommandLine.asEnvVars(env);
+
       int exitCode;
       try (OutputStream reportWriter = stdoutPath.write()) {
         logger.println("Generating report...");
         logger.println("> " + command);
         exitCode = launcher.launch()
           .cmds(command)
-          .envs(env)
+          .envs(commandEnvVars)
           .stdout(reportWriter)
           .stderr(logger)
           .quiet(true)

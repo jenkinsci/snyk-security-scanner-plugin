@@ -31,12 +31,12 @@ public class SnykStepFlow {
         config.getSnykInstallation()
       );
 
-      context.getEnvVars().put("SNYK_TOKEN", SnykApiToken.getToken(context, config.getSnykTokenId()));
+      String snykToken = SnykApiToken.getToken(context, config.getSnykTokenId());
 
-      foundIssues = SnykStepFlow.testProject(context, config, installation);
+      foundIssues = SnykStepFlow.testProject(context, config, installation, snykToken);
 
       if (config.isMonitorProjectOnBuild()) {
-        SnykMonitor.monitorProject(context, config, installation);
+        SnykMonitor.monitorProject(context, config, installation, snykToken);
       }
     } catch (IOException | InterruptedException | RuntimeException ex) {
       if (context != null) {
@@ -57,9 +57,9 @@ public class SnykStepFlow {
     }
   }
 
-  private static boolean testProject(SnykContext context, SnykConfig config, SnykInstallation installation)
+  private static boolean testProject(SnykContext context, SnykConfig config, SnykInstallation installation, String snykToken)
   throws IOException, InterruptedException {
-    SnykTest.Result testResult = SnykTest.testProject(context, config, installation);
+    SnykTest.Result testResult = SnykTest.testProject(context, config, installation, snykToken);
     FilePath report = SnykToHTML.generateReport(context, installation, testResult.testJsonPath);
     archiveReport(context, report);
     addSidebarLink(context);
