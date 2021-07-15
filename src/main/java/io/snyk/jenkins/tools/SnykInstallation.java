@@ -1,6 +1,5 @@
 package io.snyk.jenkins.tools;
 
-import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
@@ -29,8 +28,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static java.lang.String.format;
-
 public class SnykInstallation extends ToolInstallation implements EnvironmentSpecific<SnykInstallation>, NodeSpecific<SnykInstallation> {
 
   @DataBoundConstructor
@@ -56,46 +53,53 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
     return resolveExecutable(launcher, "snyk-to-html");
   }
 
-  private String resolveExecutable(Launcher launcher, String name)
-  throws IOException, InterruptedException {
+  private String resolveExecutable(Launcher launcher, String name) throws IOException, InterruptedException {
+    String home = Optional.ofNullable(getHome())
+      .orElseThrow(() -> new RuntimeException("Failed to find Snyk Executable. Installation Home is not configured."));
+
     return Optional.ofNullable(launcher.getChannel())
-      .orElseThrow(() -> new IOException("Failed to get snyk executable. Node does not support channels."))
-      .call(new MasterToSlaveCallable<String, IOException>() {
-        @Override
-        public String call() throws IOException {
-          Platform platform = Platform.current();
-          String filename = "snyk".equals(name)
-            ? platform.snykWrapperFileName
-            : platform.snykToHtmlWrapperFileName;
-
-          String root = Optional.ofNullable(getHome())
-            .orElseThrow(() -> new IOException(format(
-              "Failed to resolve executable <%s>. Could not find home.",
-              filename
-            )));
-
-          final Path executable = Paths.get(root).resolve(filename).toAbsolutePath();
-          if (!executable.toFile().exists()) {
-            throw new IOException(format("Could not find executable <%s>", filename));
-          }
-          return executable.toString();
-        }
-      });
+      .orElseThrow(() -> new RuntimeException("Failed to find Snyk Executable. Build Node does not support channels."))
+      .call(new ResolveExecutable(home, name));
   }
 
-  public static SnykInstallation install(SnykContext context, String name)
-  throws IOException, InterruptedException {
+  public static SnykInstallation install(SnykContext context, String name) throws IOException, InterruptedException {
     Node node = Optional.ofNullable(context.getWorkspace().toComputer())
       .map(Computer::getNode)
-      .orElseThrow(() -> new AbortException("Not running on a build node."));
+      .orElseThrow(() -> new RuntimeException("Failed to install Snyk. Snyk can only be installed on a Build Node."));
 
     SnykStepBuilderDescriptor descriptor = Jenkins.get().getDescriptorByType(SnykStepBuilderDescriptor.class);
     return Stream.of(descriptor.getInstallations())
       .filter(installation -> installation.getName().equals(name))
       .findFirst()
-      .orElseThrow(() -> new IOException("Snyk installation named '" + name + "' was not found. Please configure the build properly and retry."))
+      .orElseThrow(() -> new RuntimeException("Failed to install Snyk. Installation named '" + name + "' was not found. Please make sure it's configured in Jenkins under Global Tool Configuration."))
       .forNode(node, context.getTaskListener())
       .forEnvironment(context.getEnvVars());
+  }
+
+  private static class ResolveExecutable extends MasterToSlaveCallable<String, IOException> {
+    private static final long serialVersionUID = 1L;
+
+    private final String home;
+    private final String name;
+
+    public ResolveExecutable(String home, String name) {
+      this.home = home;
+      this.name = name;
+    }
+
+    @Override
+    public String call() {
+      Platform platform = Platform.current();
+      String filename = "snyk".equals(name)
+        ? platform.snykWrapperFileName
+        : platform.snykToHtmlWrapperFileName;
+
+      final Path executable = Paths.get(home).resolve(filename).toAbsolutePath();
+      if (!executable.toFile().exists()) {
+        throw new RuntimeException("Failed to find Snyk Executable. Executable does not exist. (" + executable.toAbsolutePath() + ")");
+      }
+      return executable.toString();
+    }
   }
 
   @Extension

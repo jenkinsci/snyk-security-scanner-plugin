@@ -7,17 +7,7 @@
     </l:side-panel>
 
     <l:main-panel>
-      <a href="../${it.urlName}">Back To Reports</a>
-      <br/>
-      <br/>
-      <iframe width="95%" height="700" id="reportsframe" frameborder="0" src=""/>
-      <br/>
-      <br/>
-      <a href="../${it.urlName}">Back To Reports</a>
+      <iframe width="100%" height="100%" id="reportsframe" frameborder="0" src="${it.getArtifactHref()}" style="min-height: 700px;"/>
     </l:main-panel>
-
-    <script>
-      document.getElementById("reportsframe").src = "../artifact/" + location.hash.substr(1)
-    </script>
   </l:layout>
 </j:jelly>

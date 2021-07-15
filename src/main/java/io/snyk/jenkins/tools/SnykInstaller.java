@@ -17,8 +17,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URL;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -45,16 +47,16 @@ public class SnykInstaller extends ToolInstaller {
   }
 
   @Override
-  public FilePath performInstallation(ToolInstallation tool, Node node, TaskListener log) throws IOException, InterruptedException {
+  public FilePath performInstallation(ToolInstallation tool, Node node, TaskListener listener) throws IOException, InterruptedException {
     FilePath expected = preferredLocation(tool, node);
+    PrintStream logger = listener.getLogger();
 
     if (isUpToDate(expected)) {
-      log.getLogger().println("Snyk installation is UP-TO-DATE");
       return expected;
     }
 
-    log.getLogger().println("Installing Snyk Security tool (version '" + fixEmptyAndTrim(version) + "')");
-    return downloadSnykBinaries(expected, node, log);
+    logger.println("Installing Snyk (" + fixEmptyAndTrim(version) + ")...");
+    return downloadSnykBinaries(expected, node);
   }
 
   private boolean isUpToDate(FilePath expectedLocation) throws IOException, InterruptedException {
@@ -82,17 +84,16 @@ public class SnykInstaller extends ToolInstaller {
     return timestampDifference < updateInterval;
   }
 
-  private FilePath downloadSnykBinaries(FilePath expected, Node node, TaskListener log) throws IOException, InterruptedException {
-    LOG.info("Install Snyk version '{}' as single binary on node '{}'", version, node.getDisplayName());
-
-    final VirtualChannel nodeChannel = node.getChannel();
-    if (nodeChannel == null) {
-      throw new IOException(format("Node '%s' is offline", node.getDisplayName()));
-    }
-
-    Platform platform = nodeChannel.call(new GetPlatform(node.getDisplayName()));
-
+  private FilePath downloadSnykBinaries(FilePath expected, Node node) {
     try {
+      LOG.info("Installing Snyk '{}' on Build Node '{}'", version, node.getDisplayName());
+
+      final VirtualChannel nodeChannel = node.getChannel();
+      if (nodeChannel == null) {
+        throw new IOException(format("Build Node '%s' is offline.", node.getDisplayName()));
+      }
+
+      Platform platform = nodeChannel.call(new GetPlatform());
       URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
       URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml("latest", platform);
       expected.mkdirs();
@@ -100,12 +101,10 @@ public class SnykInstaller extends ToolInstaller {
       nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
       expected.child(INSTALLED_FROM).write(snykDownloadUrl.toString(), UTF_8.name());
       expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
-    } catch (Exception ex) {
-      log.getLogger().println("Snyk Security tool could not installed: " + ex.getMessage());
-      throw new ToolDetectionException("Could not install Snyk CLI from binary", ex);
+      return expected;
+    } catch (RuntimeException | IOException | InterruptedException ex) {
+      throw new RuntimeException("Failed to install Snyk.", ex);
     }
-
-    return expected;
   }
 
   @SuppressWarnings("unused")
@@ -121,6 +120,7 @@ public class SnykInstaller extends ToolInstaller {
   @Extension
   public static final class SnykInstallerDescriptor extends ToolInstallerDescriptor<SnykInstaller> {
 
+    @Nonnull
     @Override
     public String getDisplayName() {
       return "Install from snyk.io";
@@ -135,19 +135,9 @@ public class SnykInstaller extends ToolInstaller {
   private static class GetPlatform extends MasterToSlaveCallable<Platform, IOException> {
     private static final long serialVersionUID = 1L;
 
-    private final String nodeDisplayName;
-
-    GetPlatform(String nodeDisplayName) {
-      this.nodeDisplayName = nodeDisplayName;
-    }
-
     @Override
-    public Platform call() throws IOException {
-      try {
-        return Platform.current();
-      } catch (ToolDetectionException ex) {
-        throw new IOException(format("Could not determine platform on node %s", nodeDisplayName));
-      }
+    public Platform call() {
+      return Platform.current();
     }
   }
 
@@ -170,7 +160,7 @@ public class SnykInstaller extends ToolInstaller {
       if (!Functions.isWindows() && downloadedFile.isFile()) {
         boolean result = downloadedFile.setExecutable(true, false);
         if (!result) {
-          throw new IOException(format("Could not set executable flag for the file: %s", downloadedFile.getAbsolutePath()));
+          throw new RuntimeException(format("Failed to set file as executable. (%s)", downloadedFile.getAbsolutePath()));
         }
       }
       return null;

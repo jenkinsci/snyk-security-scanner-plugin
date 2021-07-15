@@ -10,7 +10,7 @@
       <h3>Reports</h3>
       <j:forEach var="artifact" items="${it.run.artifacts}">
         <j:if test="${artifact.toString().indexOf('snyk_report.html') != -1}">
-          <a href="report#${artifact}">${artifact.toString().replace("_snyk_report.html", "")}</a>
+          <a href="report?artifact=${artifact}">${artifact.toString().replace("_snyk_report.html", "")}</a>
           <br/>
         </j:if>
       </j:forEach>

@@ -1,6 +1,5 @@
 package io.snyk.jenkins;
 
-import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -19,13 +18,13 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 
 import static hudson.Util.fixEmptyAndTrim;
-import static io.snyk.jenkins.config.SnykConstants.SNYK_TEST_REPORT_JSON;
+import static io.snyk.jenkins.Utils.getURLSafeDateTime;
 
 public class SnykTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykTest.class);
 
-  public static int testProject(
+  public static Result testProject(
     SnykContext context,
     SnykConfig config,
     SnykInstallation installation
@@ -35,62 +34,68 @@ public class SnykTest {
     Launcher launcher = context.getLauncher();
     EnvVars envVars = context.getEnvVars();
 
-    int testExitCode;
+    FilePath stdoutPath = workspace.child(getURLSafeDateTime() + "_snyk_report.json");
 
-    FilePath snykTestReport = workspace.child(SNYK_TEST_REPORT_JSON);
-    FilePath snykTestDebug = workspace.child(SNYK_TEST_REPORT_JSON + ".debug");
+    ArgumentListBuilder command = CommandLine
+      .asArgumentList(
+        installation.getSnykExecutable(launcher),
+        Command.TEST,
+        config,
+        envVars
+      )
+      .add("--json");
 
-    ArgumentListBuilder testCommand = CommandLine.asArgumentList(
-      installation.getSnykExecutable(launcher),
-      Command.TEST,
-      config,
-      envVars
-    );
-
-    try (
-      OutputStream snykTestOutput = snykTestReport.write();
-      OutputStream snykTestDebugOutput = snykTestDebug.write()
-    ) {
-      logger.println("Testing for known issues...");
-      logger.println("> " + testCommand);
-      testExitCode = launcher.launch()
-        .cmds(testCommand)
+    int exitCode;
+    try (OutputStream stdoutWriter = stdoutPath.write()) {
+      logger.println("Testing project...");
+      logger.println("> " + command);
+      exitCode = launcher.launch()
+        .cmds(command)
         .envs(envVars)
-        .stdout(snykTestOutput)
-        .stderr(snykTestDebugOutput)
+        .stdout(stdoutWriter)
+        .stderr(logger)
         .quiet(true)
         .pwd(workspace)
         .join();
     }
 
-    String snykTestReportAsString = snykTestReport.readToString();
+    String stdout = stdoutPath.readToString();
     if (LOG.isTraceEnabled()) {
-      LOG.trace("Command line arguments: {}", testCommand);
-      LOG.trace("Exit code: {}", testExitCode);
-      LOG.trace("Command standard output: {}", snykTestReportAsString);
-      LOG.trace("Command debug output: {}", snykTestDebug.readToString());
+      LOG.trace("snyk test command: {}", command);
+      LOG.trace("snyk test exit code: {}", exitCode);
+      LOG.trace("snyk test stdout: {}", stdout);
     }
 
-    SnykTestResult snykTestResult = ObjectMapperHelper.unmarshallTestResult(snykTestReportAsString);
-    if (snykTestResult == null) {
-      throw new AbortException("Could not parse generated json report file.");
+    SnykTestResult result = ObjectMapperHelper.unmarshallTestResult(stdout);
+    if (result == null) {
+      throw new RuntimeException("Failed to parse test output.");
     }
-    // exit on cli error immediately
-    if (fixEmptyAndTrim(snykTestResult.error) != null) {
-      throw new AbortException("Error result: " + snykTestResult.error);
+    if (fixEmptyAndTrim(result.error) != null) {
+      throw new RuntimeException("An error occurred. " + result.error);
     }
-    if (testExitCode >= 2) {
-      throw new AbortException("An error occurred. Exit code is " + testExitCode);
+    if (exitCode >= 2) {
+      throw new RuntimeException("An error occurred. (Exit Code: " + exitCode + ")");
     }
-    if (!snykTestResult.ok) {
+    if (!result.ok) {
       logger.println("Vulnerabilities found!");
       logger.printf(
         "Result: %s known vulnerabilities | %s dependencies%n",
-        snykTestResult.uniqueCount,
-        snykTestResult.dependencyCount
+        result.uniqueCount,
+        result.dependencyCount
       );
     }
 
-    return testExitCode;
+    return new Result(stdoutPath, exitCode);
   }
+
+  public static class Result {
+    public final FilePath testJsonPath;
+    public final boolean foundIssues;
+
+    public Result(FilePath testJsonPath, int exitCode) {
+      this.testJsonPath = testJsonPath;
+      this.foundIssues = exitCode == 1;
+    }
+  }
+
 }

@@ -8,7 +8,6 @@ import hudson.util.Secret;
 import io.snyk.jenkins.SnykContext;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.util.Optional;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
@@ -20,7 +19,7 @@ import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredenti
 public interface SnykApiToken extends StandardCredentials {
 
   @Nonnull
-  Secret getToken() throws IOException, InterruptedException;
+  Secret getToken();
 
   class NameProvider extends CredentialsNameProvider<SnykApiToken> {
 
@@ -32,9 +31,9 @@ public interface SnykApiToken extends StandardCredentials {
     }
   }
 
-  static String getToken(SnykContext context, String snykTokenId) throws IOException, InterruptedException {
+  static String getToken(SnykContext context, String snykTokenId) {
     return Optional.ofNullable(findCredentialById(snykTokenId, SnykApiToken.class, context.getRun()))
-      .orElseThrow(() -> new IOException("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry."))
+      .orElseThrow(() -> new RuntimeException("Snyk API token with ID '" + snykTokenId + "' was not found. Please configure the build properly and retry."))
       .getToken()
       .getPlainText();
   }

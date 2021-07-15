@@ -9,32 +9,26 @@ import java.util.Map;
  * Supported platform.
  */
 public enum Platform {
-  LINUX("node", "npm", "bin", "snyk-linux", "snyk-to-html-linux"),
-  LINUX_ALPINE("node", "npm", "bin", "snyk-alpine", "snyk-to-html-alpine"),
-  MAC_OS("node", "npm", "bin", "snyk-macos", "snyk-to-html-macos"),
-  WINDOWS("node.exe", "npm.cmd", "", "snyk-win.exe", "snyk-to-html-win.exe");
+  LINUX("snyk-linux", "snyk-to-html-linux"),
+  LINUX_ALPINE("snyk-alpine", "snyk-to-html-alpine"),
+  MAC_OS("snyk-macos", "snyk-to-html-macos"),
+  WINDOWS("snyk-win.exe", "snyk-to-html-win.exe");
 
-  public final String nodeFileName;
-  public final String npmFileName;
-  public final String binFolder;
   public final String snykWrapperFileName;
   public final String snykToHtmlWrapperFileName;
 
-  Platform(String nodeFileName, String npmFileName, String binFolder, String snykWrapperFileName, String snykToHtmlWrapperFileName) {
-    this.nodeFileName = nodeFileName;
-    this.npmFileName = npmFileName;
-    this.binFolder = binFolder;
+  Platform(String snykWrapperFileName, String snykToHtmlWrapperFileName) {
     this.snykWrapperFileName = snykWrapperFileName;
     this.snykToHtmlWrapperFileName = snykToHtmlWrapperFileName;
   }
 
   @Nonnull
-  public static Platform current() throws ToolDetectionException {
+  public static Platform current() {
     return detect(System.getProperties());
   }
 
   @Nonnull
-  private static Platform detect(@Nonnull Map<Object, Object> systemProperties) throws ToolDetectionException {
+  private static Platform detect(@Nonnull Map<Object, Object> systemProperties) {
     String arch = ((String) systemProperties.get("os.name")).toLowerCase(Locale.ENGLISH);
     if (arch.contains("linux")) {
       return Paths.get("/etc/alpine-release").toFile().exists() ? LINUX_ALPINE : LINUX;
@@ -43,6 +37,6 @@ public enum Platform {
     } else if (arch.contains("windows")) {
       return WINDOWS;
     }
-    throw new ToolDetectionException(arch + " is not supported CPU type");
+    throw new RuntimeException("Unsupported platform. (OS: " + arch + ")");
   }
 }
