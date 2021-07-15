@@ -3,6 +3,7 @@ package io.snyk.jenkins.command;
 import hudson.EnvVars;
 import hudson.Util;
 import hudson.util.ArgumentListBuilder;
+import io.snyk.jenkins.PluginMetadata;
 import io.snyk.jenkins.config.SnykConfig;
 
 import java.util.Arrays;
@@ -48,10 +49,11 @@ public class CommandLine {
   }
 
   public static Map<String, String> asEnvVars(String snykToken, EnvVars envVars) {
-    return new HashMap<String, String>() {{
-      putAll(envVars);
-      Optional.ofNullable(snykToken).ifPresent(token -> put("SNYK_TOKEN", token));
-    }};
+    HashMap<String, String> result = new HashMap<>(envVars);
+    Optional.ofNullable(snykToken).ifPresent(token -> result.put("SNYK_TOKEN", token));
+    result.put("SNYK_INTEGRATION_NAME", PluginMetadata.getIntegrationName());
+    result.put("SNYK_INTEGRATION_VERSION", PluginMetadata.getIntegrationVersion());
+    return result;
   }
 
   public static Map<String, String> asEnvVars(EnvVars envVars) {
