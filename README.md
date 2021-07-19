@@ -129,7 +129,7 @@ pipeline {
         echo 'Testing...'
         snykSecurity(
           snykInstallation: '<Your Snyk Installation Name>',
-          snykTokenId: '<Your Snyk Token ID>',
+          snykTokenId: '<Your Snyk API Token ID>',
           // place other parameters here
         )
       }
@@ -152,15 +152,18 @@ You can pass the following parameters to your `snykSecurity` step.
 
 Snyk Installation Name. As configured in "[2. Configure a Snyk Installation](#2-configure-a-snyk-installation)".
 
-#### `snykTokenId` (required)
+#### `snykTokenId` (optional, default: *none*)
 
 Snyk API Token Credential ID. As configured in "[3. Configure a Snyk API Token Credential](#3-configure-a-snyk-api-token-credential)".
 
-#### `failOnIssues` (optional, default `true`)
+If you prefer to provide the Snyk API Token another way, such using alternative credential bindings, you'll need to
+provide a "SNYK_TOKEN" build environment variable.
+
+#### `failOnIssues` (optional, default: `true`)
 
 Whether the step should fail if issues and vulnerabilities are found.
 
-#### `failOnError` (optional, default `true`)
+#### `failOnError` (optional, default: `true`)
 
 Whether the step should fail if Snyk fails to scan the project due to an error. Errors include scenarios like: failing
 to download Snyk's binaries, improper Jenkins setup, bad configuration and server errors.

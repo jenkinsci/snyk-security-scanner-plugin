@@ -66,11 +66,11 @@ public class SnykStepBuilderDescriptorTest {
   }
 
   @Test
-  public void doCheckSnykTokenId_shouldReturnError_ifSnykTokenIsEmpty() throws Exception {
+  public void doCheckSnykTokenId_shouldReturnWarning_ifSnykTokenIsEmpty() throws Exception {
     jenkins.createFreeStyleProject();
     Kind snykTokenIdValidation = instance.doCheckSnykTokenId(jenkins.getInstance().getItems().get(0),null).kind;
 
-    assertThat(snykTokenIdValidation, is(Kind.ERROR));
+    assertThat(snykTokenIdValidation, is(Kind.WARNING));
   }
 
   @Test

@@ -264,7 +264,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
         }
       }
       if (fixEmptyAndTrim(value) == null) {
-        return FormValidation.error("Snyk API token is required.");
+        return FormValidation.warningWithMarkup("A Snyk API token is required. If you do not provide credentials, make sure to provide a <code>SNYK_TOKEN</code> build environment variable.");
       }
 
       if (null == CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM, Collections.emptyList()),
