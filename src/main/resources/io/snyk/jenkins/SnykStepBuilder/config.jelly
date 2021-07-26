@@ -33,7 +33,7 @@
 
   <!-- common configuration -->
   <f:section title="">
-    <f:entry title="Snyk token" field="snykTokenId">
+    <f:entry title="Snyk API token" field="snykTokenId">
       <c:select/>
     </f:entry>
     <f:entry title="Target file" field="targetFile">

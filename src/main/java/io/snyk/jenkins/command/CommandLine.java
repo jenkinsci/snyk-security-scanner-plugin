@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static io.snyk.jenkins.credentials.SnykApiToken.SNYK_TOKEN_ENV_KEY;
+
 public class CommandLine {
   public static ArgumentListBuilder asArgumentList(String executablePath, Command command, SnykConfig config, EnvVars env) {
     Function<String, String> replaceMacroWithEnv = str -> Util.replaceMacro(str, env);
@@ -50,7 +52,7 @@ public class CommandLine {
 
   public static Map<String, String> asEnvVars(String snykToken, EnvVars envVars) {
     HashMap<String, String> result = new HashMap<>(envVars);
-    Optional.ofNullable(snykToken).ifPresent(token -> result.put("SNYK_TOKEN", token));
+    Optional.ofNullable(snykToken).ifPresent(token -> result.put(SNYK_TOKEN_ENV_KEY, token));
     result.put("SNYK_INTEGRATION_NAME", PluginMetadata.getIntegrationName());
     result.put("SNYK_INTEGRATION_VERSION", PluginMetadata.getIntegrationVersion());
     return result;
