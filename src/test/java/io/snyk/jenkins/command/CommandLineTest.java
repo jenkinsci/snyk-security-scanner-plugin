@@ -19,9 +19,19 @@ public class CommandLineTest {
     EnvVars env = new EnvVars();
     SnykConfig config = Mockito.mock(SnykConfig.class);
 
+    ArgumentListBuilder result = CommandLine.asArgumentList("/usr/bin/snyk", Command.MONITOR, config, env);
+
+    assertThat(result.toList(), equalTo(asList("/usr/bin/snyk", "monitor")));
+  }
+
+  @Test
+  public void shouldIncludeJsonForTest() {
+    EnvVars env = new EnvVars();
+    SnykConfig config = Mockito.mock(SnykConfig.class);
+
     ArgumentListBuilder result = CommandLine.asArgumentList("/usr/bin/snyk", Command.TEST, config, env);
 
-    assertThat(result.toList(), equalTo(asList("/usr/bin/snyk", "test")));
+    assertThat(result.toList(), equalTo(asList("/usr/bin/snyk", "test", "--json")));
   }
 
   @Test
@@ -49,6 +59,7 @@ public class CommandLineTest {
     assertThat(result.toList(), equalTo(asList(
       "/usr/bin/snyk",
       "test",
+      "--json",
       "--severity-threshold=high",
       "--project-name=my-project"
     )));
@@ -69,19 +80,22 @@ public class CommandLineTest {
   }
 
   @Test
-  public void shouldIncludeAdditionalArguments() {
+  public void shouldAppendAdditionalArgumentsToTheEnd() {
     EnvVars env = new EnvVars();
 
     SnykConfig config = Mockito.mock(SnykConfig.class);
-    when(config.getAdditionalArguments()).thenReturn("--dev\n \n-d");
+    when(config.getAdditionalArguments()).thenReturn("--dev\n \n-d -- --settings=settings.xml");
 
     ArgumentListBuilder result = CommandLine.asArgumentList("/usr/bin/snyk", Command.TEST, config, env);
 
     assertThat(result.toList(), equalTo(asList(
       "/usr/bin/snyk",
       "test",
+      "--json",
       "--dev",
-      "-d"
+      "-d",
+      "--",
+      "--settings=settings.xml"
     )));
   }
 }

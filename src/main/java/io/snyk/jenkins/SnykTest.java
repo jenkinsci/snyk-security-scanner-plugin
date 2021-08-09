@@ -44,8 +44,7 @@ public class SnykTest {
         Command.TEST,
         config,
         envVars
-      )
-      .add("--json");
+      );
 
     Map<String, String> commandEnvVars = CommandLine.asEnvVars(snykToken, envVars);
 
