@@ -19,6 +19,10 @@ public class CommandLine {
     Function<String, String> replaceMacroWithEnv = str -> Util.replaceMacro(str, env);
     ArgumentListBuilder args = new ArgumentListBuilder(executablePath, command.commandName());
 
+    if (command == Command.TEST) {
+      args.add("--json");
+    }
+
     Optional.ofNullable(config.getSeverity())
       .map(Util::fixEmptyAndTrim)
       .map(replaceMacroWithEnv)
