@@ -20,6 +20,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,7 +32,7 @@ import java.util.stream.Stream;
 public class SnykInstallation extends ToolInstallation implements EnvironmentSpecific<SnykInstallation>, NodeSpecific<SnykInstallation> {
 
   @DataBoundConstructor
-  public SnykInstallation(@Nonnull String name, @Nonnull String home, List<? extends ToolProperty<?>> properties) {
+  public SnykInstallation(@Nonnull String name, @Nullable String home, List<? extends ToolProperty<?>> properties) {
     super(name, home, properties);
   }
 
