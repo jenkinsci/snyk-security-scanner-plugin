@@ -6,8 +6,6 @@ import hudson.Launcher;
 import hudson.util.ArgumentListBuilder;
 import io.snyk.jenkins.command.CommandLine;
 import io.snyk.jenkins.tools.SnykInstallation;
-import io.snyk.jenkins.transform.ReportConverter;
-import jenkins.model.Jenkins;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,12 +70,7 @@ public class SnykToHTML {
         throw new RuntimeException("Exited with non-zero exit code. (Exit Code: " + exitCode + ")");
       }
 
-      String reportContents = ReportConverter.getInstance().modifyHeadSection(
-        stdout,
-        Jenkins.get().servletContext.getContextPath()
-      );
-
-      stdoutPath.write(reportContents, UTF_8.name());
+      stdoutPath.write(stdout, UTF_8.name());
 
       return stdoutPath;
     } catch (IOException | InterruptedException | RuntimeException ex) {
