@@ -94,6 +94,9 @@ public class SnykInstaller extends ToolInstaller {
       }
 
       Platform platform = nodeChannel.call(new GetPlatform());
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Detected Build Node platform: {}", platform);
+      }
       URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
       URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml("latest", platform);
       expected.mkdirs();
