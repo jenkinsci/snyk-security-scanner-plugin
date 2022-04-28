@@ -136,6 +136,8 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
 
     @Nonnull
     private PlatformItem getSnykInstallerPlatformIfDefined(SnykInstallation installation) {
+      // read saved xml configuration and try to read platform value
+      // if nothing will be found or any exceptions occurs return AUTO as default
       DescribableList<ToolProperty<?>, ToolPropertyDescriptor> properties = installation.getProperties();
       try {
         if (properties.size() == 1 && properties.get(0) instanceof InstallSourceProperty) {
