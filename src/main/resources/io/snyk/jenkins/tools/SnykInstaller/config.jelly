@@ -6,4 +6,7 @@
   <f:entry title="Update policy interval (hours)">
     <f:textbox field="updatePolicyIntervalHours" default="24"/>
   </f:entry>
+  <f:entry field="platform" title="OS platform architecture">
+    <f:select default="AUTO" />
+  </f:entry>
 </j:jelly>
