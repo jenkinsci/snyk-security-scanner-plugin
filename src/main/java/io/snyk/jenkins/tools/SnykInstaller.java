@@ -9,6 +9,7 @@ import hudson.remoting.VirtualChannel;
 import hudson.tools.ToolInstallation;
 import hudson.tools.ToolInstaller;
 import hudson.tools.ToolInstallerDescriptor;
+import hudson.util.ListBoxModel;
 import io.snyk.jenkins.tools.internal.DownloadService;
 import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.io.FileUtils;
@@ -38,12 +39,14 @@ public class SnykInstaller extends ToolInstaller {
 
   private final String version;
   private final Long updatePolicyIntervalHours;
+  private final PlatformItem platform;
 
   @DataBoundConstructor
-  public SnykInstaller(String label, String version, Long updatePolicyIntervalHours) {
+  public SnykInstaller(String label, String version, Long updatePolicyIntervalHours, PlatformItem platform) {
     super(label);
     this.version = version;
     this.updatePolicyIntervalHours = updatePolicyIntervalHours;
+    this.platform = platform;
   }
 
   @Override
@@ -93,17 +96,47 @@ public class SnykInstaller extends ToolInstaller {
         throw new IOException(format("Build Node '%s' is offline.", node.getDisplayName()));
       }
 
-      Platform platform = nodeChannel.call(new GetPlatform());
-      if (LOG.isTraceEnabled()) {
-        LOG.trace("Detected Build Node platform: {}", platform);
+      Platform cliPlatform;
+      switch (this.platform) {
+        case AUTO:
+          cliPlatform = nodeChannel.call(new GetPlatform());
+          LOG.info("Detected Build Node platform: {}", cliPlatform);
+          break;
+
+        case LINUX:
+          LOG.info("Configured installer architecture is {}", PlatformItem.LINUX);
+          cliPlatform = Platform.LINUX;
+          break;
+
+        case LINUX_ALPINE:
+          LOG.info("Configured installer architecture is {}", PlatformItem.LINUX_ALPINE);
+          cliPlatform = Platform.LINUX_ALPINE;
+          break;
+
+        case MAC_OS:
+          LOG.info("Configured installer architecture is {}", PlatformItem.MAC_OS);
+          cliPlatform = Platform.MAC_OS;
+          break;
+
+        case WINDOWS:
+          LOG.info("Configured installer architecture is {}", PlatformItem.WINDOWS);
+          cliPlatform = Platform.WINDOWS;
+          break;
+
+        default:
+          LOG.warn("Could not detect Build Node platform, use Linux as default.");
+          cliPlatform = Platform.LINUX;
       }
-      URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
-      URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml("latest", platform);
+
+      URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, cliPlatform);
+      URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml("latest", cliPlatform);
+
       expected.mkdirs();
-      nodeChannel.call(new Downloader(snykDownloadUrl, expected.child(platform.snykWrapperFileName)));
-      nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
+      nodeChannel.call(new Downloader(snykDownloadUrl, expected.child(cliPlatform.snykWrapperFileName)));
+      nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(cliPlatform.snykToHtmlWrapperFileName)));
       expected.child(INSTALLED_FROM).write(snykDownloadUrl.toString(), UTF_8.name());
       expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
+
       return expected;
     } catch (RuntimeException | IOException | InterruptedException ex) {
       throw new RuntimeException("Failed to install Snyk.", ex);
@@ -120,6 +153,11 @@ public class SnykInstaller extends ToolInstaller {
     return updatePolicyIntervalHours;
   }
 
+  @SuppressWarnings("unused")
+  public PlatformItem getPlatform() {
+    return platform;
+  }
+
   @Extension
   public static final class SnykInstallerDescriptor extends ToolInstallerDescriptor<SnykInstaller> {
 
@@ -132,6 +170,19 @@ public class SnykInstaller extends ToolInstaller {
     @Override
     public boolean isApplicable(Class<? extends ToolInstallation> toolType) {
       return toolType == SnykInstallation.class;
+    }
+
+    @SuppressWarnings("unused")
+    public ListBoxModel doFillPlatformItems() {
+      ListBoxModel platformItems = new ListBoxModel();
+
+      platformItems.add("Auto-detection", PlatformItem.AUTO.name());
+      platformItems.add("Linux (amd64)", PlatformItem.LINUX.name());
+      platformItems.add("Linux Alpine (amd64)", PlatformItem.LINUX_ALPINE.name());
+      platformItems.add("Mac OS (amd64)", PlatformItem.MAC_OS.name());
+      platformItems.add("Windows (amd64)", PlatformItem.WINDOWS.name());
+
+      return platformItems;
     }
   }
 
