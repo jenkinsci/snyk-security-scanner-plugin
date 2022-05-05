@@ -96,44 +96,19 @@ public class SnykInstaller extends ToolInstaller {
         throw new IOException(format("Build Node '%s' is offline.", node.getDisplayName()));
       }
 
-      Platform cliPlatform;
-      switch (this.platform) {
-        case AUTO:
-          cliPlatform = nodeChannel.call(new GetPlatform());
-          LOG.info("Detected Build Node platform: {}", cliPlatform);
-          break;
-
-        case LINUX:
-          LOG.info("Configured installer architecture is {}", PlatformItem.LINUX);
-          cliPlatform = Platform.LINUX;
-          break;
-
-        case LINUX_ALPINE:
-          LOG.info("Configured installer architecture is {}", PlatformItem.LINUX_ALPINE);
-          cliPlatform = Platform.LINUX_ALPINE;
-          break;
-
-        case MAC_OS:
-          LOG.info("Configured installer architecture is {}", PlatformItem.MAC_OS);
-          cliPlatform = Platform.MAC_OS;
-          break;
-
-        case WINDOWS:
-          LOG.info("Configured installer architecture is {}", PlatformItem.WINDOWS);
-          cliPlatform = Platform.WINDOWS;
-          break;
-
-        default:
-          LOG.warn("Could not detect Build Node platform, use Linux as default.");
-          cliPlatform = Platform.LINUX;
+      Platform platform = PlatformItem.convert(this.platform);
+      if (platform == null) {
+        LOG.info("Installer architecture is not configured or use AUTO mode");
+        platform = nodeChannel.call(new GetPlatform());
       }
+      LOG.info("Configured installer architecture is {}", platform);
 
-      URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, cliPlatform);
-      URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml("latest", cliPlatform);
+      URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
+      URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml("latest", platform);
 
       expected.mkdirs();
-      nodeChannel.call(new Downloader(snykDownloadUrl, expected.child(cliPlatform.snykWrapperFileName)));
-      nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(cliPlatform.snykToHtmlWrapperFileName)));
+      nodeChannel.call(new Downloader(snykDownloadUrl, expected.child(platform.snykWrapperFileName)));
+      nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
       expected.child(INSTALLED_FROM).write(snykDownloadUrl.toString(), UTF_8.name());
       expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
 
