@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 public class SnykInstallation extends ToolInstallation implements EnvironmentSpecific<SnykInstallation>, NodeSpecific<SnykInstallation> {
+  private static final Logger LOG = LoggerFactory.getLogger(SnykInstallation.class);
 
   @DataBoundConstructor
   public SnykInstallation(@Nonnull String name, @Nullable String home, List<? extends ToolProperty<?>> properties) {
@@ -64,9 +65,38 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
     String home = Optional.ofNullable(getHome())
       .orElseThrow(() -> new RuntimeException("Failed to find Snyk Executable. Installation Home is not configured."));
 
+    Platform platform = null;
+    SnykStepBuilderDescriptor descriptor = Jenkins.get().getDescriptorByType(SnykStepBuilderDescriptor.class);
+    SnykInstallation snykInstallation = Stream.of(descriptor.getInstallations())
+                                              .filter(installation -> installation.getName().equals(this.getName()))
+                                              .findFirst().orElse(null);
+    if (snykInstallation != null) {
+      PlatformItem installerPlatform = getSnykInstallerPlatformIfDefined(snykInstallation);
+      platform = PlatformItem.convert(installerPlatform);
+    }
+
     return Optional.ofNullable(launcher.getChannel())
       .orElseThrow(() -> new RuntimeException("Failed to find Snyk Executable. Build Node does not support channels."))
-      .call(new ResolveExecutable(this.getName(), home, executableName));
+      .call(new ResolveExecutable(home, executableName, platform));
+  }
+
+  @Nonnull
+  private PlatformItem getSnykInstallerPlatformIfDefined(SnykInstallation installation) {
+    // read saved xml configuration and try to read platform value
+    // if nothing will be found or any exceptions occurs return AUTO as default
+    DescribableList<ToolProperty<?>, ToolPropertyDescriptor> properties = installation.getProperties();
+    try {
+      if (properties.size() == 1 && properties.get(0) instanceof InstallSourceProperty) {
+        DescribableList<ToolInstaller, Descriptor<ToolInstaller>> installers = ((InstallSourceProperty) properties.get(0)).installers;
+        if (installers.size() == 1 && installers.get(0) instanceof SnykInstaller) {
+          return ((SnykInstaller) installers.get(0)).getPlatform();
+        }
+      }
+    } catch(Exception ex) {
+      LOG.warn("Could not read properties from Snyk installation", ex);
+    }
+    LOG.warn("Could not find defined installer architecture, will return 'AUTO'");
+    return PlatformItem.AUTO;
   }
 
   public static SnykInstallation install(SnykContext context, String name) throws IOException, InterruptedException {
@@ -87,33 +117,25 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(ResolveExecutable.class);
 
-    private final String snykInstallationName;
     private final String home;
     private final String executableName;
+    private final Platform executablePlatform;
 
-    public ResolveExecutable(String snykInstallationName, String home, String executableName) {
-      this.snykInstallationName = snykInstallationName;
+    public ResolveExecutable(String home, String executableName, Platform executablePlatform) {
       this.home = home;
       this.executableName = executableName;
+      this.executablePlatform = executablePlatform;
     }
 
     @Override
     public String call() {
-      // try to find configured installation first
-      SnykStepBuilderDescriptor descriptor = Jenkins.get().getDescriptorByType(SnykStepBuilderDescriptor.class);
-      SnykInstallation snykInstallation = Stream.of(descriptor.getInstallations())
-                                                .filter(installation -> installation.getName().equals(snykInstallationName))
-                                                .findFirst().orElse(null);
-      Platform platform = Platform.current();
-      if (snykInstallation != null) {
-        PlatformItem installerPlatform = getSnykInstallerPlatformIfDefined(snykInstallation);
-        platform = PlatformItem.convert(installerPlatform);
-        if (platform == null) {
+      Platform platform = executablePlatform;
+      if (platform == null) {
           LOG.info("Installer architecture is not configured or use AUTO mode");
           platform = Platform.current();
-        }
-        LOG.info("Installation '{}' has '{}' architecture configured, '{}' platform will be used", snykInstallationName, installerPlatform, platform);
       }
+      LOG.info("'{}' platform will be used by resolving Snyk Executable", platform);
+
       String filename = "snyk".equals(executableName) ? platform.snykWrapperFileName : platform.snykToHtmlWrapperFileName;
 
       final Path executable = Paths.get(home).resolve(filename).toAbsolutePath();
@@ -121,25 +143,6 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
         throw new RuntimeException("Failed to find Snyk Executable. Executable does not exist. (" + executable.toAbsolutePath() + ")");
       }
       return executable.toString();
-    }
-
-    @Nonnull
-    private PlatformItem getSnykInstallerPlatformIfDefined(SnykInstallation installation) {
-      // read saved xml configuration and try to read platform value
-      // if nothing will be found or any exceptions occurs return AUTO as default
-      DescribableList<ToolProperty<?>, ToolPropertyDescriptor> properties = installation.getProperties();
-      try {
-        if (properties.size() == 1 && properties.get(0) instanceof InstallSourceProperty) {
-          DescribableList<ToolInstaller, Descriptor<ToolInstaller>> installers = ((InstallSourceProperty) properties.get(0)).installers;
-          if (installers.size() == 1 && installers.get(0) instanceof SnykInstaller) {
-            return ((SnykInstaller) installers.get(0)).getPlatform();
-          }
-        }
-      } catch(Exception ex) {
-        LOG.warn("Could not read properties from Snyk installation", ex);
-      }
-      LOG.warn("Could not find defined installer architecture, will return 'AUTO'");
-      return PlatformItem.AUTO;
     }
   }
 
