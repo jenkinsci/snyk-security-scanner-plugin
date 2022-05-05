@@ -107,23 +107,12 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       Platform platform = Platform.current();
       if (snykInstallation != null) {
         PlatformItem installerPlatform = getSnykInstallerPlatformIfDefined(snykInstallation);
-        LOG.info("Installation '{}' has '{}' architecture configured", snykInstallationName, installerPlatform);
-        switch (installerPlatform) {
-          case LINUX:
-            platform = Platform.LINUX;
-            break;
-          case LINUX_ALPINE:
-            platform = Platform.LINUX_ALPINE;
-            break;
-          case MAC_OS:
-            platform = Platform.MAC_OS;
-            break;
-          case WINDOWS:
-            platform = Platform.WINDOWS;
-            break;
-          default:
-            platform = Platform.current();
+        platform = PlatformItem.convert(installerPlatform);
+        if (platform == null) {
+          LOG.info("Installer architecture is not configured or use AUTO mode");
+          platform = Platform.current();
         }
+        LOG.info("Installation '{}' has '{}' architecture configured, '{}' platform will be used", snykInstallationName, installerPlatform, platform);
       }
       String filename = "snyk".equals(executableName) ? platform.snykWrapperFileName : platform.snykToHtmlWrapperFileName;
 
