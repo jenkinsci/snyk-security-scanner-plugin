@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 SCRIPT_RELATIVE_DIR=$(dirname "${BASH_SOURCE[0]}")
 pushd "$SCRIPT_RELATIVE_DIR"/.. || exit 1
 HOST="http://$(echo "$DOCKER_HOST" | cut -f3 -d "/" | cut -f1 -d":"):8080"
