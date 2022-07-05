@@ -32,7 +32,7 @@
   <licenses>
     <license>
       <name>MIT License</name>
-      <url>http://opensource.org/licenses/MIT</url>
+      <url>https://opensource.org/licenses/MIT</url>
     </license>
   </licenses>
 
@@ -68,7 +68,7 @@
     <dependency>
       <groupId>org.jodd</groupId>
       <artifactId>jodd-lagarto</artifactId>
-      <version>5.0.11</version>
+      <version>6.0.6</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -99,7 +99,7 @@
         <artifactId>maven-hpi-plugin</artifactId>
         <extensions>true</extensions>
         <configuration>
-          <compatibleSinceVersion>${jenkins.version}</compatibleSinceVersion>
+          <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
           <minimumJavaVersion>1.8</minimumJavaVersion>
         </configuration>
       </plugin>
