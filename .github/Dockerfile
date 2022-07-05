@@ -10,9 +10,9 @@ RUN ./mvnw verify -q -s .mvn/settings.xml --fail-never
 
 # only now copy the src and do the real build based on the layer above that caches deps
 COPY . .
-RUN ./mvnw clean verify -q -s .mvn/settings.xml
+RUN ./mvnw clean verify -s .mvn/settings.xml
 
-FROM jenkins/jenkins:2.346.1-lts
+FROM jenkins/jenkins:lts
 
 USER root
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq git python3 python3-pip sudo
