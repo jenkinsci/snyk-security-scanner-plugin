@@ -1,0 +1,11 @@
+tool:
+  snyk:
+    installations:
+    - name: "snyk"
+      properties:
+      - installSource:
+          installers:
+          - snykInstaller:
+              platform: LINUX
+              updatePolicyIntervalHours: 36
+              version: "1.947.0"
