@@ -65,6 +65,16 @@ directory".
 </details>
 </blockquote>
 
+### Custom API Endpoints
+
+By default, Snyk uses the https://snyk.io/api endpoint. 
+It is possible to configure Snyk to use a different endpoint by changing the `SNYK_API` environment variable:
+
+- Go to "Manage Jenkins" > "Configure System"
+- Under "Global Properties" check the "Environment variables" option
+- Click "Add"
+- Set the name to `SNYK_API` and the value to the custom endpoint
+
 ## 3. Configure a Snyk API Token Credential
 
 - [Get your Snyk API Token](https://support.snyk.io/hc/en-us/articles/360004037537-Authentication-for-third-party-tools)
