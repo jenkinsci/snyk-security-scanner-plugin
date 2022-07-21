@@ -75,6 +75,8 @@ It is possible to configure Snyk to use a different endpoint by changing the `SN
 - Click "Add"
 - Set the name to `SNYK_API` and the value to the custom endpoint
 
+Refer to the [Snyk documentation](https://docs.snyk.io/snyk-cli/configure-the-snyk-cli#configuration-to-connect-to-the-snyk-api) for more information about API configuration.
+
 ## 3. Configure a Snyk API Token Credential
 
 - [Get your Snyk API Token](https://support.snyk.io/hc/en-us/articles/360004037537-Authentication-for-third-party-tools)
