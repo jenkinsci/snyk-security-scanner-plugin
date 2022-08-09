@@ -25,10 +25,10 @@ ENV JENKINS_PASS admin
 
 ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
 
-RUN /usr/local/bin/install-plugins.sh workflow-step-api
-RUN /usr/local/bin/install-plugins.sh credentials
-RUN /usr/local/bin/install-plugins.sh git
-RUN /usr/local/bin/install-plugins.sh configuration-as-code
+RUN jenkins-plugin-cli --plugins workflow-step-api
+RUN jenkins-plugin-cli --plugins credentials
+RUN jenkins-plugin-cli --plugins git
+RUN jenkins-plugin-cli --plugins configuration-as-code
 
 COPY --from=build /app/target/snyk-security-scanner.* /usr/share/jenkins/ref/plugins/
 
