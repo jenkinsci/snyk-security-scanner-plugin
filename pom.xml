@@ -11,7 +11,7 @@
   <properties>
     <jenkins.version>2.289.3</jenkins.version>
     <java.level>8</java.level>
-    <configuration-as-code.version>1.51</configuration-as-code.version>
+    <configuration-as-code.version>1.55.1</configuration-as-code.version>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
 
