@@ -142,7 +142,8 @@ pipeline {
         snykSecurity(
           snykInstallation: '<Your Snyk Installation Name>',
           snykTokenId: '<Your Snyk API Token ID>',
-          // place other parameters here
+          // place other optional parameters here, for example:
+          additionalArguments: '--all-projects --detection-depth=<DEPTH>'
         )
       }
     }
