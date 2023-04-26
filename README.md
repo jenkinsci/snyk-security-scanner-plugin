@@ -201,6 +201,11 @@ for default behaviour.
 The minimum severity to detect. Can be one of the following: `low`, `medium`, `high`
 , `critical`. See `--severity-threshold` under [Snyk CLI docs](https://snyk.io/docs/using-snyk/) for default behaviour.
 
+#### `monitorProjectOnBuild` (optional, default: `true`)
+
+Monitor the project on every build by taking a snapshot of its current dependencies on Snyk.io. Selecting this option will keep you notified about newly disclosed vulnerabilities and remediation options in the project.
+
+  
 #### `additionalArguments` (optional, default: *none*)
 
 See [Snyk CLI docs](https://snyk.io/docs/using-snyk/) for information on additional arguments.
