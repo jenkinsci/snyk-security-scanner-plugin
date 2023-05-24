@@ -51,7 +51,6 @@ public class SnykMonitorTest {
 
   @Test
   public void testMonitorShouldFailOnErrorIfConfigIsSet() throws IOException, InterruptedException {// mock setup
-    // when exit code 2 is returned, a runtime exception should be thrown
     when(starter.join()).thenReturn(2);
 
     SnykContext context = SnykContext.forFreestyleProject(buildMock, null, launchMock, taskListenerMock);
@@ -69,7 +68,6 @@ public class SnykMonitorTest {
 
   @Test
   public void testMonitorShouldNotFailOnErrorIfConfigIsNotSet() throws IOException, InterruptedException {// mock setup
-    // when exit code 2 is returned, a runtime exception should be thrown
     when(starter.join()).thenReturn(2);
 
     SnykContext context = SnykContext.forFreestyleProject(buildMock, null, launchMock, taskListenerMock);
@@ -84,7 +82,6 @@ public class SnykMonitorTest {
 
   @Test
   public void testMonitorShouldNotFailIfErrorCodeIs0AndConfigIsSet() throws IOException, InterruptedException {// mock setup
-    // when exit code 2 is returned, a runtime exception should be thrown
     when(starter.join()).thenReturn(0);
 
     SnykContext context = SnykContext.forFreestyleProject(buildMock, null, launchMock, taskListenerMock);
@@ -99,7 +96,6 @@ public class SnykMonitorTest {
 
   @Test
   public void testMonitorShouldNotFailIfErrorCodeIs0AndConfigIsNotSet() throws IOException, InterruptedException {// mock setup
-    // when exit code 2 is returned, a runtime exception should be thrown
     when(starter.join()).thenReturn(0);
 
     SnykContext context = SnykContext.forFreestyleProject(buildMock, null, launchMock, taskListenerMock);
