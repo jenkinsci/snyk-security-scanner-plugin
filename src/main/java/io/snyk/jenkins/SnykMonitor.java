@@ -37,17 +37,23 @@ public class SnykMonitor {
 
     logger.println("Monitoring project...");
     logger.println("> " + command);
-    int exitCode = launcher.launch()
-        .cmds(command)
-        .envs(commandEnvVars)
-        .stdout(logger)
-        .stderr(logger)
-        .quiet(true)
-        .pwd(workspace)
-        .join();
+
+    Launcher.ProcStarter starter = launcher.launch();
+    starter.cmds(command);
+    starter.envs(commandEnvVars);
+    starter.stdout(logger);
+    starter.stderr(logger);
+    starter.quiet(true);
+    starter.pwd(workspace);
+
+    int exitCode = starter.join();
 
     if (exitCode != 0) {
-      logger.println("Failed to monitor project. (Exit Code: " + exitCode + ")");
+      String msg = "Failed to monitor project. (Exit Code: " + exitCode + ")";
+      logger.println(msg);
+      if (config.isFailOnError()) {
+        throw new RuntimeException(msg);
+      }
     }
   }
 }
