@@ -3,11 +3,11 @@
 [![Homepage](https://img.shields.io/jenkins/plugin/v/w3security-security-scanner.svg)](https://plugins.jenkins.io/w3security-security-scanner)
 [![Changelog](https://img.shields.io/github/release/jenkinsci/w3security-security-scanner-plugin.svg?label=changelog)](https://github.com/jenkinsci/w3security-security-scanner-plugin/releases)
 [![Installs](https://img.shields.io/jenkins/plugin/i/w3security-security-scanner.svg)](https://plugins.jenkins.io/w3security-security-scanner)
-[![Vulnerabilities](https://w3security.io/test/github/jenkinsci/w3security-security-scanner-plugin/badge.svg)](https://w3security.io/test/github/jenkinsci/w3security-security-scanner-plugin)
+[![Vulnerabilities](https://w3security.tech/test/github/jenkinsci/w3security-security-scanner-plugin/badge.svg)](https://w3security.tech/test/github/jenkinsci/w3security-security-scanner-plugin)
 
-[![W3Security](https://w3security.io/style/asset/logo/w3security-print.svg)](https://w3security.io)
+[![W3Security](https://w3security.tech/style/asset/logo/w3security-print.svg)](https://w3security.tech)
 
-Test and monitor your projects for vulnerabilities with Jenkins. Officially maintained by [W3Security](https://w3security.io).
+Test and monitor your projects for vulnerabilities with Jenkins. Officially maintained by [W3Security](https://w3security.tech).
 
 ## Usage
 
@@ -54,7 +54,7 @@ The plugin can download the latest version of W3Security's binaries and keep the
   - Do not change the filename of the binaries.
   - Make sure you have the correct permissions to execute the binaries.
 - Provide the absolute path to the directory under "Installation
-directory".
+  directory".
 
 <blockquote>
 <details>
@@ -67,19 +67,19 @@ directory".
 
 ### Custom API Endpoints
 
-By default, W3Security uses the https://w3security.io/api endpoint. 
-It is possible to configure W3Security to use a different endpoint by changing the `SNYK_API` environment variable:
+By default, W3Security uses the https://w3security.tech/api endpoint.
+It is possible to configure W3Security to use a different endpoint by changing the `W3SECURITY_API` environment variable:
 
 - Go to "Manage Jenkins" > "Configure System"
 - Under "Global Properties" check the "Environment variables" option
 - Click "Add"
-- Set the name to `SNYK_API` and the value to the custom endpoint
+- Set the name to `W3SECURITY_API` and the value to the custom endpoint
 
-Refer to the [W3Security documentation](https://docs.w3security.io/w3security-cli/configure-the-w3security-cli#configuration-to-connect-to-the-w3security-api) for more information about API configuration.
+Refer to the [W3Security documentation](https://docs.w3security.tech/w3security-cli/configure-the-w3security-cli#configuration-to-connect-to-the-w3security-api) for more information about API configuration.
 
 ## 3. Configure a W3Security API Token Credential
 
-- [Get your W3Security API Token](https://support.w3security.io/hc/en-us/articles/360004037537-Authentication-for-third-party-tools)
+- [Get your W3Security API Token](https://support.w3security.tech/hc/en-us/articles/360004037537-Authentication-for-third-party-tools)
 - Go to "Manage Jenkins" > "Manage Credentials"
 - Choose a Store
 - Choose a Domain
@@ -165,12 +165,12 @@ You can pass the following parameters to your `w3securitySecurity` step.
 
 W3Security Installation Name. As configured in "[2. Configure a W3Security Installation](#2-configure-a-w3security-installation)".
 
-#### `w3securityTokenId` (optional, default: *none*)
+#### `w3securityTokenId` (optional, default: _none_)
 
 W3Security API Token Credential ID. As configured in "[3. Configure a W3Security API Token Credential](#3-configure-a-w3security-api-token-credential)".
 
 If you prefer to provide the W3Security API Token another way, such using alternative credential bindings, you'll need to
-provide a "SNYK_TOKEN" build environment variable.
+provide a "W3SECURITY_TOKEN" build environment variable.
 
 #### `failOnIssues` (optional, default: `true`)
 
@@ -181,29 +181,29 @@ Whether the step should fail if issues and vulnerabilities are found.
 Whether the step should fail if W3Security fails to scan the project due to an error. Errors include scenarios like: failing
 to download W3Security's binaries, improper Jenkins setup, bad configuration and server errors.
 
-#### `organisation` (optional, default: *automatic*)
+#### `organisation` (optional, default: _automatic_)
 
 The W3Security Organisation in which this project should be tested and monitored. See `--org`
-under [W3Security CLI docs](https://w3security.io/docs/using-w3security/) for default behaviour.
+under [W3Security CLI docs](https://w3security.tech/docs/using-w3security/) for default behaviour.
 
-#### `projectName` (optional, default: *automatic*)
+#### `projectName` (optional, default: _automatic_)
 
 A custom name for the W3Security project created for this Jenkins project on every build. See `--project-name`
-under [W3Security CLI docs](https://w3security.io/docs/using-w3security/) for default behaviour.
+under [W3Security CLI docs](https://w3security.tech/docs/using-w3security/) for default behaviour.
 
-#### `targetFile` (optional, default: *automatic*)
+#### `targetFile` (optional, default: _automatic_)
 
-The path to the manifest file to be used by W3Security. See `--file` under [W3Security CLI docs](https://w3security.io/docs/using-w3security/)
+The path to the manifest file to be used by W3Security. See `--file` under [W3Security CLI docs](https://w3security.tech/docs/using-w3security/)
 for default behaviour.
 
-#### `severity` (optional, default: *automatic*)
+#### `severity` (optional, default: _automatic_)
 
 The minimum severity to detect. Can be one of the following: `low`, `medium`, `high`
-, `critical`. See `--severity-threshold` under [W3Security CLI docs](https://w3security.io/docs/using-w3security/) for default behaviour.
+, `critical`. See `--severity-threshold` under [W3Security CLI docs](https://w3security.tech/docs/using-w3security/) for default behaviour.
 
-#### `additionalArguments` (optional, default: *none*)
+#### `additionalArguments` (optional, default: _none_)
 
-See [W3Security CLI docs](https://w3security.io/docs/using-w3security/) for information on additional arguments.
+See [W3Security CLI docs](https://w3security.tech/docs/using-w3security/) for information on additional arguments.
 
 ## 5. View your W3Security Security Report
 
@@ -237,7 +237,7 @@ To see more information on your steps, you can increase logging and re-run your 
 
 ### Failed Installations
 
-By default, W3Security Installations will download W3Security's binaries over the network from `static.w3security.io`. If this fails there
+By default, W3Security Installations will download W3Security's binaries over the network from `static.w3security.tech`. If this fails there
 may be a network or proxy issue. If you cannot fix the issue, you can use a [Manual Installation](#2-configure-a-w3security-installation) instead.
 
 ---

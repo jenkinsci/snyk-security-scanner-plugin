@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -15,19 +16,19 @@
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
 
-  <groupId>io.snyk.plugins</groupId>
-  <artifactId>snyk-security-scanner</artifactId>
+  <groupId>io.w3security.plugins</groupId>
+  <artifactId>w3security-security-scanner</artifactId>
   <version>3.2.8-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
-  <name>Snyk Security Plugin</name>
-  <description>Add the ability to test your code dependencies for vulnerabilities against Snyk database</description>
-  <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
+  <name>W3Security Security Plugin</name>
+  <description>Add the ability to test your code dependencies for vulnerabilities against W3Security database</description>
+  <url>https://github.com/jenkinsci/w3security-security-scanner-plugin</url>
 
   <scm>
-    <connection>scm:git:ssh://github.com/jenkinsci/snyk-security-scanner-plugin.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/jenkinsci/snyk-security-scanner-plugin.git</developerConnection>
-    <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
+    <connection>scm:git:ssh://github.com/jenkinsci/w3security-security-scanner-plugin.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/jenkinsci/w3security-security-scanner-plugin.git</developerConnection>
+    <url>https://github.com/jenkinsci/w3security-security-scanner-plugin</url>
     <tag>HEAD</tag>
   </scm>
   <licenses>

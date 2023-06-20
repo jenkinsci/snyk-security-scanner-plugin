@@ -8,12 +8,13 @@
 
 ### Experimental Releases
 
-To release experimental versions and configure Jenkins to use it read the documentation. 
+To release experimental versions and configure Jenkins to use it read the documentation.
 
 - [Publishing Experimental Plugin Releases](https://www.jenkins.io/doc/developer/publishing/releasing-experimental-updates/)
 
 ## Testing the plugin
-1. Under `.github`, you'll find scripts to build a dockerized jenkins with the Snyk plugin, compiled from the current source, pre-installed.
+
+1. Under `.github`, you'll find scripts to build a dockerized jenkins with the W3Security plugin, compiled from the current source, pre-installed.
 2. To do that, run the following scripts:
 
 ```bash

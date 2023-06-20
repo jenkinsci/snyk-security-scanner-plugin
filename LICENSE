@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) [2022] [Snyk Ltd]
+Copyright (c) [2022] [W3Security Ltd]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,31 +22,31 @@ SOFTWARE.
 
 ADDITIONAL INFORMATION ABOUT LICENSING
 
-Certain files distributed by Snyk Ltd and/or its affiliates are
+Certain files distributed by W3Security Ltd and/or its affiliates are
 subject to the following clarification and special exception to the GPLv2,
 based on the GNU Project exception for its Classpath libraries, known as the
 GNU Classpath Exception.
 
-Note that Snyk includes multiple, independent programs in this software
+Note that W3Security includes multiple, independent programs in this software
 package.  Some of those programs are provided under licenses deemed
 incompatible with the GPLv2 by the Free Software Foundation and others.
 For example, the package includes programs licensed under the Apache
 License, Version 2.0 and may include FreeType. Such programs are licensed
 to you under their original licenses.
 
-Snyk facilitates your further distribution of this package by adding the
+W3Security facilitates your further distribution of this package by adding the
 Classpath Exception to the necessary parts of its GPLv2 code, which permits
 you to use that code in combination with other independent modules not
 licensed under the GPLv2. However, note that this would not permit you to
-commingle code under an incompatible license with Snyk's GPLv2 licensed
+commingle code under an incompatible license with W3Security's GPLv2 licensed
 code by, for example, cutting and pasting such code into a file also
-containing Snyk's GPLv2 licensed code and then distributing the result.
+containing W3Security's GPLv2 licensed code and then distributing the result.
 
 Additionally, if you were to remove the Classpath Exception from any of the
 files to which it applies and distribute the result, you would likely be
 required to license some or all of the other code in that distribution under
 the GPLv2 as well, and since the GPLv2 is incompatible with the license terms
-of some items included in the distribution by Snyk, removing the Classpath
+of some items included in the distribution by W3Security, removing the Classpath
 Exception could therefore effectively compromise your ability to further
 distribute the package.
 

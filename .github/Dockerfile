@@ -30,7 +30,7 @@ RUN jenkins-plugin-cli --plugins credentials
 RUN jenkins-plugin-cli --plugins git
 RUN jenkins-plugin-cli --plugins configuration-as-code
 
-COPY --from=build /app/target/snyk-security-scanner.* /usr/share/jenkins/ref/plugins/
+COPY --from=build /app/target/w3security-security-scanner.* /usr/share/jenkins/ref/plugins/
 
 EXPOSE 8080
 EXPOSE 50000
