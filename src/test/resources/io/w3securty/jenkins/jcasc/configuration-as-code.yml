@@ -1,11 +1,11 @@
 tool:
-  snyk:
+  w3securty:
     installations:
-    - name: "snyk"
+    - name: "w3securty"
       properties:
       - installSource:
           installers:
-          - snykInstaller:
+          - w3securtyInstaller:
               platform: LINUX
               updatePolicyIntervalHours: 36
               version: "1.947.0"
