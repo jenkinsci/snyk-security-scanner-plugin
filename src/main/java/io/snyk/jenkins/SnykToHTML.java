@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Map;
+import java.nio.charset.MalformedInputException;
 
 import static io.snyk.jenkins.Utils.getURLSafeDateTime;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -58,19 +59,23 @@ public class SnykToHTML {
           .join();
       }
 
-      String stdout = stdoutPath.readToString();
-
-      if (LOG.isTraceEnabled()) {
-        LOG.trace("snyk-to-html command: {}", command);
-        LOG.trace("snyk-to-html exit code: {}", exitCode);
-        LOG.trace("snyk-to-html stdout: {}", stdout);
-      }
-
       if (exitCode != 0) {
         throw new RuntimeException("Exited with non-zero exit code. (Exit Code: " + exitCode + ")");
       }
 
-      stdoutPath.write(stdout, UTF_8.name());
+      try {
+        String stdout = stdoutPath.readToString();
+
+        if (LOG.isTraceEnabled()) {
+          LOG.trace("snyk-to-html command: {}", command);
+          LOG.trace("snyk-to-html exit code: {}", exitCode);
+          LOG.trace("snyk-to-html stdout: {}", stdout);
+        }
+
+        stdoutPath.write(stdout, UTF_8.name());
+      } catch(MalformedInputException e) {
+        logger.println("Couldn't convert report to UTF-8.");
+      }
 
       return stdoutPath;
     } catch (IOException | InterruptedException | RuntimeException ex) {
