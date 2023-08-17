@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk8 as build
+FROM adoptopenjdk/openjdk11 as build
 # use local mvn repo to speedup build
 COPY .m2 /root/.m2
 WORKDIR /app
@@ -34,5 +34,3 @@ COPY --from=build /app/target/snyk-security-scanner.* /usr/share/jenkins/ref/plu
 
 EXPOSE 8080
 EXPOSE 50000
-
-
