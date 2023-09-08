@@ -59,6 +59,8 @@ public class CommandLine {
     Optional.ofNullable(snykToken).ifPresent(token -> result.put(SNYK_TOKEN_ENV_KEY, token));
     result.put("SNYK_INTEGRATION_NAME", PluginMetadata.getIntegrationName());
     result.put("SNYK_INTEGRATION_VERSION", PluginMetadata.getIntegrationVersion());
+    result.put("SNYK_INTEGRATION_ENVIRONMENT", PluginMetadata.getIntegrationEnvironment());
+    result.put("SNYK_INTEGRATION_ENVIRONMENT_VERSION", PluginMetadata.getIntegrationEnvironmentVersion());
     return result;
   }
 

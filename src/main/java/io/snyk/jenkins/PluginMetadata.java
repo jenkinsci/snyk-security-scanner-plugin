@@ -8,11 +8,21 @@ import java.util.Optional;
 
 public class PluginMetadata {
 
-  private static final String INTEGRATION_NAME = "JENKINS";
+  private static final String INTEGRATION_NAME = "snyk-security-scanner";
+  private static final String INTEGRATION_ENVIRONMENT = "JENKINS";
   private static String INTEGRATION_VERSION;
+  private static String INTEGRATION_ENVIRONMENT_VERSION = Jenkins.VERSION;
 
   public static String getIntegrationName() {
     return INTEGRATION_NAME;
+  }
+
+  public static String getIntegrationEnvironment() {
+    return INTEGRATION_ENVIRONMENT;
+  }
+
+  public static String getIntegrationEnvironmentVersion() {
+    return INTEGRATION_ENVIRONMENT_VERSION;
   }
 
   public static String getIntegrationVersion() {
