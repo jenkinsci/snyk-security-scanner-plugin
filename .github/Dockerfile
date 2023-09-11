@@ -12,7 +12,7 @@ RUN ./mvnw verify -q -s .mvn/settings.xml --fail-never
 COPY . .
 RUN ./mvnw clean verify -s .mvn/settings.xml
 
-FROM jenkins/jenkins:lts
+FROM jenkins/jenkins:2.401.1-jdk11
 
 USER root
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq git python3 python3-pip sudo

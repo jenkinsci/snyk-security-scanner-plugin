@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Map;
+import java.nio.charset.MalformedInputException;
 
 import static hudson.Util.fixEmptyAndTrim;
 import static io.snyk.jenkins.Utils.getURLSafeDateTime;
@@ -62,30 +63,35 @@ public class SnykTest {
         .join();
     }
 
-    String stdout = stdoutPath.readToString();
-    if (LOG.isTraceEnabled()) {
-      LOG.trace("snyk test command: {}", command);
-      LOG.trace("snyk test exit code: {}", exitCode);
-      LOG.trace("snyk test stdout: {}", stdout);
-    }
 
-    SnykTestResult result = ObjectMapperHelper.unmarshallTestResult(stdout);
-    if (result == null) {
-      throw new RuntimeException("Failed to parse test output.");
-    }
-    if (fixEmptyAndTrim(result.error) != null) {
-      throw new RuntimeException("An error occurred. " + result.error);
-    }
-    if (exitCode >= 2) {
-      throw new RuntimeException("An error occurred. (Exit Code: " + exitCode + ")");
-    }
-    if (!result.ok) {
-      logger.println("Vulnerabilities found!");
-      logger.printf(
-        "Result: %s known vulnerabilities | %s dependencies%n",
-        result.uniqueCount,
-        result.dependencyCount
-      );
+    try {
+      String stdout = stdoutPath.readToString();
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("snyk test command: {}", command);
+        LOG.trace("snyk test exit code: {}", exitCode);
+        LOG.trace("snyk test stdout: {}", stdout);
+      }
+
+      SnykTestResult result = ObjectMapperHelper.unmarshallTestResult(stdout);
+      if (result == null) {
+        throw new RuntimeException("Failed to parse test output.");
+      }
+      if (fixEmptyAndTrim(result.error) != null) {
+        throw new RuntimeException("An error occurred. " + result.error);
+      }
+      if (exitCode >= 2) {
+        throw new RuntimeException("An error occurred. (Exit Code: " + exitCode + ")");
+      }
+      if (!result.ok) {
+        logger.println("Vulnerabilities found!");
+        logger.printf(
+          "Result: %s known vulnerabilities | %s dependencies%n",
+          result.uniqueCount,
+          result.dependencyCount
+        );
+      }
+    } catch (MalformedInputException e) {
+      logger.println("Couldn't convert report to UTF-8.");
     }
 
     return new Result(stdoutPath, exitCode);
@@ -100,5 +106,4 @@ public class SnykTest {
       this.foundIssues = exitCode == 1;
     }
   }
-
 }
