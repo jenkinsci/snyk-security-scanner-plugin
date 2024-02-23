@@ -12,11 +12,11 @@ RUN ./mvnw verify -q -s .mvn/settings.xml --fail-never
 COPY . .
 RUN ./mvnw clean verify -s .mvn/settings.xml
 
-FROM jenkins/jenkins:2.401.1-jdk11
+FROM jenkins/jenkins:2.442-jdk11
 
 USER root
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -qq git python3 python3-pip sudo
-RUN pip3 install virtualenv
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
+    apt-get install -qq --no-install-recommends git python3 python3-pip python3-virtualenv sudo
 
 USER jenkins
 
