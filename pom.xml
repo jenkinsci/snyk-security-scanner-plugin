@@ -9,7 +9,7 @@
   </parent>
 
   <properties>
-    <jenkins.version>2.442</jenkins.version>
+    <jenkins.version>2.450</jenkins.version>
     <!-- java11 required since 2.357:
           https://www.jenkins.io/blog/2022/06/28/require-java-11/ -->
     <java.version>11</java.version>
