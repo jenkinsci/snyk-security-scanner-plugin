@@ -12,7 +12,7 @@ RUN ./mvnw verify -q -s .mvn/settings.xml --fail-never
 COPY . .
 RUN ./mvnw clean verify -s .mvn/settings.xml
 
-FROM jenkins/jenkins:2.442-jdk11
+FROM jenkins/jenkins:2.450-jdk11
 
 USER root
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
