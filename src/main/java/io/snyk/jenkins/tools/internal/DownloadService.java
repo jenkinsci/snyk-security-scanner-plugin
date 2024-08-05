@@ -12,9 +12,9 @@ import java.util.List;
 import static java.lang.String.format;
 
 public class DownloadService {
-  public static final String SNYK_INTEGRATION_NAME = "JENKINS_PLUGIN";
   private static final String SNYK_DOWNLOAD_PRIMARY = "https://downloads.snyk.io/%s/%s/%s";
   private static final String SNYK_DOWNLOAD_SECONDARY = "https://static.snyk.io/%s/%s/%s";
+  public static final String SNYK_INTEGRATION_NAME = "JENKINS_PLUGIN";
   public static final List<String> SNYK_CLI_DOWNLOAD_URLS = Collections.unmodifiableList(Arrays.asList(SNYK_DOWNLOAD_PRIMARY, SNYK_DOWNLOAD_SECONDARY));
 
   private DownloadService() {
@@ -22,7 +22,13 @@ public class DownloadService {
   }
 
   public static URL constructDownloadUrlForSnyk(@Nonnull String urlTemplate, @Nonnull String product, @Nonnull String version, @Nonnull Platform platform) throws IOException {
-    URL urlNoUtm = new URL(format(urlTemplate, product, version, platform.snykWrapperFileName));
+    URL urlNoUtm;
+
+    if (product.equals("cli")) {
+      urlNoUtm = new URL(format(urlTemplate, product, version, platform.snykWrapperFileName));
+    } else { // snyk-to-html
+      urlNoUtm = new URL(format(urlTemplate, product, version, platform.snykToHtmlWrapperFileName));
+    }
     return new URL(urlNoUtm.toString() + "?utm_source=" + SNYK_INTEGRATION_NAME);
   }
 }
