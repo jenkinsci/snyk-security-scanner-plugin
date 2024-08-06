@@ -1,5 +1,6 @@
 package io.snyk.jenkins.tools.internal;
 
+import io.snyk.jenkins.PluginMetadata;
 import org.junit.Test;
 
 import io.snyk.jenkins.tools.Platform;
@@ -19,7 +20,7 @@ public class DownloadServiceTest {
     String urlTemplate = "https://downloads.snyk.io/%s/%s/%s";
     String product = "cli";
     String version = "stable";
-    String queryParam = "?utm_source=" + DownloadService.SNYK_INTEGRATION_NAME;
+    String queryParam = "?utm_source=" + PluginMetadata.getIntegrationName();
     Platform platform = Platform.MAC_OS;
 
     URL expectedUrl = new URL("https://downloads.snyk.io/" + product + "/" + version + "/" + "snyk-macos" + queryParam);
@@ -34,7 +35,7 @@ public class DownloadServiceTest {
     String urlTemplate = "https://downloads.snyk.io/%s/%s/%s";
     String product = "snyk-to-html";
     String version = "stable";
-    String queryParam = "?utm_source=" + DownloadService.SNYK_INTEGRATION_NAME;
+    String queryParam = "?utm_source=" + PluginMetadata.getIntegrationName();
     Platform platform = Platform.MAC_OS;
 
     URL expectedUrl = new URL("https://downloads.snyk.io/" + product + "/" + version + "/" + "snyk-to-html-macos" + queryParam);

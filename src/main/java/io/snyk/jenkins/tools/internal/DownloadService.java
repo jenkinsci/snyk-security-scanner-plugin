@@ -1,5 +1,6 @@
 package io.snyk.jenkins.tools.internal;
 
+import io.snyk.jenkins.PluginMetadata;
 import io.snyk.jenkins.tools.Platform;
 
 import javax.annotation.Nonnull;
@@ -14,7 +15,6 @@ import static java.lang.String.format;
 public class DownloadService {
   private static final String SNYK_DOWNLOAD_PRIMARY = "https://downloads.snyk.io/%s/%s/%s";
   private static final String SNYK_DOWNLOAD_SECONDARY = "https://static.snyk.io/%s/%s/%s";
-  public static final String SNYK_INTEGRATION_NAME = "JENKINS_PLUGIN";
   public static final List<String> SNYK_CLI_DOWNLOAD_URLS = Collections.unmodifiableList(Arrays.asList(SNYK_DOWNLOAD_PRIMARY, SNYK_DOWNLOAD_SECONDARY));
 
   private DownloadService() {
@@ -29,6 +29,6 @@ public class DownloadService {
     } else { // snyk-to-html
       urlNoUtm = new URL(format(urlTemplate, product, version, platform.snykToHtmlWrapperFileName));
     }
-    return new URL(urlNoUtm.toString() + "?utm_source=" + SNYK_INTEGRATION_NAME);
+    return new URL(urlNoUtm.toString() + "?utm_source=" + PluginMetadata.getIntegrationName());
   }
 }
