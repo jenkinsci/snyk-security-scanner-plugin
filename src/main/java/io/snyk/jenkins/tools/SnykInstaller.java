@@ -107,6 +107,9 @@ public class SnykInstaller extends ToolInstaller {
         URL snykDownloadUrl = DownloadService.constructDownloadUrlForSnyk(snykUrlTemplate, "cli", version, platform);
         URL snykToHtmlDownloadUrl = DownloadService.constructDownloadUrlForSnyk(snykUrlTemplate, "snyk-to-html", "latest", platform);
 
+        LOG.info("Downloading CLI from {}", snykDownloadUrl);
+        LOG.info("Downloading snyk-to-html from {}", snykToHtmlDownloadUrl);
+
         expected.mkdirs();
         nodeChannel.call(new Downloader(snykDownloadUrl, expected.child(platform.snykWrapperFileName)));
         nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
