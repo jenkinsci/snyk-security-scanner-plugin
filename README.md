@@ -237,7 +237,7 @@ To see more information on your steps, you can increase logging and re-run your 
 
 ### Failed Installations
 
-By default, Snyk Installations will download Snyk's binaries over the network from `static.snyk.io`. If this fails there
+By default, Snyk Installations will download Snyk's binaries over the network from `downloads.snyk.io` and use `static.snyk.io` as a fallback. If this fails there
 may be a network or proxy issue. If you cannot fix the issue, you can use a [Manual Installation](#2-configure-a-snyk-installation) instead.
 
 ---

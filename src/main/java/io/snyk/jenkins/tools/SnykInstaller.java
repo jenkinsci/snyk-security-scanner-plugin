@@ -88,34 +88,40 @@ public class SnykInstaller extends ToolInstaller {
   }
 
   private FilePath downloadSnykBinaries(FilePath expected, Node node) {
-    try {
-      LOG.info("Installing Snyk '{}' on Build Node '{}'", version, node.getDisplayName());
+    for (String snykUrlTemplate : DownloadService.SNYK_CLI_DOWNLOAD_URLS) {
+      try {
+        LOG.info("Installing Snyk '{}' on Build Node '{}'", version, node.getDisplayName());
 
-      final VirtualChannel nodeChannel = node.getChannel();
-      if (nodeChannel == null) {
-        throw new IOException(format("Build Node '%s' is offline.", node.getDisplayName()));
+        final VirtualChannel nodeChannel = node.getChannel();
+        if (nodeChannel == null) {
+          throw new IOException(format("Build Node '%s' is offline.", node.getDisplayName()));
+        }
+
+        Platform platform = PlatformItem.convert(this.platform);
+        if (platform == null) {
+          LOG.info("Installer architecture is not configured or use AUTO mode");
+          platform = nodeChannel.call(new GetPlatform());
+        }
+        LOG.info("Configured installer architecture is {}", platform);
+
+        URL snykDownloadUrl = DownloadService.constructDownloadUrlForSnyk(snykUrlTemplate, "cli", version, platform);
+        URL snykToHtmlDownloadUrl = DownloadService.constructDownloadUrlForSnyk(snykUrlTemplate, "snyk-to-html", "latest", platform);
+
+        LOG.info("Downloading CLI from {}", snykDownloadUrl);
+        LOG.info("Downloading snyk-to-html from {}", snykToHtmlDownloadUrl);
+
+        expected.mkdirs();
+        nodeChannel.call(new Downloader(snykDownloadUrl, expected.child(platform.snykWrapperFileName)));
+        nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
+        expected.child(INSTALLED_FROM).write(snykDownloadUrl.toString(), UTF_8.name());
+        expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
+
+        return expected;
+      } catch (RuntimeException | IOException | InterruptedException ex) {
+        LOG.error("Failed to install Snyk.", ex);
       }
-
-      Platform platform = PlatformItem.convert(this.platform);
-      if (platform == null) {
-        LOG.info("Installer architecture is not configured or use AUTO mode");
-        platform = nodeChannel.call(new GetPlatform());
-      }
-      LOG.info("Configured installer architecture is {}", platform);
-
-      URL snykDownloadUrl = DownloadService.getDownloadUrlForSnyk(version, platform);
-      URL snykToHtmlDownloadUrl = DownloadService.getDownloadUrlForSnykToHtml("latest", platform);
-
-      expected.mkdirs();
-      nodeChannel.call(new Downloader(snykDownloadUrl, expected.child(platform.snykWrapperFileName)));
-      nodeChannel.call(new Downloader(snykToHtmlDownloadUrl, expected.child(platform.snykToHtmlWrapperFileName)));
-      expected.child(INSTALLED_FROM).write(snykDownloadUrl.toString(), UTF_8.name());
-      expected.child(TIMESTAMP_FILE).write(valueOf(Instant.now().toEpochMilli()), UTF_8.name());
-
-      return expected;
-    } catch (RuntimeException | IOException | InterruptedException ex) {
-      throw new RuntimeException("Failed to install Snyk.", ex);
     }
+    throw new RuntimeException("Failed to install Snyk.");
   }
 
   @SuppressWarnings("unused")
