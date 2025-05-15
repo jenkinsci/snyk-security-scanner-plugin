@@ -2,7 +2,7 @@
 
 ## Releasing a New Version
 
-1. Clone the repo locally and pull in any changes on `master`.
+1. Clone the repo locally and pull in any changes on `main`.
 2. Set your accounts.jenkins.io username and password in `./mvn/settings.xml`.
 3. Run `mvn release:prepare release:perform --settings .mvn/settings.xml`.
 
