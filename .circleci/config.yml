@@ -1,0 +1,22 @@
+workflows:
+  version: 2
+  CICD:
+    jobs:
+      - prodsec/secrets-scan:
+          steps:
+            - run:
+              name: Install gitleaks
+              command: |
+                download_url=https://github.com/gitleaks/gitleaks/releases/download/v8.16.2/gitleaks_8.16.2_linux_x64.tar.gz
+                echo Using ${download_url}
+                curl -L ${download_url} --output gitleaks.tar.gz
+                tar -xf gitleaks.tar.gz
+                chmod +x ./gitleaks
+            - run:
+              name: Install gitleaks
+              command: |
+                download_url=https://github.com/gitleaks/gitleaks/releases/download/v8.16.2/gitleaks_8.16.2_linux_x64.tar.gz
+                echo Using ${download_url}
+                curl -L ${download_url} --output gitleaks.tar.gz
+                tar -xf gitleaks.tar.gz
+                chmod +x ./gitleaks
