@@ -13,7 +13,7 @@
     <!-- java11 required since 2.357:
           https://www.jenkins.io/blog/2022/06/28/require-java-11/ -->
     <java.version>11</java.version>
-    <configuration-as-code.version>1.51</configuration-as-code.version>
+    <configuration-as-code.version>1.53.1</configuration-as-code.version>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
 
