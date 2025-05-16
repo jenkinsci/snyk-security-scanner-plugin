@@ -3,7 +3,6 @@ package io.snyk.jenkins;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.CopyOnWrite;
 import hudson.Extension;
 import hudson.FilePath;
@@ -24,7 +23,6 @@ import io.snyk.jenkins.exception.SnykIssueException;
 import io.snyk.jenkins.tools.SnykInstallation;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
-import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -42,7 +40,7 @@ import java.util.stream.Stream;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
-import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
+import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentialsInItemGroup;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
 import static java.util.stream.Collectors.joining;
@@ -198,7 +196,6 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
       return true;
     }
 
-    @SuppressFBWarnings("EI_EXPOSE_REP")
     public SnykInstallation[] getInstallations() {
       return installations;
     }
@@ -238,7 +235,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
         }
       }
       return model.includeEmptyValue()
-                  .includeAs(ACL.SYSTEM, item, SnykApiToken.class)
+                  .includeAs(ACL.SYSTEM2, item, SnykApiToken.class)
                   .includeCurrentValue(snykTokenId);
     }
 
@@ -267,7 +264,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
         return FormValidation.warningWithMarkup("A Snyk API token is required. If you do not provide credentials, make sure to provide a <code>SNYK_TOKEN</code> build environment variable.");
       }
 
-      if (null == CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM, Collections.emptyList()),
+      if (null == CredentialsMatchers.firstOrNull(lookupCredentialsInItemGroup(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM2, Collections.emptyList()),
                                                   anyOf(withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
         return FormValidation.error("Cannot find currently selected Snyk API token.");
       }

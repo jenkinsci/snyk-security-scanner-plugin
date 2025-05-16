@@ -5,15 +5,13 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.71</version>
+    <version>5.17</version>
   </parent>
 
   <properties>
-    <jenkins.version>2.450</jenkins.version>
-    <!-- java11 required since 2.357:
-          https://www.jenkins.io/blog/2022/06/28/require-java-11/ -->
-    <java.version>11</java.version>
-    <configuration-as-code.version>1.53.1</configuration-as-code.version>
+    <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
+    <jenkins.baseline>2.479</jenkins.baseline>
+    <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
 
@@ -39,39 +37,45 @@
     </license>
   </licenses>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.jenkins.tools.bom</groupId>
+        <artifactId>bom-${jenkins.baseline}.x</artifactId>
+        <version>4740.v75a_90f6fefb_7</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
     <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>2.15.0</version>
+      <groupId>org.jenkins-ci.plugins</groupId>
+      <artifactId>jackson2-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci</groupId>
       <artifactId>symbol-annotation</artifactId>
-      <version>1.23</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>credentials</artifactId>
-      <version>2.6.1.1</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-step-api</artifactId>
-      <version>2.23</version>
     </dependency>
 
     <!-- Test Dependencies -->
     <dependency>
       <groupId>io.jenkins</groupId>
       <artifactId>configuration-as-code</artifactId>
-      <version>${configuration-as-code.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.jenkins.configuration-as-code</groupId>
       <artifactId>test-harness</artifactId>
-      <version>${configuration-as-code.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -114,7 +118,7 @@
         <extensions>true</extensions>
         <configuration>
           <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
-          <minimumJavaVersion>1.8</minimumJavaVersion>
+          <minimumJavaVersion>17</minimumJavaVersion>
         </configuration>
       </plugin>
       <plugin>

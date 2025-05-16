@@ -18,16 +18,10 @@ public enum PlatformItem {
       return null;
     }
 
-    switch (platformItem) {
-      case LINUX_ALPINE:
-        return Platform.LINUX_ALPINE;
-
-      case WINDOWS:
-        return Platform.WINDOWS;
-
-      case LINUX:
-      default:
-        return Platform.LINUX;
-    }
+      return switch (platformItem) {
+          case LINUX_ALPINE -> Platform.LINUX_ALPINE;
+          case WINDOWS -> Platform.WINDOWS;
+          default -> Platform.LINUX;
+      };
   }
 }

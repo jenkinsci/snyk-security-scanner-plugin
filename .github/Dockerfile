@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk11 as build
+FROM adoptopenjdk/openjdk17 as build
 # use local mvn repo to speedup build
 COPY .m2 /root/.m2
 WORKDIR /app
@@ -12,7 +12,7 @@ RUN ./mvnw verify -q -s .mvn/settings.xml --fail-never
 COPY . .
 RUN ./mvnw clean verify -s .mvn/settings.xml
 
-FROM jenkins/jenkins:2.450-jdk11
+FROM jenkins/jenkins:2.479.3-jdk17
 
 USER root
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive \

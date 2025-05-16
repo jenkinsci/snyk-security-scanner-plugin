@@ -76,7 +76,7 @@ public class SnykStepFlow {
     Launcher launcher = context.getLauncher();
     TaskListener listener = context.getTaskListener();
     new ArtifactArchiver(report.getName())
-      .perform(run, workspace, launcher, listener);
+      .perform(run, workspace, run.getEnvironment(listener), launcher, listener);
   }
 
   private static void addSidebarLink(SnykContext context) {

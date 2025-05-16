@@ -27,6 +27,7 @@ import org.kohsuke.stapler.QueryParameter;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -158,6 +159,7 @@ public class SnykSecurityStep extends Step implements SnykConfig {
 
   public static class Execution extends SynchronousNonBlockingStepExecution<Void> {
 
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final transient SnykConfig config;
