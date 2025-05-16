@@ -5,21 +5,21 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.71</version>
+    <version>5.0</version>
+    <relativePath />
   </parent>
 
   <properties>
-    <jenkins.version>2.450</jenkins.version>
-    <!-- java11 required since 2.357:
-          https://www.jenkins.io/blog/2022/06/28/require-java-11/ -->
-    <java.version>11</java.version>
-    <configuration-as-code.version>1.53.1</configuration-as-code.version>
+    <java.version>17</java.version>
+    <jenkins.version>2.479.1</jenkins.version>
+    <skipAnimalSniffer>false</skipAnimalSniffer>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
+    <configuration-as-code.version>1887.v9e47623cb_043</configuration-as-code.version>
   </properties>
 
   <groupId>io.snyk.plugins</groupId>
   <artifactId>snyk-security-scanner</artifactId>
-  <version>4.1.1-SNAPSHOT</version>
+  <version>5.0.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Snyk Security Plugin</name>
@@ -28,9 +28,9 @@
 
   <scm>
     <connection>scm:git:ssh://github.com/jenkinsci/snyk-security-scanner-plugin.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/jenkinsci/snyk-security-scanner-plugin.git</developerConnection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
-    <tag>4.0.2</tag>
+    <tag>5.0.0</tag>
   </scm>
   <licenses>
     <license>
@@ -48,17 +48,17 @@
     <dependency>
       <groupId>org.jenkins-ci</groupId>
       <artifactId>symbol-annotation</artifactId>
-      <version>1.23</version>
+      <version>1.24</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins</groupId>
       <artifactId>credentials</artifactId>
-      <version>2.6.1.1</version>
+      <version>1389.vd7a_b_f5fa_50a_2</version>
     </dependency>
     <dependency>
       <groupId>org.jenkins-ci.plugins.workflow</groupId>
       <artifactId>workflow-step-api</artifactId>
-      <version>2.23</version>
+      <version>700.v6e45cb_a_5a_a_21</version>
     </dependency>
 
     <!-- Test Dependencies -->
@@ -112,15 +112,11 @@
         <groupId>org.jenkins-ci.tools</groupId>
         <artifactId>maven-hpi-plugin</artifactId>
         <extensions>true</extensions>
-        <configuration>
-          <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
-          <minimumJavaVersion>1.8</minimumJavaVersion>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.23</version>
+        <version>1.24</version>
         <configuration>
           <skip>${skipAnimalSniffer}</skip>
         </configuration>
