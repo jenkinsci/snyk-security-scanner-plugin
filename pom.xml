@@ -12,12 +12,13 @@
     <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
     <jenkins.baseline>2.479</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.3</jenkins.version>
+    <skipAnimalSniffer>false</skipAnimalSniffer>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>
 
   <groupId>io.snyk.plugins</groupId>
   <artifactId>snyk-security-scanner</artifactId>
-  <version>4.1.1-SNAPSHOT</version>
+  <version>5.0.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
 
   <name>Snyk Security Plugin</name>
@@ -26,9 +27,9 @@
 
   <scm>
     <connection>scm:git:ssh://github.com/jenkinsci/snyk-security-scanner-plugin.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/jenkinsci/snyk-security-scanner-plugin.git</developerConnection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
-    <tag>4.0.2</tag>
+    <tag>5.0.0</tag>
   </scm>
   <licenses>
     <license>
@@ -116,15 +117,11 @@
         <groupId>org.jenkins-ci.tools</groupId>
         <artifactId>maven-hpi-plugin</artifactId>
         <extensions>true</extensions>
-        <configuration>
-          <compatibleSinceVersion>2.0.0</compatibleSinceVersion>
-          <minimumJavaVersion>17</minimumJavaVersion>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>animal-sniffer-maven-plugin</artifactId>
-        <version>1.23</version>
+        <version>1.24</version>
         <configuration>
           <skip>${skipAnimalSniffer}</skip>
         </configuration>

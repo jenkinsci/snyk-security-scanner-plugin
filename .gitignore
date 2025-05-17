@@ -31,3 +31,5 @@ work/
 Thumbs.db
 .directory
 .DS_Store
+
+.m2
