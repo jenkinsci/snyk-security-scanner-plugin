@@ -14,7 +14,7 @@ RUN ./mvnw verify -q -s .mvn/settings.xml --fail-never
 COPY . .
 RUN ./mvnw clean verify -s .mvn/settings.xml
 
-FROM jenkins/jenkins:${JENKINS_VERSION}-lts-jdk17
+FROM jenkins/jenkins:${JENKINS_VERSION}-jdk17
 
 USER root
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
