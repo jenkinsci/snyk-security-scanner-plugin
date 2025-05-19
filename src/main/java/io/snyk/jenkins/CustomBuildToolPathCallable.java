@@ -2,6 +2,7 @@ package io.snyk.jenkins;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -20,6 +21,7 @@ import static org.apache.commons.lang.StringUtils.chomp;
 
 class CustomBuildToolPathCallable implements FilePath.FileCallable<String> {
 
+  @Serial
   private static final long serialVersionUID = 1L;
   private static final Logger LOG = LoggerFactory.getLogger(CustomBuildToolPathCallable.class.getName());
   private static final String TOOLS_DIRECTORY = "tools";

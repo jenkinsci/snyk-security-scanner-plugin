@@ -1,5 +1,6 @@
 package io.snyk.jenkins;
 
+import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
@@ -75,8 +76,9 @@ public class SnykStepFlow {
     FilePath workspace = context.getWorkspace();
     Launcher launcher = context.getLauncher();
     TaskListener listener = context.getTaskListener();
+    EnvVars env = run.getEnvironment(listener);
     new ArtifactArchiver(report.getName())
-      .perform(run, workspace, launcher, listener);
+      .perform(run, workspace, env, launcher, listener);
   }
 
   private static void addSidebarLink(SnykContext context) {

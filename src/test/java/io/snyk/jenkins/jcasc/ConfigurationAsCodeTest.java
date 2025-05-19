@@ -23,17 +23,16 @@ public class ConfigurationAsCodeTest {
 
   @Test
   @ConfiguredWithCode("configuration-as-code.yml")
-  public void should_support_configuration_as_code() throws Exception {
+  public void should_support_configuration_as_code() {
     SnykInstallation.SnykInstallationDescriptor descriptor = ExtensionList.lookupSingleton(SnykInstallation.SnykInstallationDescriptor.class);
-    assertEquals(descriptor.getInstallations().length, 1);
+    assertEquals(1, descriptor.getInstallations().length);
 
     SnykInstallation installation = descriptor.getInstallations()[0];
     assertEquals("snyk", installation.getName());
     DescribableList<ToolProperty<?>, ToolPropertyDescriptor> properties = installation.getProperties();
     DescribableList<ToolInstaller, Descriptor<ToolInstaller>> installers = ((InstallSourceProperty) properties.get(0)).installers;
     assertEquals(PlatformItem.LINUX, ((SnykInstaller) installers.get(0)).getPlatform());
-    assertEquals(Long.valueOf(36l), ((SnykInstaller) installers.get(0)).getUpdatePolicyIntervalHours());
+    assertEquals(Long.valueOf(36L), ((SnykInstaller) installers.get(0)).getUpdatePolicyIntervalHours());
     assertEquals("1.947.0", ((SnykInstaller) installers.get(0)).getVersion());
   }
-
 }
