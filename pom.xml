@@ -19,7 +19,7 @@
 
   <groupId>io.snyk.plugins</groupId>
   <artifactId>snyk-security-scanner</artifactId>
-  <version>5.0.0-SNAPSHOT</version>
+  <version>5.0.0</version>
   <packaging>hpi</packaging>
 
   <name>Snyk Security Plugin</name>
