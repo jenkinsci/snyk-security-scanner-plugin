@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.io.Serial;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -114,6 +115,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   }
 
   private static class ResolveExecutable extends MasterToSlaveCallable<String, IOException> {
+    @Serial
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(ResolveExecutable.class);
 

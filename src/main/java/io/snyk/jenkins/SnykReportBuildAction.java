@@ -48,7 +48,7 @@ public class SnykReportBuildAction implements RunAction2 {
 
   @SuppressWarnings("unused")
   public String getArtifactContent() {
-    String filename = Stapler.getCurrentRequest().getParameter("artifact");
+    String filename = Stapler.getCurrentRequest2().getParameter("artifact");
     VirtualFile artifact = getArtifact(filename);
     return readFile(artifact);
   }

@@ -22,6 +22,7 @@ import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Serial;
 import java.net.URL;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -168,6 +169,7 @@ public class SnykInstaller extends ToolInstaller {
   }
 
   private static class GetPlatform extends MasterToSlaveCallable<Platform, IOException> {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Override
@@ -177,6 +179,7 @@ public class SnykInstaller extends ToolInstaller {
   }
 
   private static class Downloader extends MasterToSlaveCallable<Void, IOException> {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final URL downloadUrl;
