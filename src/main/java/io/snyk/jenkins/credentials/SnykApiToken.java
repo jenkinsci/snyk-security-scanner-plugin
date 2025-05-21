@@ -35,14 +35,12 @@ public interface SnykApiToken extends StandardCredentials {
 
   static String getToken(SnykContext context, String snykTokenId) {
     return Optional.ofNullable(snykTokenId)
-      .map(Util::fixEmptyAndTrim)
-      .map(id -> Optional.ofNullable(findCredentialById(id, SnykApiToken.class, context.getRun()))
-        .orElseThrow(() -> new RuntimeException("Snyk API token with Credential ID '" + snykTokenId + "' was not found.")))
-      .map(SnykApiToken::getToken)
-      .map(Secret::getPlainText)
-      .map(Util::fixEmptyAndTrim)
-      .map(Optional::of)
-      .orElseGet(() -> Optional.ofNullable(context.getEnvVars().get(SNYK_TOKEN_ENV_KEY)))
-      .orElseThrow(() -> new RuntimeException("Snyk API token not provided. Please assign your credentials to 'snykTokenId' in your build configuration or assign the token to a 'SNYK_TOKEN' build environment variable"));
+        .map(Util::fixEmptyAndTrim)
+        .map(id -> Optional.ofNullable(findCredentialById(id, SnykApiToken.class, context.getRun()))
+                .orElseThrow(() -> new RuntimeException("Snyk API token with Credential ID '" + snykTokenId + "' was not found.")))
+        .map(SnykApiToken::getToken)
+        .map(Secret::getPlainText)
+        .map(Util::fixEmptyAndTrim).or(() -> Optional.ofNullable(context.getEnvVars().get(SNYK_TOKEN_ENV_KEY)))
+        .orElseThrow(() -> new RuntimeException("Snyk API token not provided. Please assign your credentials to 'snykTokenId' in your build configuration or assign the token to a 'SNYK_TOKEN' build environment variable"));
   }
 }
