@@ -11,7 +11,7 @@
 
   <properties>
     <jenkins.baseline>2.504</jenkins.baseline>
-    <jenkins.version>${jenkins.baseline}.1</jenkins.version>
+    <jenkins.version>${jenkins.baseline}.2</jenkins.version>
     <skipAnimalSniffer>false</skipAnimalSniffer>
   </properties>
 
