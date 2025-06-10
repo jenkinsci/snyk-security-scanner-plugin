@@ -3,11 +3,11 @@ package io.snyk.jenkins.credentials;
 import com.cloudbees.plugins.credentials.CredentialsNameProvider;
 import com.cloudbees.plugins.credentials.NameWith;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Util;
 import hudson.util.Secret;
 import io.snyk.jenkins.SnykContext;
 
-import javax.annotation.Nonnull;
 import java.util.Optional;
 
 import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredentialById;
@@ -18,14 +18,14 @@ import static com.cloudbees.plugins.credentials.CredentialsProvider.findCredenti
 @NameWith(value = SnykApiToken.NameProvider.class, priority = 1)
 public interface SnykApiToken extends StandardCredentials {
 
-  @Nonnull
+  @NonNull
   Secret getToken();
 
   class NameProvider extends CredentialsNameProvider<SnykApiToken> {
 
-    @Nonnull
+    @NonNull
     @Override
-    public String getName(@Nonnull SnykApiToken credentials) {
+    public String getName(@NonNull SnykApiToken credentials) {
       String description = Util.fixEmptyAndTrim(credentials.getDescription());
       return description != null ? description : credentials.getId();
     }

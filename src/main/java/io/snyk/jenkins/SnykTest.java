@@ -16,8 +16,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.Map;
 import java.nio.charset.MalformedInputException;
+import java.util.Map;
 
 import static hudson.Util.fixEmptyAndTrim;
 import static io.snyk.jenkins.Utils.getURLSafeDateTime;

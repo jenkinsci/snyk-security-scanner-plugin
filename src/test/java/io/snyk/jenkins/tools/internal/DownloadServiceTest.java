@@ -1,9 +1,8 @@
 package io.snyk.jenkins.tools.internal;
 
 import io.snyk.jenkins.PluginMetadata;
-import org.junit.Test;
-
 import io.snyk.jenkins.tools.Platform;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URL;

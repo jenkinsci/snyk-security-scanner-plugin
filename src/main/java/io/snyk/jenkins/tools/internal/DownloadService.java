@@ -1,9 +1,9 @@
 package io.snyk.jenkins.tools.internal;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.snyk.jenkins.PluginMetadata;
 import io.snyk.jenkins.tools.Platform;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -19,7 +19,7 @@ public class DownloadService {
     // squid:S1118
   }
 
-  public static URL constructDownloadUrlForSnyk(@Nonnull String urlTemplate, @Nonnull String product, @Nonnull String version, @Nonnull Platform platform) throws IOException {
+  public static URL constructDownloadUrlForSnyk(@NonNull String urlTemplate, @NonNull String product, @NonNull String version, @NonNull Platform platform) throws IOException {
     URL urlNoUtm;
 
     if (product.equals("cli")) {

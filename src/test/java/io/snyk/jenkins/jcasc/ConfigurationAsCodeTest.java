@@ -1,12 +1,5 @@
 package io.snyk.jenkins.jcasc;
 
-import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
-import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
-import io.snyk.jenkins.tools.PlatformItem;
-import io.snyk.jenkins.tools.SnykInstallation;
-import io.snyk.jenkins.tools.SnykInstaller;
-import org.junit.Rule;
-import org.junit.Test;
 import hudson.ExtensionList;
 import hudson.model.Descriptor;
 import hudson.tools.InstallSourceProperty;
@@ -14,6 +7,14 @@ import hudson.tools.ToolInstaller;
 import hudson.tools.ToolProperty;
 import hudson.tools.ToolPropertyDescriptor;
 import hudson.util.DescribableList;
+import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
+import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.snyk.jenkins.tools.PlatformItem;
+import io.snyk.jenkins.tools.SnykInstallation;
+import io.snyk.jenkins.tools.SnykInstaller;
+import org.junit.Rule;
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 
 public class ConfigurationAsCodeTest {

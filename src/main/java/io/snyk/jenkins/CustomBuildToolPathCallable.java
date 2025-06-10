@@ -1,5 +1,11 @@
 package io.snyk.jenkins;
 
+import hudson.FilePath;
+import hudson.remoting.VirtualChannel;
+import org.jenkinsci.remoting.RoleChecker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serial;
@@ -9,12 +15,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
-import hudson.FilePath;
-import hudson.remoting.VirtualChannel;
-import org.jenkinsci.remoting.RoleChecker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.lang.String.join;
 import static org.apache.commons.lang.StringUtils.chomp;

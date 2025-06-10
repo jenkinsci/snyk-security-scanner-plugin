@@ -1,9 +1,8 @@
 package io.snyk.jenkins.credentials;
 
-import javax.annotation.Nonnull;
-
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -16,16 +15,16 @@ import static hudson.util.Secret.fromString;
  */
 public class DefaultSnykApiToken extends BaseStandardCredentials implements SnykApiToken {
 
-  @Nonnull
+  @NonNull
   private final Secret token;
 
   @DataBoundConstructor
-  public DefaultSnykApiToken(CredentialsScope scope, String id, String description, @Nonnull String token) {
+  public DefaultSnykApiToken(CredentialsScope scope, String id, String description, @NonNull String token) {
     super(scope, id, description);
     this.token = fromString(token);
   }
 
-  @Nonnull
+  @NonNull
   @Override
   public Secret getToken() {
     return token;
@@ -34,7 +33,7 @@ public class DefaultSnykApiToken extends BaseStandardCredentials implements Snyk
   @Extension
   public static class DefaultSnykApiTokenDescriptor extends BaseStandardCredentialsDescriptor {
 
-    @Nonnull
+    @NonNull
     @Override
     public String getDisplayName() {
       return "Snyk API token";

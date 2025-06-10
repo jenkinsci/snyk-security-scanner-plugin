@@ -1,20 +1,12 @@
 package io.snyk.jenkins.tools;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.Computer;
-import hudson.model.Descriptor;
-import hudson.model.EnvironmentSpecific;
-import hudson.model.Node;
-import hudson.model.TaskListener;
+import hudson.model.*;
 import hudson.slaves.NodeSpecific;
-import hudson.tools.InstallSourceProperty;
-import hudson.tools.ToolDescriptor;
-import hudson.tools.ToolInstallation;
-import hudson.tools.ToolInstaller;
-import hudson.tools.ToolProperty;
-import hudson.tools.ToolPropertyDescriptor;
+import hudson.tools.*;
 import hudson.util.DescribableList;
 import io.snyk.jenkins.SnykContext;
 import io.snyk.jenkins.SnykStepBuilder.SnykStepBuilderDescriptor;
@@ -25,7 +17,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Serial;
@@ -40,7 +31,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   private static final Logger LOG = LoggerFactory.getLogger(SnykInstallation.class);
 
   @DataBoundConstructor
-  public SnykInstallation(@Nonnull String name, @Nullable String home, List<? extends ToolProperty<?>> properties) {
+  public SnykInstallation(@NonNull String name, @Nullable String home, List<? extends ToolProperty<?>> properties) {
     super(name, home, properties);
   }
 
@@ -50,15 +41,15 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   }
 
   @Override
-  public SnykInstallation forNode(@Nonnull Node node, TaskListener log) throws IOException, InterruptedException {
+  public SnykInstallation forNode(@NonNull Node node, TaskListener log) throws IOException, InterruptedException {
     return new SnykInstallation(getName(), translateFor(node, log), getProperties().toList());
   }
 
-  public String getSnykExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
+  public String getSnykExecutable(@NonNull Launcher launcher) throws IOException, InterruptedException {
     return resolveExecutable(launcher, "snyk");
   }
 
-  public String getReportExecutable(@Nonnull Launcher launcher) throws IOException, InterruptedException {
+  public String getReportExecutable(@NonNull Launcher launcher) throws IOException, InterruptedException {
     return resolveExecutable(launcher, "snyk-to-html");
   }
 
@@ -81,7 +72,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
       .call(new ResolveExecutable(home, executableName, platform));
   }
 
-  @Nonnull
+  @NonNull
   private PlatformItem getSnykInstallerPlatformIfDefined(SnykInstallation installation) {
     // read saved xml configuration and try to read platform value
     // if nothing will be found or any exceptions occurs return AUTO as default
@@ -152,7 +143,7 @@ public class SnykInstallation extends ToolInstallation implements EnvironmentSpe
   @Symbol("snyk")
   public static class SnykInstallationDescriptor extends ToolDescriptor<SnykInstallation> {
 
-    @Nonnull
+    @NonNull
     @Override
     public String getDisplayName() {
       return "Snyk";

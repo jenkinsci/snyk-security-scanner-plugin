@@ -1,5 +1,6 @@
 package io.snyk.jenkins.tools;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Functions;
@@ -18,7 +19,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -143,7 +143,7 @@ public class SnykInstaller extends ToolInstaller {
   @Extension
   public static final class SnykInstallerDescriptor extends ToolInstallerDescriptor<SnykInstaller> {
 
-    @Nonnull
+    @NonNull
     @Override
     public String getDisplayName() {
       return "Install from snyk.io";
