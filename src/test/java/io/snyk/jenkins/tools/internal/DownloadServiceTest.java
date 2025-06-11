@@ -2,7 +2,7 @@ package io.snyk.jenkins.tools.internal;
 
 import io.snyk.jenkins.PluginMetadata;
 import io.snyk.jenkins.tools.Platform;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URL;
@@ -12,10 +12,10 @@ import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
-public class DownloadServiceTest {
+class DownloadServiceTest {
 
   @Test
-  public void constructDownloadUrlForSnyk_shouldReturnExpectedUrlForCli() throws IOException {
+  void constructDownloadUrlForSnyk_shouldReturnExpectedUrlForCli() throws IOException {
     String urlTemplate = "https://downloads.snyk.io/%s/%s/%s";
     String product = "cli";
     String version = "stable";
@@ -30,7 +30,7 @@ public class DownloadServiceTest {
   }
 
   @Test
-  public void constructDownloadUrlForSnyk_shouldReturnExpectedUrlForSnykToHtml() throws IOException {
+  void constructDownloadUrlForSnyk_shouldReturnExpectedUrlForSnykToHtml() throws IOException {
     String urlTemplate = "https://downloads.snyk.io/%s/%s/%s";
     String product = "snyk-to-html";
     String version = "stable";

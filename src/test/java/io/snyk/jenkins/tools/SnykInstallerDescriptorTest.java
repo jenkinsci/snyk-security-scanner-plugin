@@ -1,34 +1,34 @@
 package io.snyk.jenkins.tools;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.hamcrest.core.Is.is;
 
-public class SnykInstallerDescriptorTest {
-
-  @Rule
-  public JenkinsRule jenkins = new JenkinsRule();
+@WithJenkins
+class SnykInstallerDescriptorTest {
 
   private SnykInstaller.SnykInstallerDescriptor descriptorUnderTest;
 
-  @Before
-  public void setUp() {
+  private JenkinsRule jenkins;
+
+  @BeforeEach
+  void setUp(JenkinsRule rule) {
+    jenkins = rule;
     descriptorUnderTest = new SnykInstaller.SnykInstallerDescriptor();
   }
 
   @Test
-  public void doFillPlatformItems_shouldReturnAllValuesFromPlatformItemEnum() {
+  void doFillPlatformItems_shouldReturnAllValuesFromPlatformItemEnum() {
     List<String> model = descriptorUnderTest.doFillPlatformItems().stream()
                                             .map(e -> e.value)
-                                            .collect(Collectors.toList());
+                                            .toList();
 
     assertThat(model.size(), is(5));
     assertThat(model, contains(PlatformItem.AUTO.name(),
