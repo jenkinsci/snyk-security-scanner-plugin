@@ -9,22 +9,20 @@ import hudson.tools.ToolPropertyDescriptor;
 import hudson.util.DescribableList;
 import io.jenkins.plugins.casc.misc.ConfiguredWithCode;
 import io.jenkins.plugins.casc.misc.JenkinsConfiguredWithCodeRule;
+import io.jenkins.plugins.casc.misc.junit.jupiter.WithJenkinsConfiguredWithCode;
 import io.snyk.jenkins.tools.PlatformItem;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.tools.SnykInstaller;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ConfigurationAsCodeTest {
-
-  @Rule
-  public JenkinsConfiguredWithCodeRule r = new JenkinsConfiguredWithCodeRule();
+@WithJenkinsConfiguredWithCode
+class ConfigurationAsCodeTest {
 
   @Test
   @ConfiguredWithCode("configuration-as-code.yml")
-  public void should_support_configuration_as_code() {
+  void should_support_configuration_as_code(JenkinsConfiguredWithCodeRule r) {
     SnykInstallation.SnykInstallationDescriptor descriptor = ExtensionList.lookupSingleton(SnykInstallation.SnykInstallationDescriptor.class);
     assertEquals(1, descriptor.getInstallations().length);
 
