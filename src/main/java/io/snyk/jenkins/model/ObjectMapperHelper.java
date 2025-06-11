@@ -49,7 +49,7 @@ public class ObjectMapperHelper {
     SnykTestResult snykTestResult = new SnykTestResult();
 
     while (parser.nextToken() != JsonToken.END_OBJECT) {
-      String fieldName = parser.getCurrentName();
+      String fieldName = parser.currentName();
 
       if ("ok".equals(fieldName)) {
         parser.nextToken();

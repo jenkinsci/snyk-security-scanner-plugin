@@ -1,6 +1,7 @@
 package io.snyk.jenkins.tools;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 import java.util.Locale;
 import java.util.Map;
 
@@ -21,13 +22,13 @@ public enum Platform {
     this.snykToHtmlWrapperFileName = snykToHtmlWrapperFileName;
   }
 
-  @Nonnull
+  @NonNull
   public static Platform current() {
     return detect(System.getProperties());
   }
 
-  @Nonnull
-  private static Platform detect(@Nonnull Map<Object, Object> systemProperties) {
+  @NonNull
+  private static Platform detect(@NonNull Map<Object, Object> systemProperties) {
     String osName = ((String) systemProperties.get("os.name")).toLowerCase(Locale.ENGLISH);
     String osArch = ((String) systemProperties.get("os.arch")).toLowerCase(Locale.ENGLISH);
     if (osName.contains("linux")) {

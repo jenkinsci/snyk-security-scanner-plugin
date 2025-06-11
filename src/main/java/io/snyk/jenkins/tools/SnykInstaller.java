@@ -1,5 +1,6 @@
 package io.snyk.jenkins.tools;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Functions;
@@ -18,10 +19,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.Serial;
 import java.net.URL;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -142,7 +143,7 @@ public class SnykInstaller extends ToolInstaller {
   @Extension
   public static final class SnykInstallerDescriptor extends ToolInstallerDescriptor<SnykInstaller> {
 
-    @Nonnull
+    @NonNull
     @Override
     public String getDisplayName() {
       return "Install from snyk.io";
@@ -168,6 +169,7 @@ public class SnykInstaller extends ToolInstaller {
   }
 
   private static class GetPlatform extends MasterToSlaveCallable<Platform, IOException> {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     @Override
@@ -177,6 +179,7 @@ public class SnykInstaller extends ToolInstaller {
   }
 
   private static class Downloader extends MasterToSlaveCallable<Void, IOException> {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private final URL downloadUrl;

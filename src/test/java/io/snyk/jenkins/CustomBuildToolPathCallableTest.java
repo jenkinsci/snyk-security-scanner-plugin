@@ -1,13 +1,13 @@
 package io.snyk.jenkins;
 
-import java.io.File;
-
 import hudson.remoting.VirtualChannel;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
+
+import java.io.File;
 
 import static org.mockito.Mockito.when;
 

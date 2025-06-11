@@ -3,6 +3,8 @@ package io.snyk.jenkins;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.CopyOnWrite;
 import hudson.Extension;
 import hudson.FilePath;
@@ -23,7 +25,6 @@ import io.snyk.jenkins.exception.SnykIssueException;
 import io.snyk.jenkins.tools.SnykInstallation;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
-import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -31,8 +32,6 @@ import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,7 +40,7 @@ import java.util.stream.Stream;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.anyOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
-import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentials;
+import static com.cloudbees.plugins.credentials.CredentialsProvider.lookupCredentialsInItemGroup;
 import static hudson.Util.fixEmptyAndTrim;
 import static hudson.Util.fixNull;
 import static java.util.stream.Collectors.joining;
@@ -122,7 +121,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
   }
 
   @DataBoundSetter
-  public void setTargetFile(@CheckForNull String targetFile) {
+  public void setTargetFile(@Nullable String targetFile) {
     this.targetFile = fixEmptyAndTrim(targetFile);
   }
 
@@ -132,7 +131,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
   }
 
   @DataBoundSetter
-  public void setOrganisation(@CheckForNull String organisation) {
+  public void setOrganisation(@Nullable String organisation) {
     this.organisation = fixEmptyAndTrim(organisation);
   }
 
@@ -142,7 +141,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
   }
 
   @DataBoundSetter
-  public void setProjectName(@CheckForNull String projectName) {
+  public void setProjectName(@Nullable String projectName) {
     this.projectName = fixEmptyAndTrim(projectName);
   }
 
@@ -162,16 +161,16 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
   }
 
   @DataBoundSetter
-  public void setAdditionalArguments(@CheckForNull String additionalArguments) {
+  public void setAdditionalArguments(@Nullable String additionalArguments) {
     this.additionalArguments = fixEmptyAndTrim(additionalArguments);
   }
 
   @Override
   public void perform(
-    @Nonnull Run<?, ?> build,
-    @Nonnull FilePath workspace,
-    @Nonnull Launcher launcher,
-    @Nonnull TaskListener log
+    @NonNull Run<?, ?> build,
+    @NonNull FilePath workspace,
+    @NonNull Launcher launcher,
+    @NonNull TaskListener log
   ) throws SnykIssueException, SnykErrorException {
     SnykStepFlow.perform(this, () -> SnykContext.forFreestyleProject(build, workspace, launcher, log));
   }
@@ -186,7 +185,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
       load();
     }
 
-    @Nonnull
+    @NonNull
     @Override
     public String getDisplayName() {
       return "Invoke Snyk Security task";
@@ -236,7 +235,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
         }
       }
       return model.includeEmptyValue()
-                  .includeAs(ACL.SYSTEM, item, SnykApiToken.class)
+                  .includeAs(ACL.SYSTEM2, item, SnykApiToken.class)
                   .includeCurrentValue(snykTokenId);
     }
 
@@ -265,7 +264,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
         return FormValidation.warningWithMarkup("A Snyk API token is required. If you do not provide credentials, make sure to provide a <code>SNYK_TOKEN</code> build environment variable.");
       }
 
-      if (null == CredentialsMatchers.firstOrNull(lookupCredentials(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM, Collections.emptyList()),
+      if (null == CredentialsMatchers.firstOrNull(lookupCredentialsInItemGroup(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM2, Collections.emptyList()),
                                                   anyOf(withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
         return FormValidation.error("Cannot find currently selected Snyk API token.");
       }
