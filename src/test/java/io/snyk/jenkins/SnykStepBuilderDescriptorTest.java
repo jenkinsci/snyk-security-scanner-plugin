@@ -10,43 +10,43 @@ import io.snyk.jenkins.credentials.DefaultSnykApiToken;
 import jodd.lagarto.dom.Document;
 import jodd.lagarto.dom.LagartoDOMBuilder;
 import jodd.lagarto.dom.Node;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsIterableContaining.hasItems;
 
-public class SnykStepBuilderDescriptorTest {
-
-  @Rule
-  public JenkinsRule jenkins = new JenkinsRule();
+@WithJenkins
+class SnykStepBuilderDescriptorTest {
 
   private SnykStepBuilder.SnykStepBuilderDescriptor instance;
 
-  @Before
-  public void setUp() {
+  private JenkinsRule jenkins;
+
+  @BeforeEach
+  void setUp(JenkinsRule rule) {
+    jenkins = rule;
     instance = new SnykStepBuilder.SnykStepBuilderDescriptor();
   }
 
   @Test
-  public void doFillSeverityItems_shouldReturnAllValuesFromSeverityEnum() {
+  void doFillSeverityItems_shouldReturnAllValuesFromSeverityEnum() {
     List<String> model = instance.doFillSeverityItems().stream()
                                  .map(e -> e.value)
-                                 .collect(Collectors.toList());
+                                 .toList();
 
     assertThat(model.size(), is(4));
     assertThat(model, hasItems(Severity.LOW.getSeverity(), Severity.MEDIUM.getSeverity(), Severity.HIGH.getSeverity(), Severity.CRITICAL.getSeverity()));
   }
 
   @Test
-  public void doFillSnykTokenIdItems_shouldAddCurrentValue_ifPresent() {
+  void doFillSnykTokenIdItems_shouldAddCurrentValue_ifPresent() {
     ListBoxModel model = instance.doFillSnykTokenIdItems(null, "current-value");
 
     assertThat(model.size(), is(2));
@@ -59,14 +59,14 @@ public class SnykStepBuilderDescriptorTest {
   }
 
   @Test
-  public void doCheckSeverity_shouldReturnWarning_ifProjectNameOverriddenWithAdditionalArguments() {
+  void doCheckSeverity_shouldReturnWarning_ifProjectNameOverriddenWithAdditionalArguments() {
     Kind severityValidation = instance.doCheckSeverity("high", "--severity-threshold=low").kind;
 
     assertThat(severityValidation, is(Kind.WARNING));
   }
 
   @Test
-  public void doCheckSnykTokenId_shouldReturnWarning_ifSnykTokenIsEmpty() throws Exception {
+  void doCheckSnykTokenId_shouldReturnWarning_ifSnykTokenIsEmpty() throws Exception {
     jenkins.createFreeStyleProject();
     Kind snykTokenIdValidation = instance.doCheckSnykTokenId(jenkins.getInstance().getItems().get(0),null).kind;
 
@@ -74,14 +74,14 @@ public class SnykStepBuilderDescriptorTest {
   }
 
   @Test
-  public void doCheckSnykTokenId_shouldReturnError_ifSnykTokenNotFound() {
+  void doCheckSnykTokenId_shouldReturnError_ifSnykTokenNotFound() {
     Kind snykTokenIdValidation = instance.doCheckSnykTokenId(null,"any-token").kind;
 
     assertThat(snykTokenIdValidation, is(Kind.ERROR));
   }
 
   @Test
-  public void doCheckSnykTokenId_shouldReturnOK_ifSnykTokenFound() throws Exception {
+  void doCheckSnykTokenId_shouldReturnOK_ifSnykTokenFound() throws Exception {
     DefaultSnykApiToken snykToken = new DefaultSnykApiToken(CredentialsScope.GLOBAL, "id", "", "snyk-token");
     CredentialsProvider.lookupStores(jenkins.getInstance()).iterator().next().addCredentials(Domain.global(), snykToken);
 
@@ -91,26 +91,26 @@ public class SnykStepBuilderDescriptorTest {
   }
 
   @Test
-  public void doCheckTargetFile_shouldReturnWarning_ifTargetFileOverriddenWithAdditionalArguments() {
+  void doCheckTargetFile_shouldReturnWarning_ifTargetFileOverriddenWithAdditionalArguments() {
     Kind targetFileValidation = instance.doCheckTargetFile("pom.xml", "--file=pom-extended.xml").kind;
 
     assertThat(targetFileValidation, is(Kind.WARNING));
   }
 
   @Test
-  public void doCheckOrganisation_shouldReturnWarning_ifTargetFileOverriddenWithAdditionalArguments() {
+  void doCheckOrganisation_shouldReturnWarning_ifTargetFileOverriddenWithAdditionalArguments() {
     Kind organisationValidation = instance.doCheckOrganisation("snyk", "--org=Snyk Ltd").kind;
 
     assertThat(organisationValidation, is(Kind.WARNING));
   }
 
   @Test
-  public void doCheckProjectName_shouldAggregateWarningMessages() {
+  void doCheckProjectName_shouldAggregateWarningMessages() {
     FormValidation projectNameValidation = instance.doCheckProjectName("project-name", "false", "--project-name=new-project");
 
     assertThat(projectNameValidation.kind, is(Kind.WARNING));
 
-    // Jenkins doesn't provide findings count for 'FormValidation", so we parse html output and check count of <li> elements
+    // Jenkins doesn't provide findings count for "FormValidation", so we parse HTML output and check count of <li> elements
     LagartoDOMBuilder domBuilder = new LagartoDOMBuilder();
     Document document = domBuilder.parse(projectNameValidation.renderHtml());
     Node ulNode = document.findChildNodeWithName("ul");
@@ -119,14 +119,14 @@ public class SnykStepBuilderDescriptorTest {
   }
 
   @Test
-  public void doCheckProjectName_shouldReturnWarning_ifProjectNameDefinedWithoutMonitorOnBuild() {
+  void doCheckProjectName_shouldReturnWarning_ifProjectNameDefinedWithoutMonitorOnBuild() {
     Kind projectNameValidation = instance.doCheckProjectName("project-name", "false", "").kind;
 
     assertThat(projectNameValidation, is(Kind.WARNING));
   }
 
   @Test
-  public void doCheckProjectName_shouldReturnOK_ifProjectNameDefinedWithMonitorOnBuild() {
+  void doCheckProjectName_shouldReturnOK_ifProjectNameDefinedWithMonitorOnBuild() {
     Kind projectNameValidation = instance.doCheckProjectName("project-name", "true", "").kind;
 
     assertThat(projectNameValidation, is(Kind.OK));
