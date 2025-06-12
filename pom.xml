@@ -6,7 +6,7 @@
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
     <version>5.9</version>
-    <relativePath/>
+    <relativePath />
   </parent>
 
   <properties>
@@ -17,7 +17,7 @@
 
   <groupId>io.snyk.plugins</groupId>
   <artifactId>snyk-security-scanner</artifactId>
-  <version>5.0.1-SNAPSHOT</version>
+  <version>5.0.1</version>
   <packaging>hpi</packaging>
 
   <name>Snyk Security Plugin</name>
@@ -28,7 +28,7 @@
     <connection>scm:git:ssh://github.com/jenkinsci/snyk-security-scanner-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/${project.artifactId}-plugin.git</developerConnection>
     <url>https://github.com/jenkinsci/snyk-security-scanner-plugin</url>
-    <tag>5.0.0</tag>
+    <tag>5.0.1</tag>
   </scm>
   <licenses>
     <license>
