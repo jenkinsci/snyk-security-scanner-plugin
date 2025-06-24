@@ -6,38 +6,43 @@ import hudson.model.Run;
 import hudson.model.TaskListener;
 import io.snyk.jenkins.tools.SnykInstallation;
 import io.snyk.jenkins.workflow.SnykSecurityStep;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-public class SnykMonitorTest {
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class SnykMonitorTest {
+
   @Mock
   private Launcher launchMock;
   @Mock
-  SnykInstallation installationMock;
+  private SnykInstallation installationMock;
   @Mock
-  Run<?, ?> buildMock;
+  private Run<?, ?> buildMock;
   @Mock
-  Launcher.ProcStarter starter;
+  private Launcher.ProcStarter starter;
   @Mock
   private TaskListener taskListenerMock;
 
   @SuppressWarnings("unchecked")
-  @Before
-  public void before() throws IOException, InterruptedException {
-    MockitoAnnotations.openMocks(this);
+  @BeforeEach
+  void setUp() throws IOException, InterruptedException {
     when(installationMock.getSnykExecutable(any())).thenReturn("snyk");
     when(launchMock.launch()).thenReturn(starter);
     when(starter.pwd(anyString())).thenReturn(starter);
@@ -50,7 +55,7 @@ public class SnykMonitorTest {
   }
 
   @Test
-  public void testMonitorShouldFailOnErrorIfConfigIsSet() throws IOException, InterruptedException {// mock setup
+  void testMonitorShouldFailOnErrorIfConfigIsSet() throws IOException, InterruptedException {// mock setup
     when(starter.join()).thenReturn(2);
 
     SnykContext context = SnykContext.forFreestyleProject(buildMock, null, launchMock, taskListenerMock);
@@ -59,15 +64,12 @@ public class SnykMonitorTest {
 
     try (MockedStatic<PluginMetadata> pluginMetadataMockedStatic = Mockito.mockStatic(PluginMetadata.class)) {
       pluginMetadataMockedStatic.when(PluginMetadata::getIntegrationVersion).thenReturn("1.2.3");
-      SnykMonitor.monitorProject(context, config, installationMock, "token");
-      Assert.fail("Expected RuntimeException, but didn't get one");
-    } catch (RuntimeException ignored) {
-      // expected
+      assertThrows(RuntimeException.class, () -> SnykMonitor.monitorProject(context, config, installationMock, "token"));
     }
   }
 
   @Test
-  public void testMonitorShouldNotFailOnErrorIfConfigIsNotSet() throws IOException, InterruptedException {// mock setup
+  void testMonitorShouldNotFailOnErrorIfConfigIsNotSet() throws IOException, InterruptedException {// mock setup
     when(starter.join()).thenReturn(2);
 
     SnykContext context = SnykContext.forFreestyleProject(buildMock, null, launchMock, taskListenerMock);
@@ -81,7 +83,7 @@ public class SnykMonitorTest {
   }
 
   @Test
-  public void testMonitorShouldNotFailIfErrorCodeIs0AndConfigIsSet() throws IOException, InterruptedException {// mock setup
+  void testMonitorShouldNotFailIfErrorCodeIs0AndConfigIsSet() throws IOException, InterruptedException {// mock setup
     when(starter.join()).thenReturn(0);
 
     SnykContext context = SnykContext.forFreestyleProject(buildMock, null, launchMock, taskListenerMock);
@@ -95,7 +97,7 @@ public class SnykMonitorTest {
   }
 
   @Test
-  public void testMonitorShouldNotFailIfErrorCodeIs0AndConfigIsNotSet() throws IOException, InterruptedException {// mock setup
+  void testMonitorShouldNotFailIfErrorCodeIs0AndConfigIsNotSet() throws IOException, InterruptedException {// mock setup
     when(starter.join()).thenReturn(0);
 
     SnykContext context = SnykContext.forFreestyleProject(buildMock, null, launchMock, taskListenerMock);
