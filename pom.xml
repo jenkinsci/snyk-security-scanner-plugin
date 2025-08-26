@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>5.9</version>
+    <version>5.24</version>
     <relativePath />
   </parent>
 
@@ -13,6 +13,7 @@
     <jenkins.baseline>2.504</jenkins.baseline>
     <jenkins.version>${jenkins.baseline}.2</jenkins.version>
     <skipAnimalSniffer>false</skipAnimalSniffer>
+    <ban-junit4-imports.skip>false</ban-junit4-imports.skip>
   </properties>
 
   <groupId>io.snyk.plugins</groupId>
