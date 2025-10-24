@@ -9,6 +9,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -57,12 +58,11 @@ class CommandLineTest {
     ArgumentListBuilder result = CommandLine.asArgumentList("/usr/bin/snyk", Command.TEST, config, env);
 
     assertThat(result.toList(), equalTo(asList(
-      "/usr/bin/snyk",
-      "test",
-      "--json",
-      "--severity-threshold=high",
-      "--project-name=my-project"
-    )));
+        "/usr/bin/snyk",
+        "test",
+        "--json",
+        "--severity-threshold=high",
+        "--project-name=my-project")));
   }
 
   @Test
@@ -89,13 +89,26 @@ class CommandLineTest {
     ArgumentListBuilder result = CommandLine.asArgumentList("/usr/bin/snyk", Command.TEST, config, env);
 
     assertThat(result.toList(), equalTo(asList(
-      "/usr/bin/snyk",
-      "test",
-      "--json",
-      "--dev",
-      "-d",
-      "--",
-      "--settings=settings.xml"
-    )));
+        "/usr/bin/snyk",
+        "test",
+        "--json",
+        "--dev",
+        "-d",
+        "--",
+        "--settings=settings.xml")));
+  }
+
+  @Test
+  void shouldValidateAllowedCommands() {
+    // These should not throw
+    CommandLine.validateCommand("test");
+    CommandLine.validateCommand("monitor");
+    CommandLine.validateCommand("sbom");
+    CommandLine.validateCommand("sbom test");
+  }
+
+  @Test
+  void shouldRejectInvalidCommands() {
+    assertThrows(IllegalArgumentException.class, () -> CommandLine.validateCommand("invalid-command"));
   }
 }

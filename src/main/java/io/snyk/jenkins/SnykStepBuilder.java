@@ -18,6 +18,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
+import io.snyk.jenkins.command.Command;
+import io.snyk.jenkins.command.CommandLine;
 import io.snyk.jenkins.config.SnykConfig;
 import io.snyk.jenkins.credentials.SnykApiToken;
 import io.snyk.jenkins.exception.SnykErrorException;
@@ -53,6 +55,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
   private boolean failOnError = true;
   private boolean monitorProjectOnBuild = true;
   private Severity severity = Severity.LOW;
+  private Command snykCommand = Command.TEST;
   private String snykTokenId;
   private String targetFile;
   private String organisation;
@@ -156,6 +159,24 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
   }
 
   @SuppressWarnings("unused")
+  public String getSnykCommand() {
+    return snykCommand.getCommand();
+  }
+
+  @DataBoundSetter
+  public void setSnykCommand(@Nullable String snykCommand) {
+    String trimmed = fixEmptyAndTrim(snykCommand);
+    if (trimmed != null) {
+      CommandLine.validateCommand(trimmed);
+    }
+    this.snykCommand = Command.getIfPresent(trimmed);
+    // default to TEST if the command is not valid
+    if (this.snykCommand == null) {
+      this.snykCommand = Command.TEST;
+    }
+  }
+
+  @SuppressWarnings("unused")
   public String getAdditionalArguments() {
     return additionalArguments;
   }
@@ -167,11 +188,10 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
 
   @Override
   public void perform(
-    @NonNull Run<?, ?> build,
-    @NonNull FilePath workspace,
-    @NonNull Launcher launcher,
-    @NonNull TaskListener log
-  ) throws SnykIssueException, SnykErrorException {
+      @NonNull Run<?, ?> build,
+      @NonNull FilePath workspace,
+      @NonNull Launcher launcher,
+      @NonNull TaskListener log) throws SnykIssueException, SnykErrorException {
     SnykStepFlow.perform(this, () -> SnykContext.forFreestyleProject(build, workspace, launcher, log));
   }
 
@@ -208,7 +228,7 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
     public boolean hasInstallationsAvailable() {
       if (LOG.isTraceEnabled()) {
         LOG.trace("Available Snyk installations: {}",
-                  Arrays.stream(installations).map(SnykInstallation::getName).collect(joining(",", "[", "]")));
+            Arrays.stream(installations).map(SnykInstallation::getName).collect(joining(",", "[", "]")));
       }
 
       return installations.length > 0;
@@ -217,8 +237,16 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
     public ListBoxModel doFillSeverityItems() {
       ListBoxModel model = new ListBoxModel();
       Stream.of(Severity.values())
-            .map(Severity::getSeverity)
-            .forEach(model::add);
+          .map(Severity::getSeverity)
+          .forEach(model::add);
+      return model;
+    }
+
+    @SuppressWarnings("unused")
+    public ListBoxModel doFillSnykCommandItems() {
+      ListBoxModel model = new ListBoxModel();
+      Stream.of(Command.values())
+          .forEach(cmd -> model.add(cmd.getCommand()));
       return model;
     }
 
@@ -235,8 +263,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
         }
       }
       return model.includeEmptyValue()
-                  .includeAs(ACL.SYSTEM2, item, SnykApiToken.class)
-                  .includeCurrentValue(snykTokenId);
+          .includeAs(ACL.SYSTEM2, item, SnykApiToken.class)
+          .includeCurrentValue(snykTokenId);
     }
 
     public FormValidation doCheckSeverity(@QueryParameter String value, @QueryParameter String additionalArguments) {
@@ -245,7 +273,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
       }
 
       if (additionalArguments.contains("--severity-threshold")) {
-        return FormValidation.warning("Option '--severity-threshold' is overridden in additional arguments text area below.");
+        return FormValidation
+            .warning("Option '--severity-threshold' is overridden in additional arguments text area below.");
       }
       return FormValidation.ok();
     }
@@ -261,11 +290,13 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
         }
       }
       if (fixEmptyAndTrim(value) == null) {
-        return FormValidation.warningWithMarkup("A Snyk API token is required. If you do not provide credentials, make sure to provide a <code>SNYK_TOKEN</code> build environment variable.");
+        return FormValidation.warningWithMarkup(
+            "A Snyk API token is required. If you do not provide credentials, make sure to provide a <code>SNYK_TOKEN</code> build environment variable.");
       }
 
-      if (null == CredentialsMatchers.firstOrNull(lookupCredentialsInItemGroup(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM2, Collections.emptyList()),
-                                                  anyOf(withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
+      if (null == CredentialsMatchers.firstOrNull(
+          lookupCredentialsInItemGroup(SnykApiToken.class, Jenkins.get(), ACL.SYSTEM2, Collections.emptyList()),
+          anyOf(withId(value), CredentialsMatchers.instanceOf(SnykApiToken.class)))) {
         return FormValidation.error("Cannot find currently selected Snyk API token.");
       }
       return FormValidation.ok();
@@ -282,7 +313,8 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
       return FormValidation.ok();
     }
 
-    public FormValidation doCheckOrganisation(@QueryParameter String value, @QueryParameter String additionalArguments) {
+    public FormValidation doCheckOrganisation(@QueryParameter String value,
+        @QueryParameter String additionalArguments) {
       if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(additionalArguments) == null) {
         return FormValidation.ok();
       }
@@ -293,17 +325,20 @@ public class SnykStepBuilder extends Builder implements SimpleBuildStep, SnykCon
       return FormValidation.ok();
     }
 
-    public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild, @QueryParameter String additionalArguments) {
+    public FormValidation doCheckProjectName(@QueryParameter String value, @QueryParameter String monitorProjectOnBuild,
+        @QueryParameter String additionalArguments) {
       if (fixEmptyAndTrim(value) == null || fixEmptyAndTrim(monitorProjectOnBuild) == null) {
         return FormValidation.ok();
       }
 
       List<FormValidation> findings = new ArrayList<>(2);
       if ("false".equals(fixEmptyAndTrim(monitorProjectOnBuild))) {
-        findings.add(FormValidation.warning("Project name will be ignored, because the project is not monitored on build."));
+        findings.add(
+            FormValidation.warning("Project name will be ignored, because the project is not monitored on build."));
       }
       if (fixNull(additionalArguments).contains("--project-name")) {
-        findings.add(FormValidation.warning("Option '--project-name' is overridden in additional arguments text area below."));
+        findings.add(
+            FormValidation.warning("Option '--project-name' is overridden in additional arguments text area below."));
       }
       return FormValidation.aggregate(findings);
     }

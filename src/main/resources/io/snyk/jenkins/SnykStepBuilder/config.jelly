@@ -60,6 +60,9 @@
         </j:otherwise>
       </j:choose>
     </f:entry>
+    <f:entry title="Snyk command" field="snykCommand">
+      <f:select default="test"/>
+    </f:entry>
     <f:entry title="Additional arguments" field="additionalArguments">
       <f:textarea/>
     </f:entry>
