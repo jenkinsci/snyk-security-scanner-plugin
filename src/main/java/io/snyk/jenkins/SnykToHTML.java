@@ -37,7 +37,12 @@ public class SnykToHTML {
         throw new RuntimeException("Snyk Test JSON does not exist.");
       }
 
-      FilePath stdoutPath = workspace.child(getURLSafeDateTime() + "_snyk_report.html");
+      FilePath stdoutPath;
+      if (testJsonPath.getName().contains(SnykTest.SBOM_REPORT_FILE_NAME_SUFFIX)) {
+        stdoutPath = workspace.child(getURLSafeDateTime() + SnykTest.SBOM_REPORT_FILE_NAME_SUFFIX + ".html");
+      } else {
+        stdoutPath = workspace.child(getURLSafeDateTime() + SnykTest.REPORT_FILE_NAME_SUFFIX + ".html"  );
+      }
 
       ArgumentListBuilder command = new ArgumentListBuilder()
         .add(installation.getReportExecutable(launcher))

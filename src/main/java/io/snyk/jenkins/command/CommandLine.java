@@ -11,16 +11,59 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.snyk.jenkins.credentials.SnykApiToken.SNYK_TOKEN_ENV_KEY;
 
 public class CommandLine {
-  public static ArgumentListBuilder asArgumentList(String executablePath, Command command, SnykConfig config, EnvVars env) {
-    Function<String, String> replaceMacroWithEnv = str -> Util.replaceMacro(str, env);
-    ArgumentListBuilder args = new ArgumentListBuilder(executablePath, command.commandName());
+  public static void validateCommand(String command) {
+    if (command == null || command.trim().isEmpty()) {
+      return;
+    }
+    
+    String trimmed = command.trim();
+    Command cmd = Command.getIfPresent(trimmed);
+    
+    if (cmd == null) {
+      String allowedCommands = Stream.of(Command.values())
+        .map(Command::getCommand)
+        .collect(Collectors.joining(", "));
+      
+      throw new IllegalArgumentException(
+        "Invalid command: '" + command + "'. " +
+        "Allowed commands: " + allowedCommands
+      );
+    }
+  }
 
-    if (command == Command.TEST) {
-      args.add("--json");
+  public static ArgumentListBuilder asArgumentList(String executablePath, Command command, SnykConfig config, EnvVars env) {
+    return asArgumentList(executablePath, command.getCommand(), config, env);
+  }
+
+  public static ArgumentListBuilder asArgumentList(String executablePath, String commandName, SnykConfig config, EnvVars env) {
+    Function<String, String> replaceMacroWithEnv = str -> Util.replaceMacro(str, env);
+    ArgumentListBuilder args = new ArgumentListBuilder(executablePath);
+    
+    String[] commandParts = Util.tokenize(commandName);
+    for (String part : commandParts) {
+      args.add(part);
+    }
+
+    if (Command.TEST.getCommand().equals(commandName)) {
+      if (!args.toList().contains("--json")) {
+        args.add("--json");
+      }
+    }
+
+    // snyk-to-html requires --reachability for sbom test command
+    if (Command.SBOM_TEST.getCommand().equals(commandName)) {
+      if (!args.toList().contains("--reachability")) {
+        args.add("--reachability");
+      }
+      if (!args.toList().contains("--json")) {
+        args.add("--json");
+      }
     }
 
     Optional.ofNullable(config.getSeverity())

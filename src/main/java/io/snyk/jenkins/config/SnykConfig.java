@@ -9,6 +9,8 @@ public interface SnykConfig {
 
   String getProjectName();
 
+  String getSnykCommand();
+
   String getAdditionalArguments();
 
   String getSnykInstallation();

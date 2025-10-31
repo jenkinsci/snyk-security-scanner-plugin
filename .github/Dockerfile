@@ -1,4 +1,4 @@
-ARG JENKINS_VERSION
+ARG JENKINS_VERSION=2.504.2
 
 FROM eclipse-temurin:17-jdk AS build
 # use local mvn repo to speedup build
@@ -14,6 +14,7 @@ RUN ./mvnw verify -q -s .mvn/settings.xml --fail-never
 COPY . .
 RUN ./mvnw clean verify -s .mvn/settings.xml
 
+ARG JENKINS_VERSION
 FROM jenkins/jenkins:${JENKINS_VERSION}-jdk17
 
 USER root
@@ -31,6 +32,7 @@ RUN jenkins-plugin-cli --plugins workflow-step-api
 RUN jenkins-plugin-cli --plugins credentials
 RUN jenkins-plugin-cli --plugins git
 RUN jenkins-plugin-cli --plugins configuration-as-code
+RUN jenkins-plugin-cli --plugins jackson2-api
 
 COPY --from=build /app/target/snyk-security-scanner.* /usr/share/jenkins/ref/plugins/
 

@@ -45,6 +45,7 @@ public class SnykSecurityStep extends Step implements SnykConfig {
     private String organisation;
     private String projectName;
     private String snykInstallation;
+    private String snykCommand;
     private String additionalArguments;
 
     @DataBoundConstructor
@@ -140,6 +141,16 @@ public class SnykSecurityStep extends Step implements SnykConfig {
     @DataBoundSetter
     public void setSnykInstallation(String snykInstallation) {
         this.snykInstallation = snykInstallation;
+    }
+
+    @SuppressWarnings("unused")
+    public String getSnykCommand() {
+        return snykCommand;
+    }
+
+    @DataBoundSetter
+    public void setSnykCommand(@Nullable String snykCommand) {
+        this.snykCommand = fixEmptyAndTrim(snykCommand);
     }
 
     @SuppressWarnings("unused")

@@ -25,6 +25,78 @@ import static io.snyk.jenkins.Utils.getURLSafeDateTime;
 public class SnykTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnykTest.class);
+  public static final String SBOM_REPORT_FILE_NAME_SUFFIX = "_snyk_sbom_report";
+  public static final String REPORT_FILE_NAME_SUFFIX = "_snyk_report";
+
+  public static Result testSbomProject(
+    SnykContext context,
+    SnykConfig config,
+    SnykInstallation installation,
+    String snykToken
+  ) throws IOException, InterruptedException {
+    PrintStream logger = context.getLogger();
+    FilePath workspace = context.getWorkspace();
+    Launcher launcher = context.getLauncher();
+    EnvVars envVars = context.getEnvVars();
+
+    FilePath stdoutPath = workspace.child(getURLSafeDateTime() + SBOM_REPORT_FILE_NAME_SUFFIX + ".json");
+
+    ArgumentListBuilder command = CommandLine
+      .asArgumentList(
+        installation.getSnykExecutable(launcher),
+        Command.SBOM_TEST,
+        config,
+        envVars
+      );
+
+    Map<String, String> commandEnvVars = CommandLine.asEnvVars(snykToken, envVars);
+
+    int exitCode;
+    try (OutputStream stdoutWriter = stdoutPath.write()) {
+      logger.println("SBOM testing project...");
+      logger.println("> " + command);
+      exitCode = launcher.launch()
+        .cmds(command)
+        .envs(commandEnvVars)
+        .stdout(stdoutWriter)
+        .stderr(logger)
+        .quiet(true)
+        .pwd(workspace)
+        .join();
+    }
+
+    try {
+      String stdout = stdoutPath.readToString();
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("snyk sbom test command: {}", command);
+        LOG.trace("snyk sbom test exit code: {}", exitCode);
+        LOG.trace("snyk sbom test stdout: {}", stdout);
+      }
+
+      SnykTestResult result = ObjectMapperHelper.unmarshallTestResult(stdout);
+      if (result == null) {
+        throw new RuntimeException("Failed to parse test output.");
+      }
+      if (fixEmptyAndTrim(result.error) != null) {
+        throw new RuntimeException("An error occurred. " + result.error);
+      }
+      if (exitCode >= 2) {
+        throw new RuntimeException("An error occurred. (Exit Code: " + exitCode + ")");
+      }
+      if (!result.ok) {
+        logger.println("Vulnerabilities found!");
+        logger.printf(
+          "Result: %s known vulnerabilities | %s dependencies%n",
+          result.uniqueCount,
+          result.dependencyCount
+        );
+      }
+    } catch (MalformedInputException e) {
+      logger.println("Couldn't convert report to UTF-8.");
+    }
+
+    return new Result(stdoutPath, exitCode);
+  }
 
   public static Result testProject(
     SnykContext context,
@@ -37,7 +109,7 @@ public class SnykTest {
     Launcher launcher = context.getLauncher();
     EnvVars envVars = context.getEnvVars();
 
-    FilePath stdoutPath = workspace.child(getURLSafeDateTime() + "_snyk_report.json");
+    FilePath stdoutPath = workspace.child(getURLSafeDateTime() + REPORT_FILE_NAME_SUFFIX + ".json");
 
     ArgumentListBuilder command = CommandLine
       .asArgumentList(
@@ -62,7 +134,6 @@ public class SnykTest {
         .pwd(workspace)
         .join();
     }
-
 
     try {
       String stdout = stdoutPath.readToString();
