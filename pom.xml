@@ -10,8 +10,8 @@
   </parent>
 
   <properties>
-    <jenkins.baseline>2.504</jenkins.baseline>
-    <jenkins.version>${jenkins.baseline}.2</jenkins.version>
+    <jenkins.baseline>2.541</jenkins.baseline>
+    <jenkins.version>${jenkins.baseline}.3</jenkins.version>
     <skipAnimalSniffer>false</skipAnimalSniffer>
   </properties>
 
@@ -42,7 +42,7 @@
       <dependency>
         <groupId>io.jenkins.tools.bom</groupId>
         <artifactId>bom-${jenkins.baseline}.x</artifactId>
-        <version>4740.v75a_90f6fefb_7</version>
+        <version>6607.v3ed3d8ddfed8</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>

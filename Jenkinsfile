@@ -1,5 +1,5 @@
 #!/usr/bin/env groovy
-def minimumSupportedJenkinsVersion = "2.504.1"
+def minimumSupportedJenkinsVersion = "2.541.3"
 
 /* `buildPlugin` step provided by: https://github.com/jenkins-infra/pipeline-library */
 buildPlugin(configurations: [
