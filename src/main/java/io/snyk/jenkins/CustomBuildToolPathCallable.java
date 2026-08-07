@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static java.lang.String.join;
-import static org.apache.commons.lang.StringUtils.chomp;
+import static org.apache.commons.lang3.StringUtils.chomp;
 
 class CustomBuildToolPathCallable implements FilePath.FileCallable<String> {
 

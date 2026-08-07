@@ -14,7 +14,7 @@ import hudson.util.ListBoxModel;
 import io.snyk.jenkins.tools.internal.DownloadService;
 import jenkins.security.MasterToSlaveCallable;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
